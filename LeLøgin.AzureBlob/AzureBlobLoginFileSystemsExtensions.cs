@@ -1,6 +1,11 @@
 using LeLøgin.Core;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.DependencyInjection;
+using Umbraco.Cms.Core.IO;
+using Umbraco.Cms.Web.Common.ApplicationBuilder;
 using Umbraco.StorageProviders.AzureBlob.IO;
 
 namespace LeLøgin.AzureBlob;
@@ -34,6 +39,13 @@ public static class AzureBlobLoginFileSystemsExtensions
     /// Applied after configuration binding and before any consumer configure callback.
     /// </summary>
     public const string DefaultPublishVirtualPath = "/le-login/publish";
+
+    /// <summary>
+    /// Name of the <see cref="UmbracoPipelineFilter"/> the extension registers to serve the publish
+    /// file system as static files. Exposed so tests can locate the filter and so consumers can
+    /// reason about pipeline ordering.
+    /// </summary>
+    public const string PipelineFilterName = "LeLøginAzureBlobPublishStaticFiles";
 
     /// <summary>
     /// Routes Le Løgin's asset and publish file systems through Azure Blob Storage using the
@@ -87,6 +99,39 @@ public static class AzureBlobLoginFileSystemsExtensions
 
         builder.SetLoginPublishFileSystem(sp =>
             sp.GetRequiredService<IAzureBlobFileSystemProvider>().GetFileSystem(PublishFileSystemName));
+
+        // Mount the publish file system as static files at its configured VirtualPath.
+        // The publish FS's IFileSystem.GetUrl() returns a relative URL beneath that path
+        // (e.g. /le-login/publish/<guid>.jpg); with the physical default that path lives under
+        // wwwroot and is served by Umbraco's default UseStaticFiles. With blob storage there
+        // is no wwwroot mapping, so we register a second static-files middleware pointing at
+        // the blob's IFileProvider for that virtual path. Asset FS is NOT mounted — it's
+        // private (AssetController.Preview streams via OpenFile, never returns a URL).
+        builder.Services.Configure<UmbracoPipelineOptions>(pipelineOptions =>
+        {
+            pipelineOptions.AddFilter(new UmbracoPipelineFilter(PipelineFilterName)
+            {
+                PreRouting = app =>
+                {
+                    var blobProvider = app.ApplicationServices.GetRequiredService<IAzureBlobFileSystemProvider>();
+                    var publishFileSystem = blobProvider.GetFileSystem(PublishFileSystemName);
+                    if (publishFileSystem is not IFileProviderFactory factory)
+                    {
+                        return;
+                    }
+
+                    var optionsMonitor = app.ApplicationServices.GetRequiredService<IOptionsMonitor<AzureBlobFileSystemOptions>>();
+                    var publishOptions = optionsMonitor.Get(PublishFileSystemName);
+                    var requestPath = (publishOptions.VirtualPath ?? DefaultPublishVirtualPath).TrimEnd('/');
+
+                    app.UseStaticFiles(new StaticFileOptions
+                    {
+                        FileProvider = factory.Create(),
+                        RequestPath = requestPath
+                    });
+                }
+            });
+        });
 
         return builder;
     }

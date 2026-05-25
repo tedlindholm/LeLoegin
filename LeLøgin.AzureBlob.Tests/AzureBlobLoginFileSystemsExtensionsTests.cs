@@ -11,6 +11,7 @@ using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Cms.Core.Hosting;
 using Umbraco.Cms.Core.IO;
 using Umbraco.Cms.Core.Logging;
+using Umbraco.Cms.Web.Common.ApplicationBuilder;
 using Umbraco.StorageProviders.AzureBlob.IO;
 using Xunit;
 
@@ -166,6 +167,67 @@ public sealed class AzureBlobLoginFileSystemsExtensionsTests
 
 		Assert.Equal(1, assetsConfigureCallCount);
 		Assert.Equal(1, publishConfigureCallCount);
+	}
+
+	[Fact]
+	public void AddAzureBlobLoginFileSystems_Registers_Pipeline_Filter_For_Publish_Static_Files()
+	{
+		IServiceCollection services = BuildServicesWithMinimalBlobConfig();
+		IUmbracoBuilder builder = new TestUmbracoBuilder(
+			services,
+			services.BuildServiceProvider().GetRequiredService<IConfiguration>());
+
+		builder.AddAzureBlobLoginFileSystems();
+
+		using ServiceProvider provider = services.BuildServiceProvider();
+		UmbracoPipelineOptions pipelineOptions = provider
+			.GetRequiredService<IOptions<UmbracoPipelineOptions>>()
+			.Value;
+		IUmbracoPipelineFilter filter = Assert.Single(
+			pipelineOptions.PipelineFilters,
+			candidate => candidate.Name == AzureBlobLoginFileSystemsExtensions.PipelineFilterName);
+		UmbracoPipelineFilter concreteFilter = Assert.IsType<UmbracoPipelineFilter>(filter);
+		Assert.NotNull(concreteFilter.PreRouting);
+	}
+
+	[Fact]
+	public void AddAzureBlobLoginFileSystems_Publish_FileSystem_Is_File_Provider_Factory()
+	{
+		IServiceCollection services = BuildServicesWithMinimalBlobConfig();
+		IUmbracoBuilder builder = new TestUmbracoBuilder(
+			services,
+			services.BuildServiceProvider().GetRequiredService<IConfiguration>());
+
+		builder.AddAzureBlobLoginFileSystems();
+
+		using ServiceProvider provider = services.BuildServiceProvider();
+		LeLøginPublishFileManager publishManager = provider.GetRequiredService<LeLøginPublishFileManager>();
+
+		Assert.IsAssignableFrom<IFileProviderFactory>(publishManager.FileSystem);
+	}
+
+	[Fact]
+	public void AddAzureBlobLoginFileSystems_Registers_Exactly_One_Pipeline_Filter()
+	{
+		// The package mounts the publish file system as static files. The assets
+		// file system is private (served via AssetController.Preview, never via URL)
+		// and must not appear in the static-files pipeline.
+		IServiceCollection services = BuildServicesWithMinimalBlobConfig();
+		IUmbracoBuilder builder = new TestUmbracoBuilder(
+			services,
+			services.BuildServiceProvider().GetRequiredService<IConfiguration>());
+
+		builder.AddAzureBlobLoginFileSystems();
+
+		using ServiceProvider provider = services.BuildServiceProvider();
+		UmbracoPipelineOptions pipelineOptions = provider
+			.GetRequiredService<IOptions<UmbracoPipelineOptions>>()
+			.Value;
+		var packageFilters = pipelineOptions.PipelineFilters
+			.Where(f => f.Name.Contains("LeLøginAzureBlob", StringComparison.Ordinal))
+			.ToList();
+
+		Assert.Single(packageFilters);
 	}
 
 	private static IServiceCollection BuildServicesWithMinimalBlobConfig()
