@@ -1,0 +1,48 @@
+:host {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+#layout {
+	display: flex;
+	flex-direction: column;
+	gap: var(--uui-size-space-5);
+	max-width: 1280px;
+	padding: var(--uui-size-layout-1);
+	box-sizing: border-box;
+}
+
+#actions {
+	display: flex;
+	align-items: center;
+	gap: var(--uui-size-space-3);
+}
+
+#content {
+	display: flex;
+	flex-direction: column;
+	gap: var(--uui-size-space-5);
+}
+
+.asset-card-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+	gap: var(--uui-size-space-4);
+}
+
+.asset-card-grid login-screen-asset-card {
+	display: contents;
+	--uui-button-background-color: var(--uui-color-default);
+	--uui-button-background-color-hover: var(--uui-color-default);
+	--uui-button-contrast: var(--uui-color-default-contrast);
+	--uui-color-default-emphasis: var(--uui-color-default-contrast);
+}
+
+.empty-state {
+	color: var(--uui-color-text-alt);
+}
+
+uui-scroll-container {
+	--uui-menu-item-flat-structure: 1;
+}

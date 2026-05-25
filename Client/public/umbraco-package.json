@@ -1,0 +1,15 @@
+{
+    "name": "Le Løgin",
+    "id": "le-løgin",
+    "version": "1.1.0",
+    "allowTelemetry": true,
+    "allowPublicAccess": true,
+    "extensions": [
+        {
+            "name": "Le Løgin Backoffice Entrypoint",
+            "alias": "LeLøgin.EntryPoint.Backoffice",
+            "type": "backofficeEntryPoint",
+            "js": "/App_Plugins/le-løgin/main.js"
+        }
+    ]
+}

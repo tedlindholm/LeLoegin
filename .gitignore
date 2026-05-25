@@ -1,0 +1,15 @@
+.DS_Store
+*.lscache
+/obj
+/bin
+/wwwroot/App_Plugins/le-løgin
+
+# Ignore build artefacts in nested projects (for example test projects)
+**/bin/
+**/obj/
+/bin
+bin
+
+# Agent skills (development-only tooling, not part of the package)
+/.agents/
+/skills-lock.json

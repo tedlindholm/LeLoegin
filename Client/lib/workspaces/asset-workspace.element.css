@@ -1,0 +1,264 @@
+:host {
+	display: block;
+	width: 100%;
+	height: 100%;
+	box-sizing: border-box;
+	--overlay-surface-82: color-mix(in srgb, var(--uui-color-surface) 82%, transparent);
+	--overlay-surface-88: color-mix(in srgb, var(--uui-color-surface) 88%, transparent);
+	--overlay-surface-64: color-mix(in srgb, var(--uui-color-surface) 64%, transparent);
+	--overlay-surface-55: color-mix(in srgb, var(--uui-color-surface) 55%, transparent);
+	--overlay-surface-44: color-mix(in srgb, var(--uui-color-surface) 44%, transparent);
+	--overlay-surface-28: color-mix(in srgb, var(--uui-color-surface) 28%, transparent);
+	--overlay-surface-90: color-mix(in srgb, var(--uui-color-surface) 90%, transparent);
+	--overlay-text-45: color-mix(in srgb, var(--uui-color-text) 45%, transparent);
+	--overlay-text-48: color-mix(in srgb, var(--uui-color-text) 48%, transparent);
+	--overlay-text-65: color-mix(in srgb, var(--uui-color-text) 65%, transparent);
+	--overlay-text-04: color-mix(in srgb, var(--uui-color-text) 4%, transparent);
+	--overlay-text-08: color-mix(in srgb, var(--uui-color-text) 8%, transparent);
+	--overlay-shadow-depth-3: 0 8px 40px color-mix(in srgb, var(--uui-color-text) 24%, transparent);
+}
+
+#layout {
+	display: grid;
+	gap: var(--uui-size-space-5);
+	max-width: 1180px;
+	padding: var(--uui-size-layout-1);
+	box-sizing: border-box;
+}
+
+.workspace-grid {
+	display: grid;
+	gap: var(--uui-size-space-5);
+}
+
+.workspace-panel-body {
+	display: flex;
+	flex-direction: column;
+	gap: var(--uui-size-space-4);
+}
+
+.preview-stage {
+	position: relative;
+	overflow: hidden;
+	border-radius: calc(var(--uui-border-radius, 3px) * 2);
+	background: var(--uui-color-surface);
+}
+
+.preview-shell {
+	/* 16:9 mirrors a typical desktop login viewport so the editor's `cover`-fit crop
+	   matches what end users see at runtime. Without this lock, the shell's natural
+	   aspect ratio differs from the runtime page's #graphic panel and the visible
+	   crop diverges between edit and use. */
+	aspect-ratio: 16 / 9;
+	max-width: 100%;
+	overflow: hidden;
+}
+
+#auth-preview {
+	display: block;
+	width: 100%;
+}
+
+#preview-overlay {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+}
+
+.preview-control {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+	min-width: 0;
+	pointer-events: auto;
+}
+
+.preview-control-label {
+	position: absolute;
+	top: -1.45rem;
+	left: 0.5rem;
+	z-index: 1;
+	font-size: var(--uui-type-small-size, 0.75rem);
+	line-height: 1.2;
+	color: var(--uui-color-text-alt);
+	padding: 0.2rem 0.6rem;
+	border-radius: 999px;
+	background: var(--overlay-surface-82);
+	backdrop-filter: blur(10px);
+	opacity: 0;
+	transform: translateY(4px);
+	transition: opacity 120ms ease, transform 120ms ease;
+	pointer-events: none;
+}
+
+.preview-control:is(:hover, :focus-within) .preview-control-label {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+.preview-logo-picker {
+	position: absolute;
+	left: var(--logo-left, 10%);
+	top: var(--logo-top, 10%);
+	transform: translate(-50%, -50%);
+}
+
+#asset-logo-picker-button {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 2.5rem;
+	height: 2.5rem;
+	padding: 0;
+	border: 2px solid var(--overlay-surface-55);
+	border-radius: 50%;
+	background: var(--overlay-text-45);
+	color: var(--uui-color-surface);
+	cursor: pointer;
+	opacity: 0;
+	transform: translateY(-2px);
+	transition: opacity 120ms ease, transform 120ms ease;
+}
+
+#asset-logo-picker-button:hover {
+	background: var(--overlay-text-65);
+	border-color: var(--overlay-surface-90);
+}
+
+.preview-stage:is(:hover, :focus-within) #asset-logo-picker-button,
+.preview-logo-picker:is(:hover, :focus-within) #asset-logo-picker-button {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+.preview-greeting-field {
+	position: absolute;
+	left: var(--greeting-left, 50%);
+	top: var(--greeting-top, 40%);
+	transform: translate(-50%, -50%);
+	width: min(360px, calc(100% - var(--uui-size-layout-1) * 4));
+	box-sizing: border-box;
+}
+
+#asset-greeting-inline {
+	width: 100%;
+	color: var(--umb-login-greeting-color, var(--uui-color-interactive-emphasis));
+	text-align: center;
+	font-size: var(--umb-login-header-font-size-large, 4rem);
+	font-weight: 400;
+	line-height: 1.2;
+	--uui-input-height: 5rem;
+	--uui-input-padding: 0.14em 0.24em;
+	--uui-input-background-color: transparent;
+	--uui-input-background-color-readonly: transparent;
+	--uui-input-border-width: 2px;
+	--uui-input-border-color: transparent;
+	--uui-input-border-color-hover: transparent;
+	--uui-input-border-color-focus: var(--uui-color-interactive-emphasis);
+	box-shadow: none;
+	transition:
+		box-shadow 120ms ease,
+		background-color 120ms ease,
+		border-color 120ms ease;
+}
+
+.preview-greeting-field:hover #asset-greeting-inline {
+	--uui-input-border-color: var(--overlay-surface-28);
+	--uui-input-border-color-hover: var(--overlay-surface-44);
+	box-shadow: 0 8px 24px var(--overlay-text-04);
+}
+
+.preview-greeting-field:focus-within #asset-greeting-inline {
+	--uui-input-background-color: var(--overlay-surface-88);
+	--uui-input-background-color-readonly: var(--overlay-surface-88);
+	--uui-input-border-color: var(--overlay-surface-64);
+	--uui-input-border-color-hover: var(--overlay-surface-82);
+	box-shadow: 0 20px 60px var(--overlay-text-08);
+}
+
+.logo-picker-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+	gap: var(--uui-size-space-4);
+	padding: 2px;
+}
+
+.empty-state,
+.helper-text {
+	color: var(--uui-color-text-alt);
+}
+
+.logo-preview-image {
+	display: block;
+	max-width: 100%;
+	max-height: 220px;
+	object-fit: contain;
+}
+
+.preview-zoom-controls {
+	position: absolute;
+	left: var(--uui-size-space-4, 0.75rem);
+	bottom: var(--uui-size-space-4, 0.75rem);
+	display: flex;
+	gap: var(--uui-size-space-2, 0.25rem);
+	pointer-events: auto;
+}
+
+#asset-zoom-in,
+#asset-zoom-out {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 2rem;
+	height: 2rem;
+	padding: 0;
+	border: 2px solid var(--overlay-surface-55);
+	border-radius: 50%;
+	background: var(--overlay-text-45);
+	color: var(--uui-color-surface);
+	cursor: pointer;
+	opacity: 0;
+	transform: translateY(2px);
+	transition: opacity 120ms ease, transform 120ms ease, background-color 120ms ease;
+}
+
+#asset-zoom-in svg,
+#asset-zoom-out svg {
+	width: 1rem;
+	height: 1rem;
+	display: block;
+}
+
+#asset-zoom-in:hover:not(:disabled),
+#asset-zoom-out:hover:not(:disabled) {
+	background: var(--overlay-text-65);
+	border-color: var(--overlay-surface-90);
+}
+
+#asset-zoom-in:disabled,
+#asset-zoom-out:disabled {
+	cursor: not-allowed;
+	background: var(--overlay-text-48);
+	border-color: var(--overlay-surface-44);
+}
+
+.preview-stage:is(:hover, :focus-within) #asset-zoom-in,
+.preview-stage:is(:hover, :focus-within) #asset-zoom-out {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+#asset-zoom-in:disabled,
+.preview-stage:is(:hover, :focus-within) #asset-zoom-in:disabled,
+#asset-zoom-out:disabled,
+.preview-stage:is(:hover, :focus-within) #asset-zoom-out:disabled {
+	opacity: 0.35;
+}
+
+@media (max-width: 1100px) {
+	#asset-greeting-inline {
+		font-size: clamp(2.1rem, 8vw, 3.5rem);
+		--uui-input-height: clamp(4rem, 9vw, 5rem);
+	}
+}

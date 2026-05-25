@@ -1,0 +1,74 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <StaticWebAssetBasePath>/</StaticWebAssetBasePath>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RootNamespace>LeLøgin</RootNamespace>
+    <AssemblyName>LeLøgin</AssemblyName>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Version>1.1.0</Version>
+    <PackageId>LeLøgin</PackageId>
+    <Authors>Le Løgin contributors</Authors>
+    <Description>Le Løgin is a distributable Umbraco package for managing the backoffice login-screen image from a Settings-integrated product area.</Description>
+    <PackageReadmeFile>readme.md</PackageReadmeFile>
+    <PackageTags>umbraco;backoffice;login-screen;settings;branding</PackageTags>
+    <Product>LeLøgin</Product>
+    <Title>Le Løgin</Title>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <StaticWebAssetsGetBuildAssetsTargets>GenerateStaticWebAssetsManifest;GetCurrentProjectBuildStaticWebAssetItems</StaticWebAssetsGetBuildAssetsTargets>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
+    <PackageReference Include="Umbraco.Cms" Version="17.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Dont include the client folder as part of packaging nuget build -->
+    <Content Remove="Client\**" />
+
+    <!-- Exclude generated artefacts and scratch repro projects from SDK default globs. -->
+    <Compile Remove="artifacts\**" />
+    <Content Remove="artifacts\**" />
+    <None Remove="artifacts\**" />
+
+    <!-- Exclude test projects — their own .csproj files handle compilation -->
+    <Compile Remove="*.Tests\**" />
+    <Content Remove="*.Tests\**" />
+    <None Remove="*.Tests\**" />
+
+    <!-- Exclude sibling adapter projects — their own .csproj files handle compilation -->
+    <Compile Remove="LeLøgin.AzureBlob\**" />
+    <Content Remove="LeLøgin.AzureBlob\**" />
+    <None Remove="LeLøgin.AzureBlob\**" />
+
+    <!-- Keep the Umbraco package manifest visible in the solution without packing it twice. -->
+    <None Include="Client\public\umbraco-package.json" Pack="false" />
+    <None Include="readme.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <Target Name="PrepareLeLøginClientStaticAssets" BeforeTargets="ResolveProjectStaticWebAssets" Condition="'$(_LeLoginClientAssetsBuilt)' != 'true'">
+    <Message Importance="high" Text="Synchronising Le Løgin package versions and building client assets." />
+    <RemoveDir Directories="$(MSBuildProjectDirectory)/wwwroot/App_Plugins/le-løgin" />
+    <Exec Command="node scripts/sync-package-version.mjs &quot;$(Version)&quot;" WorkingDirectory="$(MSBuildProjectDirectory)/Client" />
+    <Exec Command="pnpm build" WorkingDirectory="$(MSBuildProjectDirectory)/Client" />
+
+    <ItemGroup>
+      <_LeLoginGeneratedContent Include="@(Content)" Condition="$([System.String]::Copy('%(Identity)').Replace('\', '/').StartsWith('wwwroot/App_Plugins/le-løgin/'))" />
+      <Content Remove="@(_LeLoginGeneratedContent)" />
+      <Content Include="wwwroot\App_Plugins\le-løgin\**" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_LeLoginClientAssetsBuilt>true</_LeLoginClientAssetsBuilt>
+    </PropertyGroup>
+  </Target>
+
+</Project>

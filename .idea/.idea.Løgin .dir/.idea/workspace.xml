@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="21768bfc-96c9-412e-a8dc-95b30e664547" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/.idea.Løgin .dir/.idea/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/.idea.Løgin .dir/.idea/encodings.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/.idea.Løgin .dir/.idea/indexLayout.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/.idea.Løgin .dir/.idea/misc.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/.idea.Løgin .dir/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/AGENTS.md" beforeDir="false" afterPath="$PROJECT_DIR$/AGENTS.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Client/lib/assets/lang/manifests.ts" beforeDir="false" afterPath="$PROJECT_DIR$/Client/lib/assets/lang/manifests.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Client/lib/backend-api/repository.ts" beforeDir="false" afterPath="$PROJECT_DIR$/Client/lib/backend-api/repository.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Client/lib/dashboard/manifests.ts" beforeDir="false" afterPath="$PROJECT_DIR$/Client/lib/dashboard/manifests.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Client/lib/dashboard/overview-dashboard.element.ts" beforeDir="false" afterPath="$PROJECT_DIR$/Client/lib/dashboard/overview-dashboard.element.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Client/lib/runtime/apply-login-image.ts" beforeDir="false" afterPath="$PROJECT_DIR$/Client/lib/runtime/apply-login-image.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Client/lib/section/manifests.ts" beforeDir="false" afterPath="$PROJECT_DIR$/Client/lib/section/manifests.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Client/lib/tree/asset-tree.repository.ts" beforeDir="false" afterPath="$PROJECT_DIR$/Client/lib/tree/asset-tree.repository.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Client/lib/tree/manifests.ts" beforeDir="false" afterPath="$PROJECT_DIR$/Client/lib/tree/manifests.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Client/lib/workspaces/asset-workspace.element.ts" beforeDir="false" afterPath="$PROJECT_DIR$/Client/lib/workspaces/asset-workspace.element.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Client/lib/workspaces/manifests.ts" beforeDir="false" afterPath="$PROJECT_DIR$/Client/lib/workspaces/manifests.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Client/lib/workspaces/root-workspace.element.ts" beforeDir="false" afterPath="$PROJECT_DIR$/Client/lib/workspaces/root-workspace.element.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Client/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/Client/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Client/public/umbraco-package.json" beforeDir="false" afterPath="$PROJECT_DIR$/Client/public/umbraco-package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Client/vite.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/Client/vite.config.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Api/ApiBase.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Api/ApiBase.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Api/ApiConfiguration.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Api/ApiConfiguration.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Api/ApiControllerBase.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Api/ApiControllerBase.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Api/Assets/AssetController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Api/Assets/AssetController.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Api/Runtime/RuntimeController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Api/Runtime/RuntimeController.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Api/Runtime/RuntimeControllerBase.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Api/Runtime/RuntimeControllerBase.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Api/Settings/SettingsController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Api/Settings/SettingsController.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/LoginScreenComposer.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Core/LoginScreenComposer.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Models/LoginImageAsset.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Models/LoginImageAsset.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Models/LoginRule.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Models/LoginRule.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Models/LoginRuleset.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Models/LoginRuleset.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Models/LoginSettings.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Models/LoginSettings.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Storage/ILoginScreenFileService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Storage/ILoginScreenFileService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Storage/ILoginScreenStore.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Storage/ILoginScreenStore.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Storage/LoginScreenFileService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Storage/LoginScreenFileService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Storage/LoginScreenStore.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Storage/LoginScreenStore.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Valkyria.LoginScreen.csproj" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/login-screen-product-plan.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/login-screen-product-plan.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/readme.md" beforeDir="false" afterPath="$PROJECT_DIR$/readme.md" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="CopilotChats">
+    <option name="panelChat">
+      <chat>
+        <option name="activeSessionId" value="ef63b076-ade9-4758-95b6-9b2539bf9535" />
+        <option name="sessions">
+          <session>
+            <option name="chatType" value="PANEL" />
+            <option name="id" value="e600faab-d42a-4c99-9751-218162357bb7" />
+            <option name="modeId" value="Agent" />
+            <option name="modelType" value="builtin_family" />
+            <option name="modelValue" value="claude-haiku-4.5" />
+            <option name="status" value="WaitingForResponse" />
+            <option name="targetType" value="LOCAL" />
+          </session>
+          <session>
+            <option name="chatType" value="PANEL" />
+            <option name="id" value="ef63b076-ade9-4758-95b6-9b2539bf9535" />
+            <option name="modeId" value="Agent" />
+            <option name="modelType" value="builtin_family" />
+            <option name="modelValue" value="auto" />
+            <option name="targetType" value="LOCAL" />
+          </session>
+        </option>
+        <option name="type" value="PANEL" />
+      </chat>
+    </option>
+  </component>
+  <component name="CopilotPersistence">
+    <persistenceIdMap>
+      <entry key="_/Users/ted/Repos/Løgin " value="3DgAXaJ67sTYcvJKPn1Mi479S1i" />
+    </persistenceIdMap>
+  </component>
+  <component name="CopilotUserSelectedModel">
+    <selectedModels>
+      <entry key="agent-panel" value="Claude Haiku 4.5" />
+      <entry key="chat-panel" value="Claude Haiku 4.5" />
+    </selectedModels>
+  </component>
+  <component name="EmbeddingIndexingInfo">
+    <option name="cachedIndexableFilesCount" value="58" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/Client/package.json" root0="FORCE_HIGHLIGHTING" />
+  </component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
+  <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 8
+}]]></component>
+  <component name="ProjectId" id="3DgAXaJ67sTYcvJKPn1Mi479S1i" />
+  <component name="ProjectSessionTemplates">
+    <option name="panelTemplate">
+      <template>
+        <option name="modeId" value="Agent" />
+        <option name="model">
+          <model>
+            <option name="modelType" value="builtin_family" />
+            <option name="modelValue" value="claude-haiku-4.5" />
+          </model>
+        </option>
+        <option name="targetType" value="LOCAL" />
+      </template>
+    </option>
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "copilot.sensitive.folder.allow.file_read./Users/ted/Repos/Løgin": "true",
+    "git-widget-placeholder": "main",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "ml.llm.AcpAgentsConfigurable",
+    "ts.external.directory.path": "/Applications/Rider.app/Contents/plugins/javascript-plugin/jsLanguageServicesImpl/external",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="21768bfc-96c9-412e-a8dc-95b30e664547" name="Changes" comment="" />
+      <created>1725978723968</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1725978723968</updated>
+      <workItem from="1725978726502" duration="62000" />
+      <workItem from="1725978805842" duration="3000" />
+      <workItem from="1778693383628" duration="1891000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="UnityCheckinConfiguration" checkUnsavedScenes="true" />
+  <component name="UnityProjectConfiguration" hasMinimizedUI="false" />
+  <component name="VcsManagerConfiguration">
+    <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <breakpoint enabled="true" type="DotNet_Exception_Breakpoints">
+          <properties exception="System.OperationCanceledException" breakIfHandledByOtherCode="false" displayValue="System.OperationCanceledException" />
+          <option name="timeStamp" value="1" />
+        </breakpoint>
+        <breakpoint enabled="true" type="DotNet_Exception_Breakpoints">
+          <properties exception="System.Threading.Tasks.TaskCanceledException" breakIfHandledByOtherCode="false" displayValue="System.Threading.Tasks.TaskCanceledException" />
+          <option name="timeStamp" value="2" />
+        </breakpoint>
+        <breakpoint enabled="true" type="DotNet_Exception_Breakpoints">
+          <properties exception="System.Threading.ThreadAbortException" breakIfHandledByOtherCode="false" displayValue="System.Threading.ThreadAbortException" />
+          <option name="timeStamp" value="3" />
+        </breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+  <component name="github-copilot-workspace">
+    <instructionFileLocations>
+      <option value=".github/instructions" />
+    </instructionFileLocations>
+    <promptFileLocations>
+      <option value=".github/prompts" />
+    </promptFileLocations>
+  </component>
+</project>
