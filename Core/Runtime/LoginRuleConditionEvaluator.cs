@@ -10,7 +10,7 @@ public static class LoginRuleConditionEvaluator
 {
 	public static bool IsSupportedCondition(JsonElement condition)
 	{
-		var validationContext = new LoginRuntimeContext("monday", 1, "2026-01-01", "localhost");
+		var validationContext = new LoginRuntimeContext("monday", 1);
 		return TryEvaluate(condition, validationContext, out _);
 	}
 
@@ -350,12 +350,6 @@ public static class LoginRuleConditionEvaluator
 				return true;
 			case "month":
 				value = OperandValue.FromNumber(context.Month);
-				return true;
-			case "date":
-				value = OperandValue.FromText(context.Date);
-				return true;
-			case "hostname":
-				value = OperandValue.FromText(context.Hostname);
 				return true;
 			default:
 				return false;

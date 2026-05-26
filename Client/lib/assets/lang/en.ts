@@ -70,8 +70,6 @@ export const englishDictionary = {
 		conditionValuePlaceholder: 'Value',
 		fieldWeekday: 'Weekday',
 		fieldMonth: 'Month',
-		fieldDate: 'Date',
-		fieldHostname: 'Domain',
 		operatorIs: 'is',
 		operatorIsNot: 'is not',
 		operatorIn: 'is one of',

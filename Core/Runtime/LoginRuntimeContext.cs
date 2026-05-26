@@ -5,6 +5,4 @@ namespace LeLøgin.Core.Runtime;
 /// </summary>
 public sealed record LoginRuntimeContext(
 	string Weekday,
-	int Month,
-	string Date,
-	string Hostname);
+	int Month);

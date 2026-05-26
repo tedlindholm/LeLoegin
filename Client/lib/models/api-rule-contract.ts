@@ -10,7 +10,7 @@ import type {
 } from './index.js';
 
 export type ApiLoginRuleConditionInput = Omit<LoginRuleConditionModel, 'field' | 'operator'> & {
-	field: LoginRuleConditionModel['field'] | 'weekday' | 'month' | 'date' | 'hostname';
+	field: LoginRuleConditionModel['field'] | 'weekday' | 'month';
 	operator:
 		| LoginRuleConditionModel['operator']
 		| 'is'
@@ -74,9 +74,7 @@ export const conditionOperator = makeBiMap<LoginRuleConditionModel['operator'], 
 
 export const conditionField = makeBiMap<LoginRuleConditionModel['field'], LoginRuleField>('condition field', [
 	['Weekday', 'weekday'],
-	['Month', 'month'],
-	['Date', 'date'],
-	['Hostname', 'hostname']
+	['Month', 'month']
 ]);
 
 export const conditionGroupOperator = makeBiMap<LoginRuleConditionGroupModel['operator'], LoginRuleConditionGroup['operator']>('condition group operator', [

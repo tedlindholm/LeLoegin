@@ -27,10 +27,10 @@ public sealed class RuleControllerTests : IDisposable
 		  "rules": [
 		    {
 		      "id": "rule-1",
-		      "name": "Hostname",
+		      "name": "Monday",
 		      "priority": 100,
 		      "enabled": true,
-		      "condition": "{\"and\":[{\"==\":[{\"var\":\"hostname\"},\"localhost\"]}]}",
+		      "condition": "{\"and\":[{\"==\":[{\"var\":\"weekday\"},\"monday\"]}]}",
 		      "assetId": "asset-1"
 		    }
 		  ]
@@ -45,9 +45,9 @@ public sealed class RuleControllerTests : IDisposable
 		Assert.Equal("rule-1", rule.Id);
 		Assert.Equal(LoginRuleConditionGroupOperator.All, rule.Condition.Operator);
 		var condition = Assert.Single(rule.Condition.Conditions);
-		Assert.Equal(LoginRuleField.Hostname, condition.Field);
+		Assert.Equal(LoginRuleField.Weekday, condition.Field);
 		Assert.Equal(LoginRuleConditionOperator.Is, condition.Operator);
-		Assert.Equal("localhost", Assert.Single(condition.Values).Text);
+		Assert.Equal("monday", Assert.Single(condition.Values).Text);
 	}
 
 	[Fact]
@@ -176,7 +176,6 @@ public sealed class RuleControllerTests : IDisposable
 		return new RuleController(
 			store,
 			fileService,
-			TimeProvider.System,
 			new NullLogger<RuleController>(),
 			Options.Create(new ImageSharpMiddlewareOptions()),
 			new LeLøginPackageManifestCacheInvalidator(AppCaches.Disabled));

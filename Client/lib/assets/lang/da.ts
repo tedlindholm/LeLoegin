@@ -68,8 +68,6 @@ export default {
 			'Ingen betingelser er defineret. Tilføj en betingelse for at komme i gang.',
 		fieldWeekday: 'Ugedag',
 		fieldMonth: 'Måned',
-		fieldDate: 'Dato',
-		fieldHostname: 'Domæne',
 		operatorIs: 'Er',
 		operatorIsNot: 'Er ikke',
 		operatorIn: 'Er en af',

@@ -15,7 +15,7 @@ public sealed class LeLøginScreenRuntimeResolverTests
 			CreateAsset("asset-monday")
 		};
 		var rules = Array.Empty<LoginRule>();
-		var context = new LoginRuntimeContext("monday", 5, "2026-05-18", "localhost");
+		var context = new LoginRuntimeContext("monday", 5);
 		var resolver = new LeLøginScreenRuntimeResolver();
 
 		var resolved = resolver.ResolveAsset(assets, rules, context);
@@ -39,9 +39,9 @@ public sealed class LeLøginScreenRuntimeResolverTests
 				Priority = 10,
 				Enabled = true,
 				Id = "rule-1",
-				Name = "Localhost",
+				Name = "May",
 				AssetId = "asset-localhost",
-				Condition = "{\"and\":[{\"==\":[{\"var\":\"hostname\"},\"localhost\"]}]}"
+				Condition = "{\"and\":[{\"==\":[{\"var\":\"month\"},5]}]}"
 			},
 			new LoginRule
 			{
@@ -53,7 +53,7 @@ public sealed class LeLøginScreenRuntimeResolverTests
 				Condition = "{\"and\":[{\"==\":[{\"var\":\"weekday\"},\"monday\"]}]}"
 			}
 		};
-		var context = new LoginRuntimeContext("monday", 5, "2026-05-18", "localhost");
+		var context = new LoginRuntimeContext("monday", 5);
 		var resolver = new LeLøginScreenRuntimeResolver();
 
 		var resolved = resolver.ResolveAsset(assets, rules, context);
@@ -90,7 +90,7 @@ public sealed class LeLøginScreenRuntimeResolverTests
 				Condition = "{\"and\":[]}"
 			}
 		};
-		var context = new LoginRuntimeContext("tuesday", 5, "2026-05-19", "localhost");
+		var context = new LoginRuntimeContext("tuesday", 5);
 		var resolver = new LeLøginScreenRuntimeResolver();
 
 		var resolved = resolver.ResolveAsset(assets, rules, context);
@@ -117,7 +117,7 @@ public sealed class LeLøginScreenRuntimeResolverTests
 				Condition = "{\"and\":[{\"==\":[{\"var\":\"weekday\"},\"monday\"]}]}"
 			}
 		};
-		var context = new LoginRuntimeContext("tuesday", 5, "2026-05-19", "localhost");
+		var context = new LoginRuntimeContext("tuesday", 5);
 		var resolver = new LeLøginScreenRuntimeResolver();
 
 		var resolved = resolver.ResolveAsset(assets, rules, context);
@@ -154,7 +154,7 @@ public sealed class LeLøginScreenRuntimeResolverTests
 				Condition = "{\"and\":[{\"==\":[{\"var\":\"weekday\"},\"monday\"]}]}"
 			}
 		};
-		var context = new LoginRuntimeContext("monday", 5, "2026-05-18", "localhost");
+		var context = new LoginRuntimeContext("monday", 5);
 		var resolver = new LeLøginScreenRuntimeResolver();
 
 		var resolved = resolver.ResolveAsset(assets, rules, context);

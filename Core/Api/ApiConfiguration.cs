@@ -40,7 +40,7 @@ public class ApiConfiguration : IConfigureOptions<SwaggerGenOptions>
 		});
 
 		options.MapType<LoginImageAssetKind>(() => CreateStringEnumSchema("background", "logo"));
-		options.MapType<LoginRuleField>(() => CreateStringEnumSchema("weekday", "month", "date", "hostname"));
+		options.MapType<LoginRuleField>(() => CreateStringEnumSchema("weekday", "month"));
 		options.MapType<LoginRuleConditionOperator>(() => CreateStringEnumSchema(
 			"is", "isNot", "in", "notIn", "between", "notBetween"));
 		options.MapType<LoginRuleConditionGroupOperator>(() => CreateStringEnumSchema("all", "any"));

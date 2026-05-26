@@ -1,5 +1,3 @@
-using System.Globalization;
-using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -19,7 +17,6 @@ namespace LeLøgin.Core.Api.Rules;
 public sealed class RuleController(
 	ILeLøginScreenStore store,
 	ILeLøginScreenFileService fileService,
-	TimeProvider timeProvider,
 	ILogger<RuleController> logger,
 	IOptions<ImageSharpMiddlewareOptions> imageSharpOptions,
 	LeLøginPackageManifestCacheInvalidator manifestCacheInvalidator,
@@ -29,8 +26,6 @@ public sealed class RuleController(
 	[ProducesResponseType<ConditionMetadataResponse>(StatusCodes.Status200OK)]
 	public IActionResult GetConditionMetadata()
 	{
-		var today = timeProvider.GetUtcNow().ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-
 		var response = new ConditionMetadataResponse(
 			Operators: new Dictionary<string, ConditionOperatorMetadata>
 			{
@@ -52,14 +47,6 @@ public sealed class RuleController(
 					Operators: ["is", "isNot"],
 					DefaultValue: 1,
 					AllowedValues: new object[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 }
-				),
-				["date"] = new(
-					Operators: ["is", "isNot", "between", "notBetween"],
-					DefaultValue: today
-				),
-				["hostname"] = new(
-					Operators: ["is", "isNot", "in", "notIn"],
-					DefaultValue: ""
 				),
 			});
 

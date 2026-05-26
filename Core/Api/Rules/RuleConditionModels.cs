@@ -13,11 +13,7 @@ public enum LoginRuleField
 {
 	Weekday,
 
-	Month,
-
-	Date,
-
-	Hostname
+	Month
 }
 
 /// <summary>
@@ -152,8 +148,6 @@ public sealed class LoginRuleFieldJsonConverter : JsonConverter<LoginRuleField>
 		{
 			"weekday" => LoginRuleField.Weekday,
 			"month" => LoginRuleField.Month,
-			"date" => LoginRuleField.Date,
-			"hostname" => LoginRuleField.Hostname,
 			_ => throw new JsonException($"Unsupported login rule field '{value}'.")
 		};
 	}
@@ -164,8 +158,6 @@ public sealed class LoginRuleFieldJsonConverter : JsonConverter<LoginRuleField>
 		{
 			LoginRuleField.Weekday => "weekday",
 			LoginRuleField.Month => "month",
-			LoginRuleField.Date => "date",
-			LoginRuleField.Hostname => "hostname",
 			_ => throw new JsonException($"Unsupported login rule field '{value}'.")
 		});
 	}
@@ -680,8 +672,6 @@ public static class LoginRuleConditionJsonMapper
 		{
 			"weekday" => LoginRuleField.Weekday,
 			"month" => LoginRuleField.Month,
-			"date" => LoginRuleField.Date,
-			"hostname" => LoginRuleField.Hostname,
 			_ => throw new InvalidOperationException($"Stored rule condition field '{variableName}' is not supported.")
 		};
 
@@ -690,8 +680,6 @@ public static class LoginRuleConditionJsonMapper
 		{
 			LoginRuleField.Weekday => "weekday",
 			LoginRuleField.Month => "month",
-			LoginRuleField.Date => "date",
-			LoginRuleField.Hostname => "hostname",
 			_ => throw new InvalidOperationException($"Rule condition field '{field}' is not supported.")
 		};
 

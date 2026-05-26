@@ -53,9 +53,9 @@ public sealed class LoginRuleConditionJsonMapperTests
 			[
 				new LoginRuleConditionModel(
 					"condition-1",
-					LoginRuleField.Hostname,
+					LoginRuleField.Weekday,
 					LoginRuleConditionOperator.Is,
-					[LoginRuleConditionValue.FromText("localhost")]),
+					[LoginRuleConditionValue.FromText("monday")]),
 				new LoginRuleConditionModel(
 					"condition-2",
 					LoginRuleField.Month,
@@ -69,7 +69,7 @@ public sealed class LoginRuleConditionJsonMapperTests
 			JsonSerializer.Serialize(ParseJson("""
 			{
 			  "or": [
-			    { "==": [{ "var": "hostname" }, "localhost"] },
+			    { "==": [{ "var": "weekday" }, "monday"] },
 			    { "!=": [{ "var": "month" }, 12] }
 			  ]
 			}

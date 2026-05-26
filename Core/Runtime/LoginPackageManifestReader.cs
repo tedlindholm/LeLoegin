@@ -1,4 +1,3 @@
-using System.Globalization;
 using LeLøgin.Core.Models;
 using LeLøgin.Core.Storage;
 using Umbraco.Cms.Core.Manifest;
@@ -19,11 +18,9 @@ namespace LeLøgin.Core.Runtime;
 /// that races Umbraco's localisation registry.
 ///
 /// Limitation: <see cref="PackageManifestService"/> caches manifests (30 days in production,
-/// 10 seconds otherwise). Because the cache is per-app, not per-request, the resolved greeting
-/// is sampled with an empty hostname — host-conditional rules can't differentiate via this
-/// path. Rule conditions on weekday/month/date still work for the duration each cache window
-/// straddles, and <see cref="LeLøginPackageManifestCacheInvalidator"/> clears the cache when
-/// any rule, asset, or setting changes.
+/// 10 seconds otherwise). Rule conditions on weekday/month still work for the duration each
+/// cache window straddles, and <see cref="LeLøginPackageManifestCacheInvalidator"/> clears
+/// the cache when any rule, asset, or setting changes.
 /// </summary>
 public sealed class LeLøginPackageManifestReader(
 	ILeLøginScreenStore store,
@@ -95,14 +92,9 @@ public sealed class LeLøginPackageManifestReader(
 
 	private static LoginRuntimeContext BuildRuntimeContext(TimeProvider timeProvider)
 	{
-		// Manifest readers run outside the per-request pipeline (PackageManifestService caches
-		// the aggregated manifest), so we don't have an HttpRequest. Hostname is left empty
-		// which means rules conditioning on host won't match; weekday/month/date rules still do.
 		var now = timeProvider.GetLocalNow();
 		return new LoginRuntimeContext(
 			now.DayOfWeek.ToString().ToLowerInvariant(),
-			now.Month,
-			now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-			string.Empty);
+			now.Month);
 	}
 }

@@ -475,7 +475,7 @@ export class LeLøginScreenConditionEditor extends UmbElementMixin(HTMLElement) 
 	}
 
 	/**
-	 * Builds the field options list (weekday, month, date, domain).
+	 * Builds the field options list (weekday, month).
 	 *
 	 * @param selected - The currently selected field value
 	 * @returns Array of select options for the field
@@ -491,9 +491,7 @@ export class LeLøginScreenConditionEditor extends UmbElementMixin(HTMLElement) 
 				name: this.localize.term('loginScreen_fieldMonth'),
 				value: 'month',
 				selected: selected === 'month'
-			},
-			{ name: this.localize.term('loginScreen_fieldDate'), value: 'date', selected: selected === 'date' },
-			{ name: this.localize.term('loginScreen_fieldHostname'), value: 'hostname', selected: selected === 'hostname' }
+			}
 		];
 	}
 

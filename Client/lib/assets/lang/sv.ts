@@ -67,8 +67,6 @@ export default {
 		conditionEmptyState: 'Inga villkor är definierade. Lägg till ett villkor för att komma igång.',
 		fieldWeekday: 'Veckodag',
 		fieldMonth: 'Månad',
-		fieldDate: 'Datum',
-		fieldHostname: 'Domän',
 		operatorIs: 'Är',
 		operatorIsNot: 'Är inte',
 		operatorIn: 'Är en av',

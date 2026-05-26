@@ -69,8 +69,6 @@ export default {
 		conditionValuePlaceholder: 'Verdi',
 		fieldWeekday: 'Ukedag',
 		fieldMonth: 'Måned',
-		fieldDate: 'Dato',
-		fieldHostname: 'Domene',
 		operatorIs: 'er',
 		operatorIsNot: 'er ikke',
 		operatorIn: 'er en av',

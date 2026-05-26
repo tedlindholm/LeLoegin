@@ -1,4 +1,4 @@
-export type LoginRuleField = 'weekday' | 'month' | 'date' | 'hostname';
+export type LoginRuleField = 'weekday' | 'month';
 
 export type LoginRuleConditionOperator =
 	| 'is'
@@ -39,7 +39,7 @@ export interface ConditionMetadata {
 }
 
 export const isLoginRuleField = (value: string): value is LoginRuleField =>
-	value === 'weekday' || value === 'month' || value === 'date' || value === 'hostname';
+	value === 'weekday' || value === 'month';
 
 export const isLoginRuleConditionOperator = (value: string): value is LoginRuleConditionOperator =>
 	value === 'is' ||
@@ -48,6 +48,25 @@ export const isLoginRuleConditionOperator = (value: string): value is LoginRuleC
 	value === 'notIn' ||
 	value === 'between' ||
 	value === 'notBetween';
+
+const normaliseSingle = (
+	values: Array<LoginRuleConditionValue>,
+	fallback: LoginRuleConditionValue
+): Array<LoginRuleConditionValue> => [values[0] ?? fallback];
+
+const normaliseRange = (
+	values: Array<LoginRuleConditionValue>,
+	fallback: LoginRuleConditionValue
+): Array<LoginRuleConditionValue> => {
+	const first = values[0] ?? fallback;
+	const second = values[1] ?? first;
+	return [first, second];
+};
+
+const normaliseSet = (
+	values: Array<LoginRuleConditionValue>,
+	fallback: LoginRuleConditionValue
+): Array<LoginRuleConditionValue> => (values.length === 0 ? [fallback] : [...values]);
 
 export const normaliseValuesForOperator = (
 	operator: LoginRuleConditionOperator,
@@ -60,11 +79,11 @@ export const normaliseValuesForOperator = (
 
 	switch (arity) {
 		case 'single':
-			return [values[0] ?? fallback];
+			return normaliseSingle(values, fallback);
 		case 'range':
-			return [values[0] ?? fallback, values[1] ?? values[0] ?? fallback];
+			return normaliseRange(values, fallback);
 		case 'set':
-			return values.length === 0 ? [fallback] : [...values];
+			return normaliseSet(values, fallback);
 	}
 };
 

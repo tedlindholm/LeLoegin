@@ -35,7 +35,7 @@ public class RuntimeController(
 		var backgroundAssets = allAssets
 			.Where(asset => asset.Kind == LoginImageAssetKind.Background)
 			.ToList();
-		var context = BuildRuntimeContext(Request, timeProvider);
+		var context = BuildRuntimeContext(timeProvider);
 		var rules = await store.GetAllRulesAsync();
 		var asset = runtimeResolver.ResolveAsset(
 			backgroundAssets,
@@ -115,14 +115,12 @@ public class RuntimeController(
 		}
 	}
 
-	private static LoginRuntimeContext BuildRuntimeContext(HttpRequest request, TimeProvider timeProvider)
+	private static LoginRuntimeContext BuildRuntimeContext(TimeProvider timeProvider)
 	{
 		var now = timeProvider.GetLocalNow();
 		return new LoginRuntimeContext(
 			now.DayOfWeek.ToString().ToLowerInvariant(),
-			now.Month,
-			now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-			request.Host.Host.ToLowerInvariant());
+			now.Month);
 	}
 }
 

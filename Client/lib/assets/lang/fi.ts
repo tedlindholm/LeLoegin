@@ -66,8 +66,6 @@ export default {
 		conditionEmptyState: 'Yhtään ehtoa ei ole määritetty. Lisää ehto päästäksesi alkuun.',
 		fieldWeekday: 'Viikonpäivä',
 		fieldMonth: 'Kuukausi',
-		fieldDate: 'Päivämäärä',
-		fieldHostname: 'Verkkotunnus',
 		operatorIs: 'On',
 		operatorIsNot: 'Ei ole',
 		operatorIn: 'On yksi seuraavista',

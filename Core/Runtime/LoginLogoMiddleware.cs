@@ -1,4 +1,3 @@
-using System.Globalization;
 using LeLøgin.Core.Models;
 using LeLøgin.Core.Storage;
 using Microsoft.AspNetCore.Http;
@@ -44,7 +43,7 @@ public sealed class LeLøginLogoMiddleware(RequestDelegate next)
 		var backgroundAssets = assets
 			.Where(asset => asset.Kind == LoginImageAssetKind.Background)
 			.ToList();
-		var runtimeContext = BuildRuntimeContext(context.Request, timeProvider);
+		var runtimeContext = BuildRuntimeContext(timeProvider);
 		var rules = await store.GetAllRulesAsync();
 		var activeAsset = runtimeResolver.ResolveAsset(
 			backgroundAssets,
@@ -99,13 +98,11 @@ public sealed class LeLøginLogoMiddleware(RequestDelegate next)
 		}
 	}
 
-	private static LoginRuntimeContext BuildRuntimeContext(HttpRequest request, TimeProvider timeProvider)
+	private static LoginRuntimeContext BuildRuntimeContext(TimeProvider timeProvider)
 	{
 		var now = timeProvider.GetLocalNow();
 		return new LoginRuntimeContext(
 			now.DayOfWeek.ToString().ToLowerInvariant(),
-			now.Month,
-			now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-			request.Host.Host.ToLowerInvariant());
+			now.Month);
 	}
 }
