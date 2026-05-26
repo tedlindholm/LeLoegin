@@ -32,6 +32,35 @@ export interface LoginAuthViewCustomisation {
 
 const PREVIEW_PROVIDER_STYLE_ID = 'le-løgin-preview-style';
 const PREVIEW_PROVIDER_NOTE_ID = 'le-løgin-preview-note';
+// Umbraco's umb-auth-view defaults the logo to `height: 55px` with no width
+// cap, so a portrait logo renders narrow and short. We override to a square
+// bounding box (allowed height === allowed width) and let object-fit preserve
+// the logo's natural aspect ratio inside it. Umbraco ships its rules via Lit's
+// `static styles` (i.e. adoptedStyleSheets); the cascade applies adopted sheets
+// in array order, so we append our own sheet last and win the tie without
+// needing !important.
+const LOGO_BOX_SIZE = '120px';
+
+const logoBoxStyleSheet = new CSSStyleSheet();
+logoBoxStyleSheet.replaceSync(`
+	#logo-on-image,
+	#logo-on-background {
+		width: ${LOGO_BOX_SIZE};
+		height: ${LOGO_BOX_SIZE};
+		max-width: ${LOGO_BOX_SIZE};
+		max-height: ${LOGO_BOX_SIZE};
+		object-fit: contain;
+		object-position: top left;
+	}
+`);
+
+const ensureLogoBoxStyles = (shadowRoot: ShadowRoot) => {
+	if (shadowRoot.adoptedStyleSheets.includes(logoBoxStyleSheet)) {
+		return;
+	}
+
+	shadowRoot.adoptedStyleSheets = [...shadowRoot.adoptedStyleSheets, logoBoxStyleSheet];
+};
 
 const setOptionalText = (element: HTMLElement | null, value: string | undefined) => {
 	if (element === null || value === undefined || element.textContent === value) {
@@ -215,6 +244,7 @@ export const applyAuthViewCustomisation = (
 		greeting.style.visibility = hidden ? 'hidden' : '';
 		greeting.style.opacity = !hidden && customisation.greetingText === undefined ? '0.38' : '';
 	}
+	ensureLogoBoxStyles(shadowRoot);
 	setOptionalImageSource(shadowRoot.getElementById('logo-on-image'), customisation.logoUrl);
 	setOptionalImageSource(shadowRoot.getElementById('logo-on-background'), customisation.logoUrl);
 
