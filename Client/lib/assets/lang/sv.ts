@@ -26,6 +26,7 @@ export default {
 		assetsLogosEmpty: 'Inga logotypbilder ännu.',
 		noActiveImage:
 			'Ingen aktiv inloggningsbild. Lägg till en regel utan villkor som catch-all för att komma igång.',
+		goToRules: 'Hantera regler',
 		loadingActiveImage: 'Läser in aktiv bild...',
 		activeScreen: 'Aktiv skärm',
 		activeImageLoadFailed: 'Det gick inte att läsa in förhandsgranskningen av den aktiva bilden.',

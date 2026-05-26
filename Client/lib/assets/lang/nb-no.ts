@@ -28,6 +28,7 @@ export default {
 		loadingAsset: 'Laster inn bilde...',
 		noActiveImage:
 			'Ingen aktiv påloggingsbilde. Legg til en regel uten betingelser som catch-all for å komme i gang.',
+		goToRules: 'Administrer regler',
 		loadingActiveImage: 'Laster inn aktivt bilde...',
 		activeScreen: 'Aktiv skjerm',
 		activeImageLoadFailed: 'Kunne ikke laste inn forhåndsvisningen av det aktive bildet.',

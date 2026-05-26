@@ -6,7 +6,6 @@ import styles from './asset-workspace.element.css?inline';
 import {
 	normaliseOptionalInputValue,
 	buildWorkspaceBody,
-	measureLogoPosition,
 	measureGreetingPosition,
 	computeFocalPointFromDrag,
 	ZOOM_MIN,
@@ -158,10 +157,19 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 	}
 
 	#updateZoomButtonStates() {
-		const inBtn = this.shadowRoot?.querySelector<HTMLButtonElement>('#asset-zoom-in');
-		const outBtn = this.shadowRoot?.querySelector<HTMLButtonElement>('#asset-zoom-out');
-		if (inBtn !== null && inBtn !== undefined) inBtn.disabled = this.#draftZoom >= ZOOM_MAX;
-		if (outBtn !== null && outBtn !== undefined) outBtn.disabled = this.#draftZoom <= ZOOM_MIN;
+		const root = this.shadowRoot;
+		if (root === null || root === undefined) return;
+		this.#applyDisabled(root.querySelector('#asset-zoom-in'), this.#draftZoom >= ZOOM_MAX);
+		this.#applyDisabled(root.querySelector('#asset-zoom-out'), this.#draftZoom <= ZOOM_MIN);
+	}
+
+	#applyDisabled(element: Element | null, disabled: boolean) {
+		if (!(element instanceof HTMLElement)) return;
+		if (disabled) {
+			element.setAttribute('disabled', '');
+		} else {
+			element.removeAttribute('disabled');
+		}
 	}
 
 	async #openLogoPicker() {
@@ -200,7 +208,6 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 		}
 		requestAnimationFrame(() => {
 			this.#positionGreetingOverlay();
-			this.#positionLogoPickerOverlay();
 			this.#syncBackgroundDragTarget();
 		});
 	}
@@ -332,17 +339,7 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 		field.style.setProperty('--greeting-top', `${pos.topPct.toFixed(1)}%`);
 	}
 
-	#positionLogoPickerOverlay() {
-		if (!this.#isBackgroundAssetLoaded() || this.#authPreview === undefined) return;
-		const pos = measureLogoPosition(this.#authPreview);
-		if (pos === null) return;
-		const picker = this.shadowRoot?.querySelector<HTMLElement>('.preview-logo-picker');
-		if (!picker) return;
-		picker.style.setProperty('--logo-left', `${pos.leftPct.toFixed(1)}%`);
-		picker.style.setProperty('--logo-top', `${pos.topPct.toFixed(1)}%`);
-	}
-
-	#isBackgroundAssetLoaded(): boolean {
+#isBackgroundAssetLoaded(): boolean {
 		return this.#asset !== null && isBackgroundLoginImageAsset(this.#asset);
 	}
 
@@ -375,11 +372,15 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 			rafHandle = requestAnimationFrame(() => {
 				rafHandle = undefined;
 				this.#positionGreetingOverlay();
-				this.#positionLogoPickerOverlay();
 				this.#syncBackgroundDragTarget();
 			});
 		});
-		observer.observe(authPreview.shadowRoot, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'hidden', 'class', 'style'] });
+		// Don't watch 'style' mutations: applyCropPreview writes background-position
+		// on every pointer-move during a drag, and watching style here turned each
+		// move into a forced-layout re-positioning pass (the overlays themselves
+		// then set CSS vars, which fed the loop). Host size changes are picked up
+		// by the ResizeObserver inside observeAuthViewCustomisation instead.
+		observer.observe(authPreview.shadowRoot, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'hidden', 'class'] });
 		this.#authPreviewMutationCleanup = () => { observer.disconnect(); if (rafHandle !== undefined) cancelAnimationFrame(rafHandle); };
 	}
 

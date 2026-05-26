@@ -42,7 +42,3 @@
 .empty-state {
 	color: var(--uui-color-text-alt);
 }
-
-uui-scroll-container {
-	--uui-menu-item-flat-structure: 1;
-}

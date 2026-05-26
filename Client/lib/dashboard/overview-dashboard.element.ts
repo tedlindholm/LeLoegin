@@ -9,6 +9,7 @@ import {
 import { LeLøginScreenActiveScreenRepository } from './active-screen.repository.js';
 import type { ActiveLeLøginScreenResponse } from '../models/index.js';
 import { cloneTemplate } from '../utils/template.js';
+import { LOGIN_SCREEN_RULE_LIST_WORKSPACE_PATH } from '../rules/entity-types.js';
 
 type LeLøginScreenOverviewState = 'loading' | 'loaded' | 'empty' | 'error';
 
@@ -103,10 +104,21 @@ export class LeLøginScreenOverviewDashboard extends UmbElementMixin(HTMLElement
 		}
 
 		if (this.#state === 'empty') {
+			const wrapper = document.createElement('div');
+			wrapper.className = 'empty-state';
+
 			const message = document.createElement('p');
-			message.className = 'empty-state';
 			message.textContent = this.localize.term('loginScreen_noActiveImage');
-			this.#previewBox.replaceChildren(message);
+			wrapper.append(message);
+
+			const action = document.createElement('uui-button');
+			action.setAttribute('look', 'primary');
+			action.setAttribute('color', 'default');
+			action.setAttribute('href', LOGIN_SCREEN_RULE_LIST_WORKSPACE_PATH);
+			action.setAttribute('label', this.localize.term('loginScreen_goToRules'));
+			wrapper.append(action);
+
+			this.#previewBox.replaceChildren(wrapper);
 			this.#syncAuthPreview();
 			return;
 		}

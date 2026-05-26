@@ -1,5 +1,6 @@
 import { UmbElementMixin } from '@umbraco-cms/backoffice/element-api';
 import { type UmbModalContext, UmbModalExtensionElement } from '@umbraco-cms/backoffice/modal';
+import styles from './logo-picker-modal.element.css?inline';
 import type { LogoPickerModalData, LogoPickerModalValue } from './logo-picker-modal.token.js';
 import { UMBRACO_LOGO_SVG } from './asset-workspace.helpers.js';
 import { cloneTemplate } from '../utils/template.js';
@@ -65,18 +66,10 @@ export class LeLøginLogoPickerModalElement extends UmbElementMixin(HTMLElement)
 	constructor() {
 		super();
 		const shadow = this.attachShadow({ mode: 'open' });
-		shadow.innerHTML = /* html */ `
-			<style>
-				.grid {
-					display: grid;
-					grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-					gap: var(--uui-size-space-4);
-					padding: var(--uui-size-space-5);
-				}
-				img { display: block; width: 100%; height: auto; }
-			</style>
-			<div id="layout"></div>
-		`;
+		const sheet = new CSSStyleSheet();
+		sheet.replaceSync(styles);
+		shadow.adoptedStyleSheets = [sheet];
+		shadow.innerHTML = /* html */ `<div id="layout"></div>`;
 		const layout = shadow.getElementById('layout');
 		if (!(layout instanceof HTMLElement)) {
 			throw new Error('Expected modal layout container.');

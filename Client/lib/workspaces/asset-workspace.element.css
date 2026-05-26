@@ -74,62 +74,21 @@
 	pointer-events: auto;
 }
 
-.preview-control-label {
-	position: absolute;
-	top: -1.45rem;
-	left: 0.5rem;
-	z-index: 1;
-	font-size: var(--uui-type-small-size, 0.75rem);
-	line-height: 1.2;
-	color: var(--uui-color-text-alt);
-	padding: 0.2rem 0.6rem;
-	border-radius: 999px;
-	background: var(--overlay-surface-82);
-	backdrop-filter: blur(10px);
-	opacity: 0;
-	transform: translateY(4px);
-	transition: opacity 120ms ease, transform 120ms ease;
-	pointer-events: none;
-}
-
-.preview-control:is(:hover, :focus-within) .preview-control-label {
-	opacity: 1;
-	transform: translateY(0);
-}
-
 .preview-logo-picker {
 	position: absolute;
-	left: var(--logo-left, 10%);
-	top: var(--logo-top, 10%);
-	transform: translate(-50%, -50%);
+	left: var(--uui-size-layout-3, 42px);
+	top: var(--uui-size-layout-3, 42px);
 }
 
-#asset-logo-picker-button {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 2.5rem;
-	height: 2.5rem;
-	padding: 0;
-	border: 2px solid var(--overlay-surface-55);
-	border-radius: 50%;
-	background: var(--overlay-text-45);
-	color: var(--uui-color-surface);
-	cursor: pointer;
+.preview-logo-picker,
+.preview-zoom-controls {
 	opacity: 0;
-	transform: translateY(-2px);
-	transition: opacity 120ms ease, transform 120ms ease;
+	transition: opacity 120ms ease;
 }
 
-#asset-logo-picker-button:hover {
-	background: var(--overlay-text-65);
-	border-color: var(--overlay-surface-90);
-}
-
-.preview-stage:is(:hover, :focus-within) #asset-logo-picker-button,
-.preview-logo-picker:is(:hover, :focus-within) #asset-logo-picker-button {
+.preview-stage:is(:hover, :focus-within) .preview-logo-picker,
+.preview-stage:is(:hover, :focus-within) .preview-zoom-controls {
 	opacity: 1;
-	transform: translateY(0);
 }
 
 .preview-greeting-field {
@@ -198,29 +157,9 @@
 
 .preview-zoom-controls {
 	position: absolute;
-	left: var(--uui-size-space-4, 0.75rem);
-	bottom: var(--uui-size-space-4, 0.75rem);
-	display: flex;
-	gap: var(--uui-size-space-2, 0.25rem);
+	left: var(--uui-size-layout-3, 42px);
+	bottom: var(--uui-size-layout-3, 42px);
 	pointer-events: auto;
-}
-
-#asset-zoom-in,
-#asset-zoom-out {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 2rem;
-	height: 2rem;
-	padding: 0;
-	border: 2px solid var(--overlay-surface-55);
-	border-radius: 50%;
-	background: var(--overlay-text-45);
-	color: var(--uui-color-surface);
-	cursor: pointer;
-	opacity: 0;
-	transform: translateY(2px);
-	transition: opacity 120ms ease, transform 120ms ease, background-color 120ms ease;
 }
 
 #asset-zoom-in svg,
@@ -228,32 +167,6 @@
 	width: 1rem;
 	height: 1rem;
 	display: block;
-}
-
-#asset-zoom-in:hover:not(:disabled),
-#asset-zoom-out:hover:not(:disabled) {
-	background: var(--overlay-text-65);
-	border-color: var(--overlay-surface-90);
-}
-
-#asset-zoom-in:disabled,
-#asset-zoom-out:disabled {
-	cursor: not-allowed;
-	background: var(--overlay-text-48);
-	border-color: var(--overlay-surface-44);
-}
-
-.preview-stage:is(:hover, :focus-within) #asset-zoom-in,
-.preview-stage:is(:hover, :focus-within) #asset-zoom-out {
-	opacity: 1;
-	transform: translateY(0);
-}
-
-#asset-zoom-in:disabled,
-.preview-stage:is(:hover, :focus-within) #asset-zoom-in:disabled,
-#asset-zoom-out:disabled,
-.preview-stage:is(:hover, :focus-within) #asset-zoom-out:disabled {
-	opacity: 0.35;
 }
 
 @media (max-width: 1100px) {

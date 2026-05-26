@@ -30,4 +30,11 @@ describe('overview dashboard chrome', () => {
 		expect(source).not.toContain('this.#previewBox.innerHTML =');
 		expect(source).not.toContain('#renderActiveStateMarkup()');
 	});
+
+	it('empty state links to the rule list workspace so users can create a rule', async () => {
+		const source = await readFile(dashboardElementFilePath, 'utf8');
+
+		expect(source).toContain('LOGIN_SCREEN_RULE_LIST_WORKSPACE_PATH');
+		expect(source).toContain('loginScreen_goToRules');
+	});
 });

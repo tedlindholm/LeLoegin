@@ -79,23 +79,75 @@ export const applyCropPreview = (
 	if (!(graphic instanceof HTMLElement)) return;
 
 	const existingWrapper = graphic.querySelector(`#${CROP_PREVIEW_WRAPPER_ID}`);
+	const resolved = resolveCropPreviewPaint(graphic, inputs);
 
-	// Bail (and clear the wrapper) for inactive previews, missing layout, or any
-	// crop region that doesn't actually have pixels to paint.
-	const panelW = graphic.clientWidth;
-	const panelH = graphic.clientHeight;
-	const paint = isCropPreviewActive(inputs) && panelW > 0 && panelH > 0
-		? cropPreviewPaint(inputs, panelW, panelH)
-		: undefined;
-	if (paint === undefined || !isCropPreviewActive(inputs)) {
-		existingWrapper?.remove();
+	if (resolved === undefined) {
+		teardownCropPreview(graphic, existingWrapper);
 		return;
 	}
 
+	hideGraphicBackground(graphic);
 	const wrapper = ensureCropPreviewWrapper(graphic, existingWrapper);
-	wrapper.style.backgroundImage = `url("${escapeBackgroundUrl(inputs.imageUrl)}")`;
-	wrapper.style.backgroundSize = `${paint.paintedW.toFixed(2)}px ${paint.paintedH.toFixed(2)}px`;
-	wrapper.style.backgroundPosition = `${(paint.bpX * 100).toFixed(4)}% ${(paint.bpY * 100).toFixed(4)}%`;
+	paintCropPreview(wrapper, resolved.inputs, resolved.paint);
+};
+
+interface ResolvedCropPreview {
+	readonly inputs: CropPreviewInputs;
+	readonly paint: CropPreviewPaint;
+}
+
+const resolveCropPreviewPaint = (
+	graphic: HTMLElement,
+	inputs: CropPreviewInputs | undefined
+): ResolvedCropPreview | undefined => {
+	if (!isCropPreviewActive(inputs)) return undefined;
+	const panelW = graphic.clientWidth;
+	const panelH = graphic.clientHeight;
+	if (panelW <= 0 || panelH <= 0) return undefined;
+	const paint = cropPreviewPaint(inputs, panelW, panelH);
+	return paint === undefined ? undefined : { inputs, paint };
+};
+
+const teardownCropPreview = (graphic: HTMLElement, existingWrapper: Element | null) => {
+	existingWrapper?.remove();
+	// Restore #graphic's own background (the uncropped --umb-login-image paint)
+	// once the crop preview is no longer hiding it.
+	graphic.style.background = '';
+};
+
+// Hide #graphic's own --umb-login-image paint while the wrapper is active. The
+// wrapper sits on top of #graphic but its transparent pixels (PNGs with alpha)
+// would otherwise reveal the uncropped cover-fit underneath, painting a ghost
+// copy of the image at a different position. Runtime serves a single pre-cropped
+// PNG from ImageSharp so this dual-paint never happens there.
+const hideGraphicBackground = (graphic: HTMLElement) => {
+	if (graphic.style.background !== 'none') {
+		graphic.style.background = 'none';
+	}
+};
+
+// Pan only changes the background position, but applyCropPreview runs on every
+// pointer-move during a drag. Writing the URL and size on every move re-triggers
+// style recalc (and on some browsers a redecode of the same image) which reads
+// as "a bit jumpy" to anyone dragging. Only re-set each declaration when its
+// value actually changes.
+const paintCropPreview = (
+	wrapper: HTMLElement,
+	inputs: CropPreviewInputs,
+	paint: CropPreviewPaint
+) => {
+	const nextImage = `url("${escapeBackgroundUrl(inputs.imageUrl)}")`;
+	const nextSize = `${paint.paintedW.toFixed(2)}px ${paint.paintedH.toFixed(2)}px`;
+	const nextPosition = `${(paint.bpX * 100).toFixed(4)}% ${(paint.bpY * 100).toFixed(4)}%`;
+	if (wrapper.style.backgroundImage !== nextImage) {
+		wrapper.style.backgroundImage = nextImage;
+	}
+	if (wrapper.style.backgroundSize !== nextSize) {
+		wrapper.style.backgroundSize = nextSize;
+	}
+	if (wrapper.style.backgroundPosition !== nextPosition) {
+		wrapper.style.backgroundPosition = nextPosition;
+	}
 };
 
 const isCropPreviewActive = (inputs: CropPreviewInputs | undefined): inputs is CropPreviewInputs =>

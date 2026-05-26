@@ -24,7 +24,11 @@ export class LeLøginScreenActiveScreenDataSource extends UmbControllerBase {
 			return { data: null, error: undefined };
 		}
 
-		return { data: mapApiActiveLeLøginScreenResponse(data), error: undefined };
+		try {
+			return { data: mapApiActiveLeLøginScreenResponse(data), error: undefined };
+		} catch (parseError) {
+			return { data: undefined, error: parseError };
+		}
 	}
 
 	/**
@@ -48,6 +52,10 @@ export class LeLøginScreenActiveScreenDataSource extends UmbControllerBase {
 			return { data: null, error: undefined };
 		}
 
-		return { data: mapApiActiveLeLøginScreenResponse(data), error: undefined };
+		try {
+			return { data: mapApiActiveLeLøginScreenResponse(data), error: undefined };
+		} catch (parseError) {
+			return { data: undefined, error: parseError };
+		}
 	}
 }
