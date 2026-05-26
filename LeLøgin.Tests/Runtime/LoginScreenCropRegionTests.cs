@@ -45,15 +45,17 @@ public sealed class LoginScreenCropRegionTests
 	}
 
 	[Fact]
-	public void Clamps_Edge_When_Focal_Point_Is_Near_That_Edge()
+	public void Clamps_Focal_Point_So_Window_Stays_Symmetric_Near_An_Edge()
 	{
-		// The case that surfaced the editor/runtime divergence: fp.left at 0.1
-		// with zoom 2 shifts only x1 to 0, leaving an asymmetric 0.35-wide window.
+		// fp.left = 0.1 with zoom 2 (half = 0.25) → fp is clamped to 0.25 so the
+		// window slides flush against the left edge but keeps its full 0.5 width.
+		// Without this clamp the window would narrow to 0.35 wide and the editor
+		// would appear to "zoom in" as the user panned the focal point sideways.
 		var region = LoginScreenCropRegion.Compute(new FocalPoint { Left = 0.1, Top = 0.5 }, 2d);
 
 		Assert.Equal(0d, region.X1, 6);
 		Assert.Equal(0.25, region.Y1, 6);
-		Assert.Equal(0.35, region.X2, 6);
+		Assert.Equal(0.5, region.X2, 6);
 		Assert.Equal(0.75, region.Y2, 6);
 	}
 

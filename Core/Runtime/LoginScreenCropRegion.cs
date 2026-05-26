@@ -26,10 +26,13 @@ public readonly record struct LoginScreenCropRegion(double X1, double Y1, double
 	private const double ZoomNoopThreshold = 1.001d;
 
 	/// <summary>
-	/// Computes the <c>1/zoom × 1/zoom</c> window centred on the focal point and
-	/// clamped to image bounds. The clamp shifts only one edge when the focal
-	/// point sits near an edge — the resulting window is asymmetric and the
-	/// editor's CSS preview must reproduce the same maths to stay WYSIWYG.
+	/// Computes the <c>1/zoom × 1/zoom</c> window centred on the focal point. The
+	/// focal point itself is clamped to <c>[half, 1 − half]</c> before centring,
+	/// so the window can never be clipped to a smaller area near an edge —
+	/// clipping shrinks the crop, the cover-fit then has to scale up more to
+	/// fill the panel, and the result reads as "the zoom changed while I was
+	/// panning" in the editor. The TypeScript helper must mirror this so the
+	/// preview stays WYSIWYG.
 	/// </summary>
 	public static LoginScreenCropRegion Compute(FocalPoint? focalPoint, double zoom)
 	{
@@ -40,10 +43,12 @@ public readonly record struct LoginScreenCropRegion(double X1, double Y1, double
 
 		var fp = focalPoint ?? new FocalPoint { Left = 0.5, Top = 0.5 };
 		var half = 0.5d / zoom;
+		var left = Math.Clamp(fp.Left, half, 1d - half);
+		var top = Math.Clamp(fp.Top, half, 1d - half);
 		return new LoginScreenCropRegion(
-			Math.Max(0d, fp.Left - half),
-			Math.Max(0d, fp.Top - half),
-			Math.Min(1d, fp.Left + half),
-			Math.Min(1d, fp.Top + half));
+			left - half,
+			top - half,
+			left + half,
+			top + half);
 	}
 }

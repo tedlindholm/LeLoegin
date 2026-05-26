@@ -21,11 +21,12 @@ const ZOOM_NOOP_THRESHOLD = 1.001;
  * {@link ../../Core/Runtime/LoginScreenImageUrlBuilder.cs} so the editor preview
  * can render the same visible pixels without a server round-trip.
  *
- * The window is `1/zoom × 1/zoom` of the original image, centred on the focal
- * point and clamped to [0, 1]. When the focal point sits near an edge the clamp
- * shifts one side: the window becomes asymmetric and its aspect ratio differs
- * from the original — that's exactly what the server produces and what the
- * editor must reproduce to stay WYSIWYG.
+ * The window is always `1/zoom × 1/zoom` of the original image — the focal
+ * point is clamped to `[half, 1 − half]` before centring so the window can never
+ * be clipped to a smaller area at the edges. Clipping the window shrinks the
+ * crop, which the cover-fit then has to scale up more to fill the panel, and
+ * the result reads as "the zoom changed while I was panning" to anyone dragging
+ * the focal point near an edge.
  *
  * Returns the full image `(0, 0)–(1, 1)` for any zoom ≤ 1 (or non-finite) so
  * callers can plug the result straight into cover-fit maths regardless of
@@ -43,10 +44,14 @@ export const computeCropRegion = (
 	}
 	const fp = focalPoint ?? { left: 0.5, top: 0.5 };
 	const half = 0.5 / z;
+	const left = clamp(fp.left, half, 1 - half);
+	const top = clamp(fp.top, half, 1 - half);
 	return {
-		x1: Math.max(0, fp.left - half),
-		y1: Math.max(0, fp.top - half),
-		x2: Math.min(1, fp.left + half),
-		y2: Math.min(1, fp.top + half)
+		x1: left - half,
+		y1: top - half,
+		x2: left + half,
+		y2: top + half
 	};
 };
+
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));

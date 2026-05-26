@@ -36,15 +36,17 @@ describe('computeCropRegion', () => {
 		expectClose(computeCropRegion({ left: 0.5, top: 0.5 }, 4), { x1: 0.375, y1: 0.375, x2: 0.625, y2: 0.625 });
 	});
 
-	it('clamps one edge when the focal point is close to that edge — the very case that broke the editor', () => {
-		// fp.left = 0.1 with zoom 2 → half=0.25 → unclamped x1=−0.15 → clamps to 0,
-		// so the window becomes 0.35 wide instead of 0.5. Y is unaffected.
-		expectClose(computeCropRegion({ left: 0.1, top: 0.5 }, 2), { x1: 0, y1: 0.25, x2: 0.35, y2: 0.75 });
+	it('clamps the focal point so the window stays a symmetric 1/zoom × 1/zoom near an edge', () => {
+		// fp.left = 0.1 with zoom 2 → half=0.25 → fp gets clamped to 0.25 so the
+		// window slides up against the left edge but keeps its full 0.5 width. Without
+		// this clamp the window would narrow to 0.35 wide and dragging would read as
+		// "the image is zooming in" to the user.
+		expectClose(computeCropRegion({ left: 0.1, top: 0.5 }, 2), { x1: 0, y1: 0.25, x2: 0.5, y2: 0.75 });
 	});
 
-	it('clamps both edges when the focal point sits in a corner', () => {
-		expectClose(computeCropRegion({ left: 0, top: 0 }, 4), { x1: 0, y1: 0, x2: 0.125, y2: 0.125 });
-		expectClose(computeCropRegion({ left: 1, top: 1 }, 4), { x1: 0.875, y1: 0.875, x2: 1, y2: 1 });
+	it('keeps a symmetric window when the focal point sits in a corner', () => {
+		expectClose(computeCropRegion({ left: 0, top: 0 }, 4), { x1: 0, y1: 0, x2: 0.25, y2: 0.25 });
+		expectClose(computeCropRegion({ left: 1, top: 1 }, 4), { x1: 0.75, y1: 0.75, x2: 1, y2: 1 });
 	});
 
 	it('falls back to the image centre when the focal point is undefined and zoom > 1', () => {

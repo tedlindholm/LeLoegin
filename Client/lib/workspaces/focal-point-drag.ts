@@ -84,11 +84,19 @@ export function computeFocalPointFromDrag({
 	const overflowX = Math.max(0, scaledWidth * z - container.width);
 	const overflowY = Math.max(0, scaledHeight * z - container.height);
 
+	// When zoomed the focal point is constrained to [half, 1−half] so the crop
+	// window stays a symmetric 1/zoom × 1/zoom; clamping the drag output to the
+	// same range keeps the cursor honest (otherwise it would slide past the edge
+	// while the visible image stops moving). At zoom=1 there's no crop window so
+	// the rxy= focal-point hint can use the full [0, 1] range.
+	const half = 0.5 / z;
+	const [minBound, maxBound] = z > 1 ? [half, 1 - half] : [0, 1];
+
 	const left = overflowX > 0
-		? clamp(startFocalPoint.left - deltaX / overflowX, 0, 1)
+		? clamp(startFocalPoint.left - deltaX / overflowX, minBound, maxBound)
 		: startFocalPoint.left;
 	const top = overflowY > 0
-		? clamp(startFocalPoint.top - deltaY / overflowY, 0, 1)
+		? clamp(startFocalPoint.top - deltaY / overflowY, minBound, maxBound)
 		: startFocalPoint.top;
 
 	return { left, top };
