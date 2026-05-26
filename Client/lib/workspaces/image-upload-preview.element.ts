@@ -1,23 +1,9 @@
+import styles from './image-upload-preview.element.css?inline';
+
 export interface UmbFileUploadPreviewElement extends HTMLElement {
 	file?: File;
 	path?: string;
 }
-
-const styles = `
-	:host {
-		display: block;
-		border-radius: var(--uui-border-radius);
-		overflow: hidden;
-		background: var(--uui-color-surface-alt);
-	}
-
-	img {
-		display: block;
-		width: 100%;
-		max-height: 300px;
-		object-fit: contain;
-	}
-`;
 
 export class LoginScreenImageUploadPreviewElement extends HTMLElement implements UmbFileUploadPreviewElement {
 	#objectUrl?: string;

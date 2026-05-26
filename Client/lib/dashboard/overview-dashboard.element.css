@@ -15,6 +15,14 @@
 
 .empty-state {
 	color: var(--uui-color-text-alt);
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: var(--uui-size-space-3);
+}
+
+.empty-state p {
+	margin: 0;
 }
 
 .preview-shell {

@@ -221,6 +221,13 @@ const logoPickerModalManifest = {
 	element: () => import('./logo-picker-modal.element.js'),
 };
 
+const createAssetModalManifest = {
+	type: 'modal',
+	alias: 'LeLøgin.Modal.CreateAsset',
+	name: 'Login Screen Create Asset Modal',
+	element: () => import('./create-asset-modal.element.js'),
+};
+
 const imageUploadPreviewManifest = {
 	type: 'fileUploadPreview',
 	alias: 'LeLøgin.FileUploadPreview.Image',
@@ -268,6 +275,7 @@ const assetGroupCardCollectionViewManifest: UmbExtensionManifest = {
 export const manifests = [
 	rootWorkspaceManifest,
 	logoPickerModalManifest,
+	createAssetModalManifest,
 	imageUploadPreviewManifest,
 	assetRootWorkspaceManifest,
 	assetGroupWorkspaceManifest,

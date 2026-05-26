@@ -28,6 +28,7 @@ export const englishDictionary = {
 		loadingAsset: 'Loading asset...',
 		noActiveImage:
 			'No Le Løgin image is active right now. Add a rule without conditions to act as a catch-all.',
+		goToRules: 'Manage rules',
 		loadingActiveImage: 'Loading active image...',
 		activeScreen: 'Active screen',
 		activeImageLoadFailed: 'Could not load the active image preview.',

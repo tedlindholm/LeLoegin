@@ -75,9 +75,11 @@ previewStageTemplate.innerHTML = /* html */ `
 const logoPickerTemplate = document.createElement('template');
 logoPickerTemplate.innerHTML = /* html */ `
 	<div class="preview-control preview-logo-picker">
-		<button id="asset-logo-picker-button" type="button">
-			<uui-icon name="icon-edit"></uui-icon>
-		</button>
+		<uui-action-bar>
+			<uui-button id="asset-logo-picker-button" compact look="primary">
+				<uui-icon name="icon-edit"></uui-icon>
+			</uui-button>
+		</uui-action-bar>
 	</div>
 `;
 
@@ -154,7 +156,7 @@ const buildLogoPickerControl = (
 	const fragment = cloneTemplate(logoPickerTemplate, 'logo picker');
 	const control = queryRequired(fragment, '.preview-logo-picker', isHtmlElement, 'logo picker control');
 	const button = queryRequired(control, '#asset-logo-picker-button', isHtmlElement, 'logo picker button');
-	button.setAttribute('aria-label', localize.term('loginScreen_logoAsset'));
+	button.setAttribute('label', localize.term('loginScreen_logoAsset'));
 	return control;
 };
 
@@ -169,11 +171,19 @@ const ZOOM_PLUS_SVG = /* html */ `<svg viewBox="0 0 16 16" aria-hidden="true" fo
 
 const zoomControlsTemplate = document.createElement('template');
 zoomControlsTemplate.innerHTML = /* html */ `
-	<div class="preview-zoom-controls">
-		<button id="asset-zoom-out" type="button">${ZOOM_MINUS_SVG}</button>
-		<button id="asset-zoom-in" type="button">${ZOOM_PLUS_SVG}</button>
-	</div>
+	<uui-action-bar class="preview-zoom-controls">
+		<uui-button id="asset-zoom-out" compact look="primary">${ZOOM_MINUS_SVG}</uui-button>
+		<uui-button id="asset-zoom-in" compact look="primary">${ZOOM_PLUS_SVG}</uui-button>
+	</uui-action-bar>
 `;
+
+const setUuiButtonDisabled = (button: HTMLElement, disabled: boolean) => {
+	if (disabled) {
+		button.setAttribute('disabled', '');
+	} else {
+		button.removeAttribute('disabled');
+	}
+};
 
 const buildZoomControls = (localize: LeLøginScreenLocaliser, zoom: number): HTMLElement => {
 	const zoomInLabel = localize.term('loginScreen_zoomIn');
@@ -183,15 +193,11 @@ const buildZoomControls = (localize: LeLøginScreenLocaliser, zoom: number): HTM
 	const fragment = cloneTemplate(zoomControlsTemplate, 'zoom controls');
 	const controls = queryRequired(fragment, '.preview-zoom-controls', isHtmlElement, 'zoom controls');
 	const zoomOutButton = queryRequired(controls, '#asset-zoom-out', isHtmlElement, 'zoom out button');
-	zoomOutButton.setAttribute('aria-label', zoomOutLabel);
-	if (zoomOutButton instanceof HTMLButtonElement) {
-		zoomOutButton.disabled = !canZoomOut;
-	}
+	zoomOutButton.setAttribute('label', zoomOutLabel);
+	setUuiButtonDisabled(zoomOutButton, !canZoomOut);
 	const zoomInButton = queryRequired(controls, '#asset-zoom-in', isHtmlElement, 'zoom in button');
-	zoomInButton.setAttribute('aria-label', zoomInLabel);
-	if (zoomInButton instanceof HTMLButtonElement) {
-		zoomInButton.disabled = !canZoomIn;
-	}
+	zoomInButton.setAttribute('label', zoomInLabel);
+	setUuiButtonDisabled(zoomInButton, !canZoomIn);
 	return controls;
 };
 

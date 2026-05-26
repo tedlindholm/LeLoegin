@@ -26,6 +26,7 @@ export default {
 		assetsLogosEmpty: 'Ingen logo-billeder endnu.',
 		noActiveImage:
 			'Intet aktivt login-skærmbillede. Tilføj en regel uden betingelser som catch-all for at komme i gang.',
+		goToRules: 'Administrer regler',
 		loadingActiveImage: 'Indlæser aktivt billede...',
 		activeScreen: 'Aktivt skærmbillede',
 		activeImageLoadFailed: 'Kunne ikke indlæse forhåndsvisningen af det aktive billede.',

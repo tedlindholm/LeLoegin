@@ -1,5 +1,6 @@
 import { UmbElementMixin } from '@umbraco-cms/backoffice/element-api';
 import { escapeHTML } from '@umbraco-cms/backoffice/utils';
+import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
 import styles from './asset-root-workspace.element.css?inline';
 import type { LeLøginScreenAssetCardValue } from './asset-card.element.js';
 import type { LeLøginScreenAssetCard } from './asset-card.element.js';
@@ -11,35 +12,10 @@ import {
 	LOGIN_SCREEN_ASSET_UPLOAD_BACKGROUND_ENTITY_TYPE,
 	LOGIN_SCREEN_ASSET_UPLOAD_LOGO_ENTITY_TYPE,
 } from '../tree/types.js';
+import { CREATE_ASSET_MODAL_TOKEN, type CreateAssetKind } from './create-asset-modal.token.js';
 import { cloneTemplate } from '../utils/template.js';
 
-interface LeLøginScreenPopoverToggleEvent extends Event {
-	newState: string;
-}
-
 type ElementGuard<T extends Element> = (value: Element | null) => value is T;
-
-const createMenuTemplate = document.createElement('template');
-createMenuTemplate.innerHTML = /* html */ `
-	<uui-button look="outline" popovertarget="le-løgin-create-popover">
-		<span class="create-label"></span>
-		<uui-symbol-expand></uui-symbol-expand>
-	</uui-button>
-	<uui-popover-container id="le-løgin-create-popover" placement="bottom-start">
-		<umb-popover-layout>
-			<uui-scroll-container>
-				<uui-menu-item class="background-upload-item">
-					<umb-icon slot="icon" name="icon-picture"></umb-icon>
-					<span class="background-upload-label"></span>
-				</uui-menu-item>
-				<uui-menu-item class="logo-upload-item">
-					<umb-icon slot="icon" name="icon-tag"></umb-icon>
-					<span class="logo-upload-label"></span>
-				</uui-menu-item>
-			</uui-scroll-container>
-		</umb-popover-layout>
-	</uui-popover-container>
-`;
 
 const assetSectionTemplate = document.createElement('template');
 assetSectionTemplate.innerHTML = /* html */ `<uui-box></uui-box>`;
@@ -81,6 +57,9 @@ const WORKSPACE_BASE = '/umbraco/section/settings/workspace';
 const BACKGROUND_UPLOAD_PATH = `${WORKSPACE_BASE}/${LOGIN_SCREEN_ASSET_UPLOAD_BACKGROUND_ENTITY_TYPE}/edit/null`;
 const LOGO_UPLOAD_PATH = `${WORKSPACE_BASE}/${LOGIN_SCREEN_ASSET_UPLOAD_LOGO_ENTITY_TYPE}/edit/null`;
 
+const uploadPathFor = (kind: CreateAssetKind): string =>
+	kind === 'background' ? BACKGROUND_UPLOAD_PATH : LOGO_UPLOAD_PATH;
+
 /**
  * Asset root workspace — collection-style overview for login screen assets.
  */
@@ -89,7 +68,6 @@ export class LeLøginScreenAssetRootWorkspace extends UmbElementMixin(HTMLElemen
 	#assets: LoginImageAsset[] = [];
 	#isLoading = true;
 	#loadError = false;
-	#createMenuOpen = false;
 	#actions: HTMLElement | undefined;
 	#content: HTMLElement | undefined;
 
@@ -125,16 +103,27 @@ export class LeLøginScreenAssetRootWorkspace extends UmbElementMixin(HTMLElemen
 			if (shadow === null) {
 				return;
 			}
+			const createLabel = this.localize.term('general_create');
 			shadow.innerHTML = /* html */ `
 				<umb-workspace-editor headline="${escapeHTML(this.localize.term('loginScreen_assets'))}" alias="LeLøgin.Workspace.AssetRoot" enforceNoFooter>
 					<div id="layout">
-						<div id="actions"></div>
+						<div id="actions">
+							<uui-button id="create-btn" look="outline" label="${escapeHTML(createLabel)}">
+								${escapeHTML(createLabel)}
+							</uui-button>
+						</div>
 						<div id="content"></div>
 					</div>
 				</umb-workspace-editor>
 			`;
 			this.#actions = getRequiredById(shadow, 'actions', isHtmlElement, 'actions container');
 			this.#content = getRequiredById(shadow, 'content', isHtmlElement, 'content container');
+			this.#actions.addEventListener('click', (event) => {
+				const target = event.target instanceof Element ? event.target : null;
+				if (target?.closest('#create-btn') !== null) {
+					void this.#openCreateModal();
+				}
+			});
 		}
 
 		this.#render();
@@ -142,17 +131,16 @@ export class LeLøginScreenAssetRootWorkspace extends UmbElementMixin(HTMLElemen
 	}
 
 	#render() {
-		if (this.#actions === undefined || this.#content === undefined) {
+		if (this.#content === undefined) {
 			return;
 		}
-
-		this.#actions.replaceChildren(this.#buildCreateActions());
 		this.#content.replaceChildren(...this.#buildContentNodes());
+	}
 
-		const createPopover = this.#actions.querySelector('#le-løgin-create-popover');
-		if (createPopover instanceof HTMLElement) {
-			createPopover.addEventListener('toggle', this.#onCreateMenuToggle);
-		}
+	async #openCreateModal() {
+		const result = await umbOpenModal(this, CREATE_ASSET_MODAL_TOKEN).catch(() => undefined);
+		if (result === undefined) return;
+		window.location.href = uploadPathFor(result.kind);
 	}
 
 	#buildContentNodes(): Array<HTMLElement> {
@@ -181,41 +169,6 @@ export class LeLøginScreenAssetRootWorkspace extends UmbElementMixin(HTMLElemen
 				this.localize.term('loginScreen_assetsLogosEmpty'),
 			),
 		];
-	}
-
-	#buildCreateActions(): DocumentFragment {
-		const fragment = cloneTemplate(createMenuTemplate, 'create menu');
-
-		const createLabel = this.localize.term('general_create');
-		const backgroundLabel = `${this.localize.term('grid_media')}...`;
-		const logoLabel = `${this.localize.term('loginScreen_createAssetLogo')}...`;
-
-		const createButton = queryRequired(fragment, 'uui-button', isHtmlElement, 'create button');
-		createButton.setAttribute('label', createLabel);
-
-		const createLabelElement = queryRequired(fragment, '.create-label', isHtmlElement, 'create label');
-		createLabelElement.textContent = createLabel;
-
-		const expandIndicator = queryRequired(fragment, 'uui-symbol-expand', isHtmlElement, 'expand indicator');
-		if (this.#createMenuOpen) {
-			expandIndicator.setAttribute('open', '');
-		} else {
-			expandIndicator.removeAttribute('open');
-		}
-
-		const backgroundMenuItem = queryRequired(fragment, '.background-upload-item', isHtmlElement, 'background upload item');
-		backgroundMenuItem.setAttribute('label', backgroundLabel);
-		backgroundMenuItem.setAttribute('href', BACKGROUND_UPLOAD_PATH);
-		const backgroundLabelElement = queryRequired(fragment, '.background-upload-label', isHtmlElement, 'background upload label');
-		backgroundLabelElement.textContent = backgroundLabel;
-
-		const logoMenuItem = queryRequired(fragment, '.logo-upload-item', isHtmlElement, 'logo upload item');
-		logoMenuItem.setAttribute('label', logoLabel);
-		logoMenuItem.setAttribute('href', LOGO_UPLOAD_PATH);
-		const logoLabelElement = queryRequired(fragment, '.logo-upload-label', isHtmlElement, 'logo upload label');
-		logoLabelElement.textContent = logoLabel;
-
-		return fragment;
 	}
 
 	#buildStatusSection(message: string, colour?: string): HTMLElement {
@@ -283,33 +236,6 @@ export class LeLøginScreenAssetRootWorkspace extends UmbElementMixin(HTMLElemen
 			src: `/umbraco/le-løgin/api/v1/assets/${encodeURIComponent(asset.id)}/thumbnail`,
 			alt: asset.altText ?? asset.name
 		};
-	}
-
-	#onCreateMenuToggle = (event: Event) => {
-		if (!this.#isPopoverToggleEvent(event)) {
-			return;
-		}
-
-		this.#createMenuOpen = event.newState === 'open';
-		this.#syncCreateMenuIndicator();
-	};
-
-	#syncCreateMenuIndicator() {
-		const expand = this.shadowRoot?.querySelector('uui-symbol-expand');
-		if (!(expand instanceof HTMLElement)) {
-			return;
-		}
-
-		if (this.#createMenuOpen) {
-			expand.setAttribute('open', '');
-			return;
-		}
-
-		expand.removeAttribute('open');
-	}
-
-	#isPopoverToggleEvent(event: Event): event is LeLøginScreenPopoverToggleEvent {
-		return 'newState' in event && typeof event.newState === 'string';
 	}
 }
 

@@ -8,13 +8,15 @@ const workspaceElementFilePath = resolve(currentDirectory, 'asset-root-workspace
 const cardElementFilePath = resolve(currentDirectory, 'asset-card.element.ts');
 
 describe('asset root workspace imports', () => {
-	it('uses a pure TypeScript create menu instead of Lit collection helpers', async () => {
+	it('opens a modal for the create flow so the trigger matches the rule list', async () => {
 		const source = await readFile(workspaceElementFilePath, 'utf8');
 
 		expect(source).toContain('extends UmbElementMixin(HTMLElement)');
-		expect(source).toContain('uui-popover-container');
-		expect(source).toContain('uui-symbol-expand');
-		expect(source).toContain('uui-menu-item');
+		expect(source).toContain('umbOpenModal');
+		expect(source).toContain('CREATE_ASSET_MODAL_TOKEN');
+		expect(source).toContain('<uui-button');
+		expect(source).not.toContain('uui-popover-container');
+		expect(source).not.toContain('uui-symbol-expand');
 		expect(source).not.toContain('@umbraco-cms/backoffice/external/lit');
 		expect(source).not.toContain('UmbLitElement');
 		expect(source).not.toContain('html`');
@@ -25,7 +27,6 @@ describe('asset root workspace imports', () => {
 	it('renders actions and content with DOM nodes instead of string re-renders', async () => {
 		const source = await readFile(workspaceElementFilePath, 'utf8');
 
-		expect(source).toContain('cloneTemplate(');
 		expect(source).toContain('replaceChildren(');
 		expect(source).toContain('#buildAssetSection(');
 		expect(source).not.toContain('actionsEl.innerHTML =');

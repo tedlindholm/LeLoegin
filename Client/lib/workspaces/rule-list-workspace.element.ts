@@ -93,48 +93,50 @@ export class LeLøginScreenRuleListWorkspace extends UmbElementMixin(HTMLElement
 
 	override connectedCallback() {
 		super.connectedCallback();
-		if (this.#listBox === undefined) {
-			const shadow = this.shadowRoot;
-			if (shadow === null) return;
-			shadow.innerHTML = /* html */ `
-				<umb-workspace-editor
-					headline="${escapeHTML(this.localize.term('loginScreen_rules'))}"
-					alias="LeLøgin.Workspace.RuleList"
-					enforceNoFooter>
-					<div id="layout">
-						<div id="actions">
-							<uui-button look="outline" href="${LOGIN_SCREEN_RULE_CREATE_WORKSPACE_PATH}" label="${escapeHTML(this.localize.term('general_create'))}">
-								${escapeHTML(this.localize.term('general_create'))}
-							</uui-button>
-						</div>
-						<uui-box id="list-box"></uui-box>
-					</div>
-					<template id="row-template">
-						<div class="rule-row">
-							<div class="drag-handle" draggable="true">
-								<uui-icon name="icon-navigation"></uui-icon>
-							</div>
-							<uui-ref-node class="ref"></uui-ref-node>
-							<uui-toggle class="enabled-toggle"></uui-toggle>
-							<uui-button class="delete-btn" look="default" color="danger" compact>
-								<uui-icon name="icon-trash"></uui-icon>
-							</uui-button>
-						</div>
-					</template>
-				</umb-workspace-editor>
-			`;
-			this.#listBox = getRequiredById(shadow, 'list-box', isHtmlElement, 'list box');
-			this.#rowTemplate = getRequiredById(shadow, 'row-template', isTemplateElement, 'row template');
-			this.#listBox.addEventListener('dragstart', this.#onDragStartDelegate);
-			this.#listBox.addEventListener('dragend', this.#onDragEndDelegate);
-			this.#listBox.addEventListener('dragover', this.#onDragOverDelegate);
-			this.#listBox.addEventListener('drop', this.#onDropDelegate);
-			this.#listBox.addEventListener('dragenter', this.#onDragEnterDelegate);
-			this.#listBox.addEventListener('change', this.#onEnabledToggleDelegate);
-			this.#listBox.addEventListener('click', this.#onDeleteDelegate);
-		}
+		if (this.#listBox === undefined) this.#initShadow();
 		this.#render();
 		void this.#workspaceContext.load();
+	}
+
+	#initShadow() {
+		const shadow = this.shadowRoot;
+		if (shadow === null) return;
+		shadow.innerHTML = /* html */ `
+			<umb-workspace-editor
+				headline="${escapeHTML(this.localize.term('loginScreen_rules'))}"
+				alias="LeLøgin.Workspace.RuleList"
+				enforceNoFooter>
+				<div id="layout">
+					<div id="actions">
+						<uui-button look="outline" href="${LOGIN_SCREEN_RULE_CREATE_WORKSPACE_PATH}" label="${escapeHTML(this.localize.term('general_create'))}">
+							${escapeHTML(this.localize.term('general_create'))}
+						</uui-button>
+					</div>
+					<uui-box id="list-box"></uui-box>
+				</div>
+				<template id="row-template">
+					<div class="rule-row">
+						<div class="drag-handle" draggable="true">
+							<uui-icon name="icon-navigation"></uui-icon>
+						</div>
+						<uui-ref-node class="ref"></uui-ref-node>
+						<uui-toggle class="enabled-toggle"></uui-toggle>
+						<uui-button class="delete-btn" look="default" color="default" compact>
+							<uui-icon name="icon-trash"></uui-icon>
+						</uui-button>
+					</div>
+				</template>
+			</umb-workspace-editor>
+		`;
+		this.#listBox = getRequiredById(shadow, 'list-box', isHtmlElement, 'list box');
+		this.#rowTemplate = getRequiredById(shadow, 'row-template', isTemplateElement, 'row template');
+		this.#listBox.addEventListener('dragstart', this.#onDragStartDelegate);
+		this.#listBox.addEventListener('dragend', this.#onDragEndDelegate);
+		this.#listBox.addEventListener('dragover', this.#onDragOverDelegate);
+		this.#listBox.addEventListener('drop', this.#onDropDelegate);
+		this.#listBox.addEventListener('dragenter', this.#onDragEnterDelegate);
+		this.#listBox.addEventListener('change', this.#onEnabledToggleDelegate);
+		this.#listBox.addEventListener('click', this.#onDeleteDelegate);
 	}
 
 	#render() {

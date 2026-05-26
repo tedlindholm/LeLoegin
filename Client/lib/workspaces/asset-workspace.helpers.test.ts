@@ -114,6 +114,12 @@ describe('asset workspace helper rendering', () => {
 		expect(source).toContain('id="preview-overlay"');
 		expect(source).toContain('id="asset-greeting-inline"');
 		expect(source).toContain('id="asset-logo-picker-button"');
+		expect(source).toContain('id="asset-zoom-in"');
+		expect(source).toContain('id="asset-zoom-out"');
+		expect(source).toMatch(/<uui-action-bar[\s\S]*<uui-button id="asset-logo-picker-button"/);
+		expect(source).toMatch(/<uui-action-bar[\s\S]*<uui-button id="asset-zoom-out"/);
+		expect(source).not.toContain('<button id="asset-logo-picker-button"');
+		expect(source).not.toContain('<button id="asset-zoom-');
 		expect(source).not.toContain('renderWorkspaceBodyMarkup');
 		expect(source).not.toContain('renderLoadedWorkspaceMarkup');
 		expect(source).not.toContain('id="asset-logo-picker-popover"');

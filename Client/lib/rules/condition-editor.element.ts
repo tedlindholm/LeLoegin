@@ -38,7 +38,7 @@ conditionRowTemplate.innerHTML = /* html */ `
 		<uui-select class="field-select"></uui-select>
 		<uui-select class="operator-select"></uui-select>
 		<uui-input class="value-input"></uui-input>
-		<uui-button class="remove-btn" look="outline" color="danger" compact></uui-button>
+		<uui-button class="remove-btn" look="outline" compact></uui-button>
 	</div>
 `;
 
@@ -191,7 +191,7 @@ export class LeLøginScreenConditionEditor extends UmbElementMixin(HTMLElement) 
 				</div>
 				<div id="condition-list" class="condition-list"></div>
 				<uui-action-bar>
-					<uui-button id="add-condition-btn" look="outline" label="${this.localize.term('loginScreen_addCondition')}">
+					<uui-button id="add-condition-btn" look="placeholder" label="${this.localize.term('loginScreen_addCondition')}">
 						${this.localize.term('loginScreen_addCondition')}
 					</uui-button>
 				</uui-action-bar>

@@ -25,6 +25,7 @@ export default {
 		assetsLogos: 'Logot',
 		assetsLogosEmpty: 'Ei logo-kuvia vielä.',
 		noActiveImage: 'Ei aktiivista kirjautumiskuvaa. Lisää sääntö ilman ehtoja catch-all-säännöksi aloittaaksesi.',
+		goToRules: 'Hallitse sääntöjä',
 		loadingActiveImage: 'Ladataan aktiivista kuvaa...',
 		activeScreen: 'Aktiivinen näyttö',
 		activeImageLoadFailed: 'Aktiivisen kuvan esikatselua ei voitu ladata.',
