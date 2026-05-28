@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>1.1.1</Version>
+    <Version>1.2.0</Version>
     <PackageId>LeLøgin.AzureBlob</PackageId>
     <Authors>Le Løgin contributors</Authors>
     <Description>Azure Blob Storage adapter for Le Løgin. Routes the asset and publish file systems through Umbraco.StorageProviders.AzureBlob so backoffice login-screen assets can live in blob storage instead of the local disk.</Description>
