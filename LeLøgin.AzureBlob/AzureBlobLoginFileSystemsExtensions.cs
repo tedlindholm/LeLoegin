@@ -1,9 +1,7 @@
 using LeLøgin.Core;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Cms.Core.IO;
 using Umbraco.Cms.Web.Common.ApplicationBuilder;
 using Umbraco.StorageProviders.AzureBlob.IO;
@@ -18,15 +16,15 @@ public static class AzureBlobLoginFileSystemsExtensions
 {
     /// <summary>
     /// Name of the Azure Blob file system holding private uploads and thumbnail cache.
-    /// Configuration is read from <c>Umbraco:Storage:AzureBlob:LeLøginAssets</c>.
+    /// Configuration is read from <c>Umbraco:Storage:AzureBlob:LeLoginAssets</c>.
     /// </summary>
-    public const string AssetsFileSystemName = "LeLøginAssets";
+    public const string AssetsFileSystemName = "LeLoginAssets";
 
     /// <summary>
     /// Name of the Azure Blob file system holding publicly-served runtime publications.
-    /// Configuration is read from <c>Umbraco:Storage:AzureBlob:LeLøginPublish</c>.
+    /// Configuration is read from <c>Umbraco:Storage:AzureBlob:LeLoginPublish</c>.
     /// </summary>
-    public const string PublishFileSystemName = "LeLøginPublish";
+    public const string PublishFileSystemName = "LeLoginPublish";
 
     /// <summary>
     /// Default <see cref="AzureBlobFileSystemOptions.VirtualPath"/> for the assets file system.
