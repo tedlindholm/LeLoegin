@@ -15,7 +15,7 @@ import '@umbraco-cms/backoffice/components';
  * silently set own-properties that the eventual upgrade may or may not pick up.
  *
  * Calling `customElements.upgrade(fragment)` walks the subtree and promotes every
- * uncustomized custom element to its registered class, so callers can rely on the
+ * uncustomised custom element to its registered class, so callers can rely on the
  * real component API immediately — guards work, property writes land on the real
  * setters, and we don't depend on the upgrade-fix race.
  */
