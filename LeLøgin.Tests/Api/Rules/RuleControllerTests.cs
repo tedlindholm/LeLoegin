@@ -85,7 +85,7 @@ public sealed class RuleControllerTests : IDisposable
 		Assert.All(rules, rule =>
 		{
 			Assert.False(string.IsNullOrWhiteSpace(rule.Id));
-			Assert.False(string.IsNullOrWhiteSpace(rule.AssetId));
+			Assert.NotEmpty(rule.AssetIds);
 		});
 	}
 
@@ -154,6 +154,95 @@ public sealed class RuleControllerTests : IDisposable
 
 		var result = await controller.Preview("rule-orphan");
 		Assert.IsType<NoContentResult>(result);
+	}
+
+	[Fact]
+	public async Task Create_Persists_A_Rule_With_Multiple_Images_And_A_Condition()
+	{
+		// "Random image on Wednesdays": a normal weekday condition plus several images. The
+		// resolver picks one image at random whenever the rule matches.
+		var store = CreateStore("""
+		{
+		  "assets": [
+		    { "id": "asset-a", "name": "A", "kind": "background", "storagePath": "/tmp/a.jpg", "width": 10, "height": 10 },
+		    { "id": "asset-b", "name": "B", "kind": "background", "storagePath": "/tmp/b.jpg", "width": 10, "height": 10 }
+		  ],
+		  "rules": []
+		}
+		""");
+		var controller = CreateController(store);
+		var request = new SaveRuleRequest
+		{
+			Name = "Random on Wednesdays",
+			Priority = 50,
+			Enabled = true,
+			Condition = new LoginRuleConditionGroupModel(
+				LoginRuleConditionGroupOperator.All,
+				[
+					new LoginRuleConditionModel(
+						"condition-1",
+						LoginRuleField.Weekday,
+						LoginRuleConditionOperator.Is,
+						[LoginRuleConditionValue.FromText("wednesday")])
+				]),
+			AssetIds = ["asset-a", "asset-b"],
+		};
+
+		var created = Assert.IsType<CreatedAtActionResult>(await controller.Create(request));
+		var model = Assert.IsType<LoginRuleResponseModel>(created.Value);
+
+		Assert.Equal(LoginRuleConditionGroupOperator.All, model.Condition.Operator);
+		Assert.Equal(LoginRuleField.Weekday, Assert.Single(model.Condition.Conditions).Field);
+		Assert.Equal(new[] { "asset-a", "asset-b" }, model.AssetIds);
+
+		var stored = await store.GetRuleAsync(model.Id);
+		Assert.NotNull(stored);
+		Assert.Equal(new[] { "asset-a", "asset-b" }, stored!.AssetIds);
+	}
+
+	[Fact]
+	public async Task Create_Rejects_A_Rule_With_No_Images()
+	{
+		var store = CreateStore("""{ "assets": [], "rules": [] }""");
+		var controller = CreateController(store);
+		var request = new SaveRuleRequest
+		{
+			Name = "No images",
+			Condition = new LoginRuleConditionGroupModel(LoginRuleConditionGroupOperator.All, []),
+			AssetIds = [],
+		};
+
+		await controller.Create(request);
+
+		Assert.False(controller.ModelState.IsValid);
+		Assert.True(controller.ModelState.ContainsKey(nameof(SaveRuleRequest.AssetIds)));
+		Assert.Empty(await store.GetAllRulesAsync());
+	}
+
+	[Fact]
+	public async Task Create_Rejects_A_Rule_Referencing_A_Missing_Image()
+	{
+		var store = CreateStore("""
+		{
+		  "assets": [
+		    { "id": "asset-a", "name": "A", "kind": "background", "storagePath": "/tmp/a.jpg", "width": 10, "height": 10 }
+		  ],
+		  "rules": []
+		}
+		""");
+		var controller = CreateController(store);
+		var request = new SaveRuleRequest
+		{
+			Name = "Mixed",
+			Condition = new LoginRuleConditionGroupModel(LoginRuleConditionGroupOperator.All, []),
+			AssetIds = ["asset-a", "does-not-exist"],
+		};
+
+		await controller.Create(request);
+
+		Assert.False(controller.ModelState.IsValid);
+		Assert.True(controller.ModelState.ContainsKey(nameof(SaveRuleRequest.AssetIds)));
+		Assert.Empty(await store.GetAllRulesAsync());
 	}
 
 	public void Dispose()

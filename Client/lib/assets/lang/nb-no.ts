@@ -67,6 +67,7 @@ export default {
 		conditionMatchAll: 'Alle betingelser',
 		conditionMatchAny: 'Enhver betingelse',
 		conditionEmptyState: 'Ingen betingelser er definert. Legg til en betingelse for å komme i gang.',
+		ruleImagesHint: 'Velg mer enn ett bilde for å vise et tilfeldig ved hver innlogging.',
 		conditionValuePlaceholder: 'Verdi',
 		fieldWeekday: 'Ukedag',
 		fieldMonth: 'Måned',

@@ -193,7 +193,7 @@ public sealed class LeLøginScreenStore : ILeLøginScreenStore
 		Enabled = dto.Enabled,
 		Priority = dto.Priority,
 		Condition = dto.Condition,
-		AssetId = dto.AssetId
+		AssetIds = RuleAssetIdsSerializer.Deserialize(dto.AssetIds)
 	};
 
 	private static LeLoginRuleDto MapToDto(LoginRule rule) => new()
@@ -203,7 +203,7 @@ public sealed class LeLøginScreenStore : ILeLøginScreenStore
 		Enabled = rule.Enabled,
 		Priority = rule.Priority,
 		Condition = rule.Condition,
-		AssetId = rule.AssetId
+		AssetIds = RuleAssetIdsSerializer.Serialize(rule.AssetIds)
 	};
 
 	private static LoginImageAssetKind ParseKind(string value) => value.ToLowerInvariant() switch

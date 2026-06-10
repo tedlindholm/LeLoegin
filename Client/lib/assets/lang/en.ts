@@ -68,6 +68,7 @@ export const englishDictionary = {
 		conditionMatchAny: 'Any condition',
 		conditionEmptyState:
 			'No conditions defined. This rule will match every login until you add one.',
+		ruleImagesHint: 'Select more than one image to show a random one each login.',
 		conditionValuePlaceholder: 'Value',
 		fieldWeekday: 'Weekday',
 		fieldMonth: 'Month',

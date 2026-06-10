@@ -275,7 +275,7 @@ public sealed class LeLøginLogoMiddlewareTests : IDisposable
 		middleware.InvokeAsync(
 			context,
 			store,
-			new LeLøginScreenRuntimeResolver(),
+			new LeLøginScreenRuntimeResolver(new StubRandom()),
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
 			TestFileSystems.AssetFileManager(_contentRootPath),
 			new NullLogger<LeLøginLogoMiddleware>());

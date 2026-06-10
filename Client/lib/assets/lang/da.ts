@@ -67,6 +67,7 @@ export default {
 		conditionMatchAny: 'Enhver betingelse',
 		conditionEmptyState:
 			'Ingen betingelser er defineret. Tilføj en betingelse for at komme i gang.',
+		ruleImagesHint: 'Vælg mere end ét billede for at vise et tilfældigt ved hvert login.',
 		fieldWeekday: 'Ugedag',
 		fieldMonth: 'Måned',
 		operatorIs: 'Er',

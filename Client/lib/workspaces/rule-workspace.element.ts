@@ -236,12 +236,16 @@ export class LeLøginScreenRuleWorkspace extends UmbElementMixin(HTMLElement) {
 			return [emptyState];
 		}
 
+		const hint = document.createElement('p');
+		hint.className = 'asset-hint';
+		hint.textContent = this.localize.term('loginScreen_ruleImagesHint');
+
 		const fragment = cloneTemplate(assetGridTemplate, 'asset grid');
 		const grid = queryRequired(fragment, '.asset-card-grid', isHtmlElement, 'asset card grid');
 		for (const asset of backgroundAssets) {
 			grid.append(this.#buildAssetCard(asset, draft));
 		}
-		return [grid];
+		return [hint, grid];
 	}
 
 	#buildAssetCard(asset: LoginImageAsset, draft: LoginRuleDraft): HTMLElement {
@@ -253,7 +257,7 @@ export class LeLøginScreenRuleWorkspace extends UmbElementMixin(HTMLElement) {
 
 		card.dataset['assetId'] = asset.id;
 		card.setAttribute('name', asset.name);
-		if (asset.id === draft.assetId) {
+		if (draft.assetIds.includes(asset.id)) {
 			card.setAttribute('selected', '');
 		} else {
 			card.removeAttribute('selected');
@@ -291,9 +295,17 @@ export class LeLøginScreenRuleWorkspace extends UmbElementMixin(HTMLElement) {
 		}
 
 		const assetId = card.dataset['assetId'];
-		if (assetId !== undefined && assetId !== this.#draft.assetId) {
-			this.#updateDraft({ assetId }, true);
+		if (assetId === undefined) {
+			return;
 		}
+
+		// Clicking toggles a card in or out of the rule's image set. A rule with more than one
+		// selected image shows one at random each login (see #buildAssetField hint).
+		const current = this.#draft.assetIds;
+		const next = current.includes(assetId)
+			? current.filter((id) => id !== assetId)
+			: [...current, assetId];
+		this.#updateDraft({ assetIds: next }, true);
 	};
 
 	#onConditionChange = (event: Event) => {

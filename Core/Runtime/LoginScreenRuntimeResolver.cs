@@ -8,6 +8,12 @@ namespace LeLøgin.Core.Runtime;
 public sealed class LeLøginScreenRuntimeResolver
 {
 	private readonly StringComparer _assetIdComparer = StringComparer.OrdinalIgnoreCase;
+	private readonly ILeLøginRandom _random;
+
+	public LeLøginScreenRuntimeResolver(ILeLøginRandom random)
+	{
+		_random = random;
+	}
 
 	public LoginImageAsset? ResolveAsset(
 		IEnumerable<LoginImageAsset> assets,
@@ -21,8 +27,13 @@ public sealed class LeLøginScreenRuntimeResolver
 			if (!LoginRuleConditionEvaluator.TryEvaluate(rule.Condition, context, out var matches) || !matches)
 				continue;
 
-			if (assetMap.TryGetValue(rule.AssetId, out var asset))
-				return asset;
+			// Resolve to the rule's images that actually exist, then show one. A single-image rule
+			// (all/any) is deterministic; a random rule with several images shows one at random.
+			var candidates = rule.AssetIds.Where(assetMap.ContainsKey).ToList();
+			if (candidates.Count == 0)
+				continue;
+
+			return assetMap[candidates[_random.NextIndex(candidates.Count)]];
 		}
 
 		return null;

@@ -42,7 +42,8 @@ public sealed class LeLoginMigrationNotificationHandler : INotificationAsyncHand
 
         var plan = new MigrationPlan("LeLogin")
             .From(string.Empty)
-            .To<CreateLeLoginTables>("create-tables");
+            .To<CreateLeLoginTables>("create-tables")
+            .To<AddRuleAssetIds>("add-rule-asset-ids");
 
         var upgrader = new Upgrader(plan);
         await upgrader.ExecuteAsync(_migrationPlanExecutor, _coreScopeProvider, _keyValueService);

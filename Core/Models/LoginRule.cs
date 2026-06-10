@@ -4,7 +4,8 @@ using Newtonsoft.Json.Linq;
 namespace LeLøgin.Core.Models;
 
 /// <summary>
-/// A login screen rule. Evaluated in priority order; first matching rule wins.
+/// A login screen rule. Evaluated in priority order; first matching rule wins. When the matching
+/// rule references more than one image, one of <see cref="AssetIds"/> is shown at random.
 /// </summary>
 public sealed class LoginRule
 {
@@ -14,14 +15,19 @@ public sealed class LoginRule
 	public int Priority { get; set; }
 
 	/// <summary>
-	/// A JsonLogic condition expression, stored as raw JSON. Use <c>"true"</c> for an always-match fallback.
+	/// A JsonLogic condition expression, stored as raw JSON. Use <c>"true"</c> for an always-match
+	/// fallback — this is how a <c>random</c> rule (no date conditions, multiple images) is stored.
 	/// Stored as a string because JsonFlatFileDataStore (Newtonsoft) cannot round-trip <see cref="System.Text.Json.JsonElement"/>.
 	/// Legacy persisted object tokens are normalised back to compact JSON during deserialisation.
 	/// </summary>
 	[JsonConverter(typeof(LoginRuleConditionNewtonsoftJsonConverter))]
 	public required string Condition { get; set; }
 
-	public required string AssetId { get; set; }
+	/// <summary>
+	/// The image(s) this rule can show. <c>all</c>/<c>any</c> rules hold exactly one; a <c>random</c>
+	/// rule holds one or more, and the resolver picks one at random each time the rule matches.
+	/// </summary>
+	public required IReadOnlyList<string> AssetIds { get; set; }
 }
 
 /// <summary>

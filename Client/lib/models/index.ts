@@ -58,7 +58,8 @@ export interface LoginRule {
 	name: string;
 	priority: number;
 	enabled: boolean;
-	assetId: string;
+	/** Image(s) the rule can show. all/any rules hold one; a random rule holds one or more. */
+	assetIds: string[];
 	condition: LoginRuleConditionGroup;
 }
 

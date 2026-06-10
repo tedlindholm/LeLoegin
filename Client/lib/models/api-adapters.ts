@@ -132,7 +132,7 @@ export const mapApiLoginRule = (rule: ApiLoginRuleResponseInput): LoginRule => (
 	name: rule.name,
 	priority: rule.priority,
 	enabled: rule.enabled,
-	assetId: rule.assetId,
+	assetIds: [...rule.assetIds],
 	condition: mapApiLoginRuleConditionGroup(rule.condition)
 });
 
@@ -144,7 +144,7 @@ export const toSaveRuleRequest = (rule: LoginRule): SaveRuleRequest => ({
 	name: rule.name,
 	priority: rule.priority,
 	enabled: rule.enabled,
-	assetId: rule.assetId,
+	assetIds: [...rule.assetIds],
 	condition: toSaveRuleConditionGroup(rule.condition)
 });
 

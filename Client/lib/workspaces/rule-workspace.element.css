@@ -35,9 +35,15 @@
 }
 
 .empty-state,
-.helper-text {
+.helper-text,
+.asset-hint {
 	color: var(--uui-color-text-alt);
 	margin: 0;
+}
+
+.asset-hint {
+	margin-bottom: var(--uui-size-space-3);
+	font-size: var(--uui-type-small-size);
 }
 
 @media (max-width: 900px) {

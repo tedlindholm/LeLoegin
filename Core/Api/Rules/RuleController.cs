@@ -149,10 +149,12 @@ public sealed class RuleController(
 		var rule = await store.GetRuleAsync(id);
 		if (rule is null) return NotFound();
 
-		var asset = await store.GetAssetAsync(rule.AssetId);
+		// Preview is deterministic — it shows the rule's first image (a random rule may have several).
+		var previewAssetId = rule.AssetIds.Count > 0 ? rule.AssetIds[0] : null;
+		var asset = previewAssetId is null ? null : await store.GetAssetAsync(previewAssetId);
 		if (asset is null || asset.Kind != LoginImageAssetKind.Background)
 		{
-			logger.LogDebug("Rule {RuleId} references missing or non-background asset {AssetId}", id, rule.AssetId);
+			logger.LogDebug("Rule {RuleId} references missing or non-background asset {AssetId}", id, previewAssetId);
 			return NoContent();
 		}
 
@@ -184,17 +186,23 @@ public sealed class RuleController(
 		if (string.IsNullOrWhiteSpace(request.Name))
 			ModelState.AddModelError(nameof(request.Name), "Rule name is required.");
 
-		if (string.IsNullOrWhiteSpace(request.AssetId))
+		var assetIds = (request.AssetIds ?? [])
+			.Select(id => id?.Trim() ?? string.Empty)
+			.Where(id => id.Length > 0)
+			.Distinct(StringComparer.OrdinalIgnoreCase)
+			.ToList();
+
+		if (assetIds.Count == 0)
 		{
-			ModelState.AddModelError(nameof(request.AssetId), "Rule asset is required.");
+			ModelState.AddModelError(nameof(request.AssetIds), "Rule asset is required.");
 		}
 		else
 		{
 			var validAssetIds = (await store.GetAllAssetsAsync())
 				.Select(a => a.Id)
 				.ToHashSet(StringComparer.OrdinalIgnoreCase);
-			if (!validAssetIds.Contains(request.AssetId.Trim()))
-				ModelState.AddModelError(nameof(request.AssetId), "Rule asset could not be found.");
+			if (assetIds.Any(id => !validAssetIds.Contains(id)))
+				ModelState.AddModelError(nameof(request.AssetIds), "Rule asset could not be found.");
 		}
 
 		string condition;
@@ -218,7 +226,7 @@ public sealed class RuleController(
 			Priority = request.Priority,
 			Enabled = request.Enabled,
 			Condition = condition,
-			AssetId = request.AssetId?.Trim() ?? string.Empty,
+			AssetIds = assetIds,
 		};
 	}
 
@@ -229,7 +237,7 @@ public sealed class RuleController(
 		try
 		{
 			var condition = LoginRuleConditionJsonMapper.ToConditionGroupModel(rule.Condition, $"{rule.Id}-condition");
-			mapped = new LoginRuleResponseModel(rule.Id, rule.Name, rule.Priority, rule.Enabled, condition, rule.AssetId);
+			mapped = new LoginRuleResponseModel(rule.Id, rule.Name, rule.Priority, rule.Enabled, condition, rule.AssetIds);
 			return true;
 		}
 		catch (InvalidOperationException exception)
