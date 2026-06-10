@@ -49,7 +49,7 @@ To run recurring or long-running tasks asynchronously in the background, Umbraco
 - **Registration**: Registered in a Composer using `builder.Services.AddHostedService<MyBackgroundTask>()`.
 
 ## 7. Caching
-Umbraco provides multiple caching layers to optimize performance, accessible via the `AppCaches` interface.
+Umbraco provides multiple caching layers to optimise performance, accessible via the `AppCaches` interface.
 - **Request Cache**: Items exist only for the duration of the current HTTP request.
 - **Runtime Cache (Memory Cache)**: Application-wide memory caching for expensive database or API calls.
 - **Isolated Cache**: A partitioned cache useful for strongly-typed caching without key collisions.

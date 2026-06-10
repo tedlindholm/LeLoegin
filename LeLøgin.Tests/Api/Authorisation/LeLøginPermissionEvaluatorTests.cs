@@ -5,7 +5,7 @@ using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Strings;
 using Xunit;
 
-namespace LeLøgin.Tests.Api.Authorization;
+namespace LeLøgin.Tests.Api.Authorisation;
 
 public sealed class LeLøginPermissionEvaluatorTests
 {
