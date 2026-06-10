@@ -58,7 +58,8 @@ internal static class FakeLeLøginScreenStoreSeed
 				Enabled = rule.Enabled,
 				Priority = rule.Priority,
 				Condition = rule.Condition ?? string.Empty,
-				AssetId = rule.AssetId
+				// Legacy fixtures carry a single assetId; mirror the migration's single-id → list conversion.
+				AssetIds = [rule.AssetId]
 			});
 		}
 		if (legacy.Settings is not null)

@@ -2,6 +2,7 @@ using LeLøgin.Core.Api.Runtime;
 using LeLøgin.Core.Models;
 using LeLøgin.Core.Runtime;
 using LeLøgin.Core.Storage;
+using LeLøgin.Tests.Runtime;
 using LeLøgin.Tests.Storage;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -90,7 +91,7 @@ public sealed class RuntimeControllerTests : IDisposable
 		var controller = new RuntimeController(
 			store,
 			fileService,
-			new LeLøginScreenRuntimeResolver(),
+			new LeLøginScreenRuntimeResolver(new StubRandom()),
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
 			new NullLogger<RuntimeController>(),
 			TestFileSystems.AssetFileManager(_contentRootPath),
@@ -176,7 +177,7 @@ public sealed class RuntimeControllerTests : IDisposable
 		var controller = new RuntimeController(
 			store,
 			fileService,
-			new LeLøginScreenRuntimeResolver(),
+			new LeLøginScreenRuntimeResolver(new StubRandom()),
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 20, 9, 0, 0, TimeSpan.Zero)),
 			new NullLogger<RuntimeController>(),
 			TestFileSystems.AssetFileManager(_contentRootPath),
@@ -241,7 +242,7 @@ public sealed class RuntimeControllerTests : IDisposable
 		var controller = new RuntimeController(
 			store,
 			fileService,
-			new LeLøginScreenRuntimeResolver(),
+			new LeLøginScreenRuntimeResolver(new StubRandom()),
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 20, 9, 0, 0, TimeSpan.Zero)),
 			new NullLogger<RuntimeController>(),
 			TestFileSystems.AssetFileManager(_contentRootPath),
@@ -279,7 +280,7 @@ public sealed class RuntimeControllerTests : IDisposable
 				TestFileSystems.AssetFileManager(_contentRootPath),
 				TestFileSystems.PublishFileManager(_contentRootPath),
 				new NullLogger<LeLøginScreenFileService>()),
-			new LeLøginScreenRuntimeResolver(),
+			new LeLøginScreenRuntimeResolver(new StubRandom()),
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
 			new NullLogger<RuntimeController>(),
 			TestFileSystems.AssetFileManager(_contentRootPath),
@@ -331,7 +332,7 @@ public sealed class RuntimeControllerTests : IDisposable
 				TestFileSystems.AssetFileManager(_contentRootPath),
 				TestFileSystems.PublishFileManager(_contentRootPath),
 				new NullLogger<LeLøginScreenFileService>()),
-			new LeLøginScreenRuntimeResolver(),
+			new LeLøginScreenRuntimeResolver(new StubRandom()),
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
 			new NullLogger<RuntimeController>(),
 			TestFileSystems.AssetFileManager(_contentRootPath),
@@ -381,7 +382,7 @@ public sealed class RuntimeControllerTests : IDisposable
 				TestFileSystems.AssetFileManager(_contentRootPath),
 				TestFileSystems.PublishFileManager(_contentRootPath),
 				new NullLogger<LeLøginScreenFileService>()),
-			new LeLøginScreenRuntimeResolver(),
+			new LeLøginScreenRuntimeResolver(new StubRandom()),
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
 			new NullLogger<RuntimeController>(),
 			TestFileSystems.AssetFileManager(_contentRootPath),
@@ -434,7 +435,7 @@ public sealed class RuntimeControllerTests : IDisposable
 				TestFileSystems.AssetFileManager(_contentRootPath),
 				TestFileSystems.PublishFileManager(_contentRootPath),
 				new NullLogger<LeLøginScreenFileService>()),
-			new LeLøginScreenRuntimeResolver(),
+			new LeLøginScreenRuntimeResolver(new StubRandom()),
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
 			new NullLogger<RuntimeController>(),
 			TestFileSystems.AssetFileManager(_contentRootPath),
@@ -497,7 +498,7 @@ public sealed class RuntimeControllerTests : IDisposable
 		var controller = new RuntimeController(
 			store,
 			new RecordingFileService(),
-			new LeLøginScreenRuntimeResolver(),
+			new LeLøginScreenRuntimeResolver(new StubRandom()),
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
 			new NullLogger<RuntimeController>(),
 			TestFileSystems.AssetFileManager(_contentRootPath),
@@ -564,7 +565,7 @@ public sealed class RuntimeControllerTests : IDisposable
 		var controller = new RuntimeController(
 			store,
 			new RecordingFileService(),
-			new LeLøginScreenRuntimeResolver(),
+			new LeLøginScreenRuntimeResolver(new StubRandom()),
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
 			new NullLogger<RuntimeController>(),
 			TestFileSystems.AssetFileManager(_contentRootPath),
@@ -629,7 +630,7 @@ public sealed class RuntimeControllerTests : IDisposable
 		var controller = new RuntimeController(
 			store,
 			new RecordingFileService(),
-			new LeLøginScreenRuntimeResolver(),
+			new LeLøginScreenRuntimeResolver(new StubRandom()),
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
 			new NullLogger<RuntimeController>(),
 			TestFileSystems.AssetFileManager(_contentRootPath),
@@ -693,7 +694,7 @@ public sealed class RuntimeControllerTests : IDisposable
 		var controller = new RuntimeController(
 			store,
 			new RecordingFileService(),
-			new LeLøginScreenRuntimeResolver(),
+			new LeLøginScreenRuntimeResolver(new StubRandom()),
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
 			logger,
 			TestFileSystems.AssetFileManager(_contentRootPath),

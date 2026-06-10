@@ -72,6 +72,8 @@ public class LeLøginScreenComposer : IComposer
 
 		// Prefer non-singleton where possible.
 		builder.Services.AddTransient(_ => TimeProvider.System);
+		// Randomness source for rules that resolve to multiple images; singleton wraps Random.Shared.
+		builder.Services.AddSingleton<ILeLøginRandom, LeLøginRandom>();
 		builder.Services.AddTransient<LeLøginScreenRuntimeResolver>();
 		builder.AddNotificationAsyncHandler<UmbracoApplicationStartedNotification, LeLøginUserGroupProvisioningNotificationHandler>();
 

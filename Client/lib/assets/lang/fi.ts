@@ -65,6 +65,7 @@ export default {
 		conditionMatchAll: 'Kaikki ehdot',
 		conditionMatchAny: 'Mikä tahansa ehto',
 		conditionEmptyState: 'Yhtään ehtoa ei ole määritetty. Lisää ehto päästäksesi alkuun.',
+		ruleImagesHint: 'Valitse useampi kuin yksi kuva näyttääksesi satunnaisen jokaisella kirjautumisella.',
 		fieldWeekday: 'Viikonpäivä',
 		fieldMonth: 'Kuukausi',
 		operatorIs: 'On',

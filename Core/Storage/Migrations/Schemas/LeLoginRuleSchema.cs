@@ -5,8 +5,9 @@ using Umbraco.Cms.Infrastructure.Persistence.DatabaseAnnotations;
 namespace LeLøgin.Core.Storage.Migrations.Schemas;
 
 /// <summary>
-/// Immutable schema snapshot for the <c>LeLoginRules</c> table. Used only by the
-/// initial Create-tables migration.
+/// Schema definition for the <c>LeLoginRules</c> table. Used by the create-tables migration for
+/// fresh installs and by the <c>AddRuleAssetIds</c> rebuild migration when upgrading the
+/// single-image <c>AssetId</c> column to the multi-image <c>AssetIds</c> JSON column.
 /// </summary>
 [TableName("LeLoginRules")]
 [PrimaryKey("Id", AutoIncrement = false)]
@@ -33,7 +34,8 @@ internal sealed class LeLoginRuleSchema
     [SpecialDbType(SpecialDbTypes.NVARCHARMAX)]
     public string Condition { get; set; } = string.Empty;
 
-    [Column("AssetId")]
-    [Length(64)]
-    public string AssetId { get; set; } = string.Empty;
+    /// <summary>JSON array of image ids. See <see cref="LeLøgin.Core.Storage.RuleAssetIdsSerializer"/>.</summary>
+    [Column("AssetIds")]
+    [SpecialDbType(SpecialDbTypes.NVARCHARMAX)]
+    public string AssetIds { get; set; } = string.Empty;
 }

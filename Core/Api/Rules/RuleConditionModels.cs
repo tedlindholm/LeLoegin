@@ -37,6 +37,8 @@ public enum LoginRuleConditionOperator
 
 /// <summary>
 /// Supported group operators used to combine multiple Le Løgin rule conditions.
+/// (Random image selection is independent of conditions — any matching rule with more than one
+/// image shows one at random; see <see cref="LoginRuleResponseModel.AssetIds"/>.)
 /// </summary>
 [JsonConverter(typeof(LoginRuleConditionGroupOperatorJsonConverter))]
 public enum LoginRuleConditionGroupOperator
@@ -113,7 +115,7 @@ public sealed record LoginRuleResponseModel(
 	int Priority,
 	bool Enabled,
 	LoginRuleConditionGroupModel Condition,
-	string AssetId);
+	IReadOnlyList<string> AssetIds);
 
 /// <summary>
 /// Request payload for creating or updating a rule.
@@ -133,7 +135,7 @@ public sealed class SaveRuleRequest
 	public required LoginRuleConditionGroupModel Condition { get; init; }
 
 	[Required]
-	public required string AssetId { get; init; }
+	public required IReadOnlyList<string> AssetIds { get; init; }
 }
 
 /// <summary>

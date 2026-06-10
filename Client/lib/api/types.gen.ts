@@ -82,7 +82,7 @@ export type LoginRuleResponseModel = {
     priority: number;
     enabled: boolean;
     condition: LoginRuleConditionGroupModel;
-    assetId: string;
+    assetIds: Array<string>;
 };
 
 export type LoginSettings = {
@@ -95,7 +95,7 @@ export type SaveRuleRequest = {
     priority: number;
     enabled: boolean;
     condition: LoginRuleConditionGroupModel;
-    assetId: string;
+    assetIds: Array<string>;
 };
 
 export type GetUmbracoLeLøginApiV1AssetsData = {

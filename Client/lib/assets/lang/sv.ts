@@ -66,6 +66,7 @@ export default {
 		conditionMatchAll: 'Alla villkor',
 		conditionMatchAny: 'Vilket villkor som helst',
 		conditionEmptyState: 'Inga villkor är definierade. Lägg till ett villkor för att komma igång.',
+		ruleImagesHint: 'Välj fler än en bild för att visa en slumpmässig vid varje inloggning.',
 		fieldWeekday: 'Veckodag',
 		fieldMonth: 'Månad',
 		operatorIs: 'Är',

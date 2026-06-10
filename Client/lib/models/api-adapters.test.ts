@@ -4,7 +4,8 @@ import {
 	mapApiLoginAsset,
 	mapApiLoginRule,
 	mapApiActiveLeLøginScreenResponse,
-	parseActiveLeLøginScreenResponse
+	parseActiveLeLøginScreenResponse,
+	toSaveRuleRequest
 } from './api-adapters.js';
 
 describe('mapApiLoginAsset', () => {
@@ -91,7 +92,7 @@ describe('mapApiLoginRule', () => {
 			name: 'Monday',
 			priority: 100,
 			enabled: true,
-			assetId: 'asset-1',
+			assetIds: ['asset-1'],
 			condition: {
 				operator: 'all',
 				conditions: [
@@ -108,11 +109,44 @@ describe('mapApiLoginRule', () => {
 		expect(rule).toMatchObject({
 			id: 'rule-1',
 			priority: 100,
-			assetId: 'asset-1',
+			assetIds: ['asset-1'],
 			condition: {
 				operator: 'all',
 				conditions: [{ field: 'weekday', operator: 'is', values: ['monday'] }]
 			}
 		});
+	});
+
+	it('maps a rule holding multiple images (shown at random when it matches)', () => {
+		const rule = mapApiLoginRule({
+			id: 'rule-multi',
+			name: 'Wednesday pool',
+			priority: 50,
+			enabled: true,
+			assetIds: ['asset-a', 'asset-b', 'asset-c'],
+			condition: {
+				operator: 'all',
+				conditions: [{ id: 'c1', field: 'weekday', operator: 'is', values: ['wednesday'] }]
+			}
+		});
+
+		expect(rule.assetIds).toEqual(['asset-a', 'asset-b', 'asset-c']);
+		expect(rule.condition.operator).toBe('all');
+	});
+});
+
+describe('toSaveRuleRequest', () => {
+	it('serialises a rule with multiple images back to the wire contract', () => {
+		const request = toSaveRuleRequest({
+			id: 'rule-multi',
+			name: 'Pool',
+			priority: 50,
+			enabled: true,
+			assetIds: ['asset-a', 'asset-b'],
+			condition: { operator: 'all', conditions: [] }
+		});
+
+		expect(request.assetIds).toEqual(['asset-a', 'asset-b']);
+		expect(request.condition.operator).toBe('All');
 	});
 });

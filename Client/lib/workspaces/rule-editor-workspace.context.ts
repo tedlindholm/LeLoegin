@@ -23,7 +23,7 @@ export interface LoginRuleDraft {
 	name: string;
 	priority: number;
 	enabled: boolean;
-	assetId: string;
+	assetIds: string[];
 	condition: LoginRuleConditionGroup;
 }
 
@@ -194,7 +194,7 @@ export class LeLøginScreenRuleEditorWorkspaceContext extends UmbContextBase {
 
 	async #saveRule(draft: LoginRuleDraft) {
 		this.#isLoading.setValue(true);
-		const rule: LoginRule = { id: draft.id ?? globalThis.crypto.randomUUID(), name: draft.name, priority: draft.priority, enabled: draft.enabled, assetId: draft.assetId, condition: draft.condition };
+		const rule: LoginRule = { id: draft.id ?? globalThis.crypto.randomUUID(), name: draft.name, priority: draft.priority, enabled: draft.enabled, assetIds: [...draft.assetIds], condition: draft.condition };
 		try {
 			const response = draft.id === undefined
 				? await this.#ruleRepository.create(rule)
@@ -225,7 +225,7 @@ export class LeLøginScreenRuleEditorWorkspaceContext extends UmbContextBase {
 
 	#validateDraft(draft: LoginRuleDraft): ValidationState | undefined {
 		if (draft.name.trim().length === 0) return 'nameRequired';
-		if (draft.assetId.trim().length === 0) return 'assetRequired';
+		if (draft.assetIds.length === 0) return 'assetRequired';
 		for (const condition of draft.condition.conditions) {
 			if (condition.values.length === 0 || condition.values.some(
 				(v) => (typeof v === 'string' && v.trim().length === 0) || (typeof v === 'number' && Number.isNaN(v))
@@ -236,19 +236,19 @@ export class LeLøginScreenRuleEditorWorkspaceContext extends UmbContextBase {
 
 	#createEmptyDraft(): LoginRuleDraft {
 		const metadata = this.#conditionMetadata.getValue();
-		return { name: '', priority: 100, enabled: true, assetId: '', condition: metadata !== null ? createEmptyRuleConditionGroup(metadata) : { operator: 'all', conditions: [] } };
+		return { name: '', priority: 100, enabled: true, assetIds: [], condition: metadata !== null ? createEmptyRuleConditionGroup(metadata) : { operator: 'all', conditions: [] } };
 	}
 
 	#toDraft(rule: LoginRule): LoginRuleDraft {
 		return {
-			id: rule.id, name: rule.name, priority: rule.priority, enabled: rule.enabled, assetId: rule.assetId,
+			id: rule.id, name: rule.name, priority: rule.priority, enabled: rule.enabled, assetIds: [...rule.assetIds],
 			condition: { operator: rule.condition.operator, conditions: rule.condition.conditions.map((c) => ({ ...c, values: [...c.values] })) },
 		};
 	}
 
 	#cloneDraft(draft: LoginRuleDraft): LoginRuleDraft {
 		return {
-			...(draft.id === undefined ? {} : { id: draft.id }), name: draft.name, priority: draft.priority, enabled: draft.enabled, assetId: draft.assetId,
+			...(draft.id === undefined ? {} : { id: draft.id }), name: draft.name, priority: draft.priority, enabled: draft.enabled, assetIds: [...draft.assetIds],
 			condition: { operator: draft.condition.operator, conditions: draft.condition.conditions.map((c) => ({ ...c, values: [...c.values] })) },
 		};
 	}
