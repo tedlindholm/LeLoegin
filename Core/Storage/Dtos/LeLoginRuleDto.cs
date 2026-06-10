@@ -26,7 +26,7 @@ internal sealed class LeLoginRuleDto
     [Column("Condition")]
     public string Condition { get; set; } = string.Empty;
 
-    /// <summary>JSON array of image ids. See <see cref="LeLøgin.Core.Storage.RuleAssetIdsSerializer"/>.</summary>
+    /// <summary>JSON array of image ids. See <see cref="LeLøgin.Core.Storage.RuleAssetIdsSerialiser"/>.</summary>
     [Column("AssetIds")]
     public string AssetIds { get; set; } = string.Empty;
 }

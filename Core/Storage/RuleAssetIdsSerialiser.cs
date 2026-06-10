@@ -7,17 +7,17 @@ namespace LeLøgin.Core.Storage;
 /// <c>LeLoginRules.AssetIds</c> column. Shared by the store and the data-preserving migration so the
 /// on-disk shape (and the legacy single-id → list conversion) is defined in exactly one place.
 /// </summary>
-public static class RuleAssetIdsSerializer
+public static class RuleAssetIdsSerialiser
 {
 	/// <summary>Serialises the asset ids to a JSON array string for persistence.</summary>
-	public static string Serialize(IReadOnlyList<string>? assetIds) =>
+	public static string Serialise(IReadOnlyList<string>? assetIds) =>
 		JsonSerializer.Serialize(assetIds ?? []);
 
 	/// <summary>
 	/// Reads the stored JSON array back into a list. Tolerates null/empty (→ empty list) and a
 	/// bare single id that predates the JSON-array shape (→ one-element list).
 	/// </summary>
-	public static IReadOnlyList<string> Deserialize(string? stored)
+	public static IReadOnlyList<string> Deserialise(string? stored)
 	{
 		if (string.IsNullOrWhiteSpace(stored))
 		{
@@ -40,5 +40,5 @@ public static class RuleAssetIdsSerializer
 	/// becomes an empty array. Used by the migration to backfill existing rows without data loss.
 	/// </summary>
 	public static string FromLegacyAssetId(string? legacyAssetId) =>
-		Serialize(string.IsNullOrWhiteSpace(legacyAssetId) ? [] : [legacyAssetId]);
+		Serialise(string.IsNullOrWhiteSpace(legacyAssetId) ? [] : [legacyAssetId]);
 }

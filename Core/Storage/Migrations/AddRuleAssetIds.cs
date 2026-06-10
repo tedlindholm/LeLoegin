@@ -11,7 +11,7 @@ namespace LeLøgin.Core.Storage.Migrations;
 /// <summary>
 /// Migrates <c>LeLoginRules</c> from the single-image <c>AssetId</c> column to the multi-image
 /// <c>AssetIds</c> JSON-array column. Existing rules keep their image — the old id is preserved as a
-/// one-element array (see <see cref="RuleAssetIdsSerializer.FromLegacyAssetId"/>).
+/// one-element array (see <see cref="RuleAssetIdsSerialiser.FromLegacyAssetId"/>).
 ///
 /// The table is rebuilt rather than altered in place: SQLite cannot drop/alter columns, so the
 /// cross-provider approach is to read the rows, recreate the table from the current schema, and
@@ -46,7 +46,7 @@ public sealed class AddRuleAssetIds : AsyncMigrationBase
 				Enabled = row.Enabled,
 				Priority = row.Priority,
 				Condition = row.Condition,
-				AssetIds = RuleAssetIdsSerializer.FromLegacyAssetId(row.AssetId),
+				AssetIds = RuleAssetIdsSerialiser.FromLegacyAssetId(row.AssetId),
 			})
 			.ToList();
 
