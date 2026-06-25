@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using LeLøgin.Core.Models;
 using NPoco;
 using Umbraco.Cms.Infrastructure.Persistence.DatabaseAnnotations;
 
@@ -6,7 +7,7 @@ namespace LeLøgin.Core.Storage.Dtos;
 
 /// <summary>
 /// NPoco DTO for runtime read/write of the <c>LeLoginAssets</c> table. Mapped to and from
-/// <see cref="LeLøgin.Core.Models.LoginImageAsset"/> by <c>LeLøginScreenStore</c>.
+/// <see cref="LoginImageAsset"/> by <c>LeLøginScreenStore</c>.
 /// </summary>
 [TableName("LeLoginAssets")]
 [PrimaryKey("Id", AutoIncrement = false)]
