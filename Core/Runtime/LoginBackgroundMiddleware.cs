@@ -1,7 +1,6 @@
 using LeLøgin.Core.Models;
 using LeLøgin.Core.Storage;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SixLabors.ImageSharp.Web;
