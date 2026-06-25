@@ -1,7 +1,5 @@
 using LeLøgin.Core.Storage;
-using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Cms.Core.IO;
-using Umbraco.Extensions;
 
 namespace LeLøgin.Core;
 
@@ -21,7 +19,7 @@ public static class LeLøginBuilderExtensions
         Func<IServiceProvider, IFileSystem> factory)
     {
         builder.Services.AddUnique<LeLøginAssetFileManager>(
-            sp => new LeLøginAssetFileManager(factory(sp)));
+            sp => new(factory(sp)));
         return builder;
     }
 
@@ -40,7 +38,7 @@ public static class LeLøginBuilderExtensions
         Func<IServiceProvider, IFileSystem> factory)
     {
         builder.Services.AddUnique<LeLøginPublishFileManager>(
-            sp => new LeLøginPublishFileManager(factory(sp)));
+            sp => new(factory(sp)));
         return builder;
     }
 }
