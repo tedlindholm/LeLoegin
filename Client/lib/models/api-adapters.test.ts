@@ -39,9 +39,9 @@ describe('mapApiActiveLeLøginScreenResponse', () => {
 			greetingText: 'Good evening',
 			focalPoint: {
 				left: 0.25,
-				top: 0.75,
+				top: 0.75
 			},
-			zoom: 1,
+			zoom: 1
 		});
 
 		expect(response).toEqual({
@@ -51,9 +51,9 @@ describe('mapApiActiveLeLøginScreenResponse', () => {
 			greetingText: 'Good evening',
 			focalPoint: {
 				left: 0.25,
-				top: 0.75,
+				top: 0.75
 			},
-			zoom: 1,
+			zoom: 1
 		});
 	});
 });
@@ -67,9 +67,9 @@ describe('parseActiveLeLøginScreenResponse', () => {
 			greetingText: 'Welcome back',
 			focalPoint: {
 				left: 0.4,
-				top: 0.6,
+				top: 0.6
 			},
-			zoom: 1,
+			zoom: 1
 		});
 
 		expect(response).toEqual({
@@ -78,9 +78,9 @@ describe('parseActiveLeLøginScreenResponse', () => {
 			greetingText: 'Welcome back',
 			focalPoint: {
 				left: 0.4,
-				top: 0.6,
+				top: 0.6
 			},
-			zoom: 1,
+			zoom: 1
 		});
 	});
 });

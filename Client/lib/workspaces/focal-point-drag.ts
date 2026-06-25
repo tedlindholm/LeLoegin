@@ -55,7 +55,7 @@ export function computeFocalPointFromDrag({
 	startFocalPoint,
 	deltaX,
 	deltaY,
-	zoom,
+	zoom
 }: ComputeFocalPointFromDragArgs): FocalPointLike {
 	if (image.width <= 0 || image.height <= 0 || container.width <= 0 || container.height <= 0) {
 		return startFocalPoint;
@@ -92,12 +92,14 @@ export function computeFocalPointFromDrag({
 	const half = 0.5 / z;
 	const [minBound, maxBound] = z > 1 ? [half, 1 - half] : [0, 1];
 
-	const left = overflowX > 0
-		? clamp(startFocalPoint.left - deltaX / overflowX, minBound, maxBound)
-		: startFocalPoint.left;
-	const top = overflowY > 0
-		? clamp(startFocalPoint.top - deltaY / overflowY, minBound, maxBound)
-		: startFocalPoint.top;
+	const left =
+		overflowX > 0
+			? clamp(startFocalPoint.left - deltaX / overflowX, minBound, maxBound)
+			: startFocalPoint.left;
+	const top =
+		overflowY > 0
+			? clamp(startFocalPoint.top - deltaY / overflowY, minBound, maxBound)
+			: startFocalPoint.top;
 
 	return { left, top };
 }

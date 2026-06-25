@@ -40,7 +40,7 @@ export class LeLøginScreenActiveScreenDataSource extends UmbControllerBase {
 			this,
 			V1.getUmbracoLeLøginApiV1RulesByIdPreview({
 				path: { id: ruleId },
-				headers: { 'Cache-Control': 'no-cache' },
+				headers: { 'Cache-Control': 'no-cache' }
 			})
 		);
 

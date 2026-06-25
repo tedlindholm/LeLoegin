@@ -19,7 +19,10 @@ import '@umbraco-cms/backoffice/components';
  * real component API immediately — guards work, property writes land on the real
  * setters, and we don't depend on the upgrade-fix race.
  */
-export function cloneTemplate(template: HTMLTemplateElement, description: string): DocumentFragment {
+export function cloneTemplate(
+	template: HTMLTemplateElement,
+	description: string
+): DocumentFragment {
 	const fragment = template.content.cloneNode(true);
 	if (!(fragment instanceof DocumentFragment)) {
 		throw new Error(`${description} template clone failed.`);

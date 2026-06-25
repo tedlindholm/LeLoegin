@@ -5,7 +5,10 @@ export interface UmbFileUploadPreviewElement extends HTMLElement {
 	path?: string;
 }
 
-export class LoginScreenImageUploadPreviewElement extends HTMLElement implements UmbFileUploadPreviewElement {
+export class LoginScreenImageUploadPreviewElement
+	extends HTMLElement
+	implements UmbFileUploadPreviewElement
+{
 	#objectUrl?: string;
 	#file?: File;
 

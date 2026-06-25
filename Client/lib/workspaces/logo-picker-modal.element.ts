@@ -32,13 +32,14 @@ emptyLogoCardTemplate.innerHTML = /* html */ `
 `;
 
 const isHtmlElement = (value: Element | null): value is HTMLElement => value instanceof HTMLElement;
-const isHtmlImageElement = (value: Element | null): value is HTMLImageElement => value instanceof HTMLImageElement;
+const isHtmlImageElement = (value: Element | null): value is HTMLImageElement =>
+	value instanceof HTMLImageElement;
 
 function queryRequired<T extends Element>(
 	root: ParentNode,
 	selector: string,
 	guard: ElementGuard<T>,
-	description: string,
+	description: string
 ): T {
 	const element = root.querySelector(selector);
 	if (!guard(element)) {
@@ -51,13 +52,16 @@ function getEventTargetElement(event: Event): Element | null {
 	return event.target instanceof Element ? event.target : null;
 }
 
-export class LeLøginLogoPickerModalElement extends UmbElementMixin(HTMLElement)
-	implements UmbModalExtensionElement<LogoPickerModalData, LogoPickerModalValue> {
-
+export class LeLøginLogoPickerModalElement
+	extends UmbElementMixin(HTMLElement)
+	implements UmbModalExtensionElement<LogoPickerModalData, LogoPickerModalValue>
+{
 	#modalContext: UmbModalContext<LogoPickerModalData, LogoPickerModalValue> | undefined;
 	#layout: HTMLElement;
 
-	get modalContext() { return this.#modalContext; }
+	get modalContext() {
+		return this.#modalContext;
+	}
 	set modalContext(value: UmbModalContext<LogoPickerModalData, LogoPickerModalValue> | undefined) {
 		this.#modalContext = value;
 		this.#render();
@@ -114,7 +118,7 @@ export class LeLøginLogoPickerModalElement extends UmbElementMixin(HTMLElement)
 		const cardGrid = queryRequired(body, '#card-grid', isHtmlElement, 'card grid');
 		cardGrid.replaceChildren(
 			this.#buildEmptyLogoCard(selectedId.length === 0),
-			...logoAssets.map((asset) => this.#buildLogoCard(asset, asset.id === selectedId)),
+			...logoAssets.map((asset) => this.#buildLogoCard(asset, asset.id === selectedId))
 		);
 
 		const closeButton = queryRequired(body, '#close-btn', isHtmlElement, 'close button');

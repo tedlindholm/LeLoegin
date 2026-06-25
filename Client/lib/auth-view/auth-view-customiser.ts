@@ -236,10 +236,7 @@ export const applyAuthViewCustomisation = (
 			: null;
 	const hidden = customisation.hideGreeting === true;
 
-	setOptionalText(
-		greeting,
-		customisation.greetingText
-	);
+	setOptionalText(greeting, customisation.greetingText);
 	if (greeting instanceof HTMLElement) {
 		greeting.style.visibility = hidden ? 'hidden' : '';
 		greeting.style.opacity = !hidden && customisation.greetingText === undefined ? '0.38' : '';

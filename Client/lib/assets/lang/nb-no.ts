@@ -66,7 +66,8 @@ export default {
 		conditionMatchLabel: 'Match',
 		conditionMatchAll: 'Alle betingelser',
 		conditionMatchAny: 'Enhver betingelse',
-		conditionEmptyState: 'Ingen betingelser er definert. Legg til en betingelse for å komme i gang.',
+		conditionEmptyState:
+			'Ingen betingelser er definert. Legg til en betingelse for å komme i gang.',
 		ruleImagesHint: 'Velg mer enn ett bilde for å vise et tilfeldig ved hver innlogging.',
 		conditionValuePlaceholder: 'Verdi',
 		fieldWeekday: 'Ukedag',
@@ -86,5 +87,5 @@ export default {
 		validationRuleAsset: 'Et bilde er påkrevd.',
 		validationConditionValue: 'Hver betingelse må ha en verdi.',
 		toggleEnabled: 'Aktiver / Deaktiver'
-	},
+	}
 } satisfies LeLøginScreenLocalisationDictionary;

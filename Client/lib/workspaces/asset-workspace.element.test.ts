@@ -10,7 +10,7 @@ const workspaceManifestFilePath = resolve(currentDirectory, 'manifests.ts');
 const readWorkspaceSources = async () => {
 	const [workspaceElementSource, workspaceManifestSource] = await Promise.all([
 		readFile(workspaceElementFilePath, 'utf8'),
-		readFile(workspaceManifestFilePath, 'utf8'),
+		readFile(workspaceManifestFilePath, 'utf8')
 	]);
 
 	return { workspaceElementSource, workspaceManifestSource };
@@ -20,7 +20,9 @@ it('uses the auth view preview shell without the old asset list', async () => {
 	const { workspaceElementSource } = await readWorkspaceSources();
 
 	expect(workspaceElementSource).toContain("import '@umbraco-cms/backoffice/auth';");
-	expect(workspaceElementSource).toContain('this.consumeContext(UMB_LOGIN_SCREEN_ASSET_EDITOR_WORKSPACE_CONTEXT');
+	expect(workspaceElementSource).toContain(
+		'this.consumeContext(UMB_LOGIN_SCREEN_ASSET_EDITOR_WORKSPACE_CONTEXT'
+	);
 	expect(workspaceElementSource).not.toContain('#resolveAssetIdFromLocation()');
 	expect(workspaceElementSource).not.toContain('window.location.href');
 	expect(workspaceElementSource).not.toContain('Upload New Asset');
@@ -71,7 +73,9 @@ it('preserves an explicit empty logo selection so saves can clear the stored log
 	const { workspaceElementSource } = await readWorkspaceSources();
 
 	expect(workspaceElementSource).toContain('updateDraft({ logoAssetId: result.logoAssetId });');
-	expect(workspaceElementSource).not.toContain('updateDraft({ logoAssetId: normaliseOptionalInputValue(result.logoAssetId) });');
+	expect(workspaceElementSource).not.toContain(
+		'updateDraft({ logoAssetId: normaliseOptionalInputValue(result.logoAssetId) });'
+	);
 });
 
 it('replaces the workspace body with DOM nodes instead of assigning HTML strings', async () => {
@@ -87,8 +91,12 @@ it('registers the asset editor as a routable workspace', async () => {
 	const { workspaceManifestSource } = await readWorkspaceSources();
 
 	expect(workspaceManifestSource).toContain("kind: 'routable'");
-	expect(workspaceManifestSource).toContain("api: () => import('./asset-editor-workspace.context.js')");
+	expect(workspaceManifestSource).toContain(
+		"api: () => import('./asset-editor-workspace.context.js')"
+	);
 	expect(workspaceManifestSource).toContain("type: 'workspaceAction'");
 	expect(workspaceManifestSource).toContain('UmbSubmitWorkspaceAction');
-	expect(workspaceManifestSource).not.toContain("element: () => import('./asset-workspace.element.js')");
+	expect(workspaceManifestSource).not.toContain(
+		"element: () => import('./asset-workspace.element.js')"
+	);
 });

@@ -11,15 +11,15 @@ const overviewDashboardManifest = {
 	weight: 100,
 	meta: {
 		label: '#loginScreen_overview',
-		pathname: 'login-screen-overview',
+		pathname: 'login-screen-overview'
 	},
 	conditions: [
 		{
 			alias: 'Umb.Condition.SectionAlias',
-			match: 'Umb.Section.Settings',
+			match: 'Umb.Section.Settings'
 		},
-		manageLeLøginScreenCondition,
-	],
+		manageLeLøginScreenCondition
+	]
 } satisfies ManifestDashboard;
 
 export const manifests = [overviewDashboardManifest] satisfies ReadonlyArray<ManifestDashboard>;

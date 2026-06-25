@@ -7,9 +7,9 @@ const localisationManifests = [
 		weight: -110,
 		name: 'English',
 		meta: {
-			culture: 'en',
+			culture: 'en'
 		},
-		js: () => import('./en.js'),
+		js: () => import('./en.js')
 	},
 	{
 		type: 'localization',
@@ -17,9 +17,9 @@ const localisationManifests = [
 		weight: -110,
 		name: 'Dansk',
 		meta: {
-			culture: 'da',
+			culture: 'da'
 		},
-		js: () => import('./da.js'),
+		js: () => import('./da.js')
 	},
 	{
 		type: 'localization',
@@ -27,9 +27,9 @@ const localisationManifests = [
 		weight: -110,
 		name: 'Svenska',
 		meta: {
-			culture: 'sv',
+			culture: 'sv'
 		},
-		js: () => import('./sv.js'),
+		js: () => import('./sv.js')
 	},
 	{
 		type: 'localization',
@@ -37,9 +37,9 @@ const localisationManifests = [
 		weight: -110,
 		name: 'Norska',
 		meta: {
-			culture: 'nb-no',
+			culture: 'nb-no'
 		},
-		js: () => import('./nb-no.js'),
+		js: () => import('./nb-no.js')
 	},
 	{
 		type: 'localization',
@@ -47,10 +47,10 @@ const localisationManifests = [
 		weight: -110,
 		name: 'Suomi',
 		meta: {
-			culture: 'fi',
+			culture: 'fi'
 		},
-		js: () => import('./fi.js'),
-	},
- ] satisfies ReadonlyArray<ManifestLocalization>;
+		js: () => import('./fi.js')
+	}
+] satisfies ReadonlyArray<ManifestLocalization>;
 
 export const manifests = [...localisationManifests];

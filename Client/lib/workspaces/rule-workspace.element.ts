@@ -12,7 +12,7 @@ import { LOGIN_SCREEN_ASSET_ENTITY_TYPE } from '../tree/types.js';
 import {
 	UMB_LOGIN_SCREEN_RULE_EDITOR_WORKSPACE_CONTEXT,
 	type LoginRuleDraft,
-	type LeLøginScreenRuleEditorWorkspaceContext,
+	type LeLøginScreenRuleEditorWorkspaceContext
 } from './rule-editor-workspace.context.js';
 import { cloneTemplate } from '../utils/template.js';
 
@@ -66,7 +66,8 @@ assetCardTemplate.innerHTML = /* html */ `
 `;
 
 const isHtmlElement = (value: Element | null): value is HTMLElement => value instanceof HTMLElement;
-const isHtmlImageElement = (value: Element | null): value is HTMLImageElement => value instanceof HTMLImageElement;
+const isHtmlImageElement = (value: Element | null): value is HTMLImageElement =>
+	value instanceof HTMLImageElement;
 const isConditionEditorElement = (value: Element | null): value is ConditionEditorElement =>
 	value instanceof HTMLElement && value.localName === 'login-screen-condition-editor';
 
@@ -74,7 +75,7 @@ function getRequiredById<T extends Element>(
 	root: ParentNode,
 	id: string,
 	guard: ElementGuard<T>,
-	description: string,
+	description: string
 ): T {
 	const element = root.querySelector(`#${id}`);
 	if (!guard(element)) {
@@ -87,7 +88,7 @@ function queryRequired<T extends Element>(
 	root: ParentNode,
 	selector: string,
 	guard: ElementGuard<T>,
-	description: string,
+	description: string
 ): T {
 	const element = root.querySelector(selector);
 	if (!guard(element)) {
@@ -96,7 +97,10 @@ function queryRequired<T extends Element>(
 	return element;
 }
 
-function hasProperty<K extends string>(value: object, key: K): value is object & Record<K, unknown> {
+function hasProperty<K extends string>(
+	value: object,
+	key: K
+): value is object & Record<K, unknown> {
 	return key in value;
 }
 
@@ -145,20 +149,42 @@ export class LeLøginScreenRuleWorkspace extends UmbElementMixin(HTMLElement) {
 		new UmbModalRouteRegistrationController(this, UMB_WORKSPACE_MODAL)
 			.addAdditionalPath(LOGIN_SCREEN_ASSET_ENTITY_TYPE)
 			.onSetup(() => ({ data: { entityType: LOGIN_SCREEN_ASSET_ENTITY_TYPE, preset: {} } }))
-			.observeRouteBuilder((builder) => { this.#assetModalRouteBuilder = builder; this.#render(); });
+			.observeRouteBuilder((builder) => {
+				this.#assetModalRouteBuilder = builder;
+				this.#render();
+			});
 
 		this.consumeContext(UMB_LOGIN_SCREEN_RULE_EDITOR_WORKSPACE_CONTEXT, (ctx) => {
 			if (ctx === undefined) return;
 			this.#workspaceContext = ctx;
-			this.observe(ctx.currentRule, (draft) => { this.#draft = draft; this.#render(); });
-			this.observe(ctx.assets, (assets) => { this.#assets = assets ?? []; this.#render(); });
-			this.observe(ctx.conditionMetadata, (meta) => { this.#conditionMetadata = meta ?? null; this.#render(); });
-			this.observe(ctx.isLoading, (loading) => { this.#isLoading = loading; this.#render(); });
-			this.observe(ctx.name, (name) => { if (this.#draft !== null && this.#draft.name !== name) { this.#draft = { ...this.#draft, name }; } });
+			this.observe(ctx.currentRule, (draft) => {
+				this.#draft = draft;
+				this.#render();
+			});
+			this.observe(ctx.assets, (assets) => {
+				this.#assets = assets ?? [];
+				this.#render();
+			});
+			this.observe(ctx.conditionMetadata, (meta) => {
+				this.#conditionMetadata = meta ?? null;
+				this.#render();
+			});
+			this.observe(ctx.isLoading, (loading) => {
+				this.#isLoading = loading;
+				this.#render();
+			});
+			this.observe(ctx.name, (name) => {
+				if (this.#draft !== null && this.#draft.name !== name) {
+					this.#draft = { ...this.#draft, name };
+				}
+			});
 		});
 	}
 
-	override connectedCallback() { super.connectedCallback(); this.#render(); }
+	override connectedCallback() {
+		super.connectedCallback();
+		this.#render();
+	}
 
 	#render() {
 		this.#layout.replaceChildren(...this.#buildBody());
@@ -197,7 +223,10 @@ export class LeLøginScreenRuleWorkspace extends UmbElementMixin(HTMLElement) {
 		return box;
 	}
 
-	#buildWorkspaceBody(draft: LoginRuleDraft, backgroundAssets: Array<LoginImageAsset>): HTMLElement {
+	#buildWorkspaceBody(
+		draft: LoginRuleDraft,
+		backgroundAssets: Array<LoginImageAsset>
+	): HTMLElement {
 		const fragment = cloneTemplate(workspaceBodyTemplate, 'rule workspace body');
 		const box = fragment.firstElementChild;
 		if (!(box instanceof HTMLElement)) {
@@ -211,14 +240,21 @@ export class LeLøginScreenRuleWorkspace extends UmbElementMixin(HTMLElement) {
 		const assetField = getRequiredById(box, 'asset-field', isHtmlElement, 'asset field');
 		assetField.replaceChildren(...this.#buildAssetField(backgroundAssets, draft));
 
-		const conditionEditorSlot = getRequiredById(box, 'condition-editor-slot', isHtmlElement, 'condition editor slot');
+		const conditionEditorSlot = getRequiredById(
+			box,
+			'condition-editor-slot',
+			isHtmlElement,
+			'condition editor slot'
+		);
 		// `document.createElement` synchronously upgrades the element (since the class is
 		// registered via the import at the top of this file), so the setters below run
 		// as real setters — fixing the "Expected condition editor" crash that happens
 		// when the element is parsed inside a `<template>`.
 		const conditionEditor = document.createElement('login-screen-condition-editor');
 		if (!isConditionEditorElement(conditionEditor)) {
-			throw new Error('Failed to create login-screen-condition-editor — is the custom element registered?');
+			throw new Error(
+				'Failed to create login-screen-condition-editor — is the custom element registered?'
+			);
 		}
 		conditionEditor.id = 'condition-editor';
 		conditionEditor.conditionMetadata = this.#conditionMetadata;
@@ -228,7 +264,10 @@ export class LeLøginScreenRuleWorkspace extends UmbElementMixin(HTMLElement) {
 		return box;
 	}
 
-	#buildAssetField(backgroundAssets: Array<LoginImageAsset>, draft: LoginRuleDraft): Array<HTMLElement> {
+	#buildAssetField(
+		backgroundAssets: Array<LoginImageAsset>,
+		draft: LoginRuleDraft
+	): Array<HTMLElement> {
 		if (backgroundAssets.length === 0) {
 			const emptyState = document.createElement('p');
 			emptyState.className = 'empty-state';
@@ -314,7 +353,7 @@ export class LeLøginScreenRuleWorkspace extends UmbElementMixin(HTMLElement) {
 		}
 
 		this.#updateDraft({ condition: event.detail }, false);
-	}
+	};
 
 	#updateDraft(update: Partial<LoginRuleDraft>, shouldRender = false) {
 		if (this.#draft === null || this.#workspaceContext === undefined) return;
@@ -322,7 +361,6 @@ export class LeLøginScreenRuleWorkspace extends UmbElementMixin(HTMLElement) {
 		this.#workspaceContext.updateDraft({ ...this.#draft, name: this.#workspaceContext.getName() });
 		if (shouldRender) this.#render();
 	}
-
 }
 
 customElements.define('login-screen-rule-workspace', LeLøginScreenRuleWorkspace);

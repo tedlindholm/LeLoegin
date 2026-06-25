@@ -24,7 +24,8 @@ export default {
 		assetsWelcomeImagesEmpty: 'Ei tervetulokuvia vielä.',
 		assetsLogos: 'Logot',
 		assetsLogosEmpty: 'Ei logo-kuvia vielä.',
-		noActiveImage: 'Ei aktiivista kirjautumiskuvaa. Lisää sääntö ilman ehtoja catch-all-säännöksi aloittaaksesi.',
+		noActiveImage:
+			'Ei aktiivista kirjautumiskuvaa. Lisää sääntö ilman ehtoja catch-all-säännöksi aloittaaksesi.',
 		goToRules: 'Hallitse sääntöjä',
 		loadingActiveImage: 'Ladataan aktiivista kuvaa...',
 		activeScreen: 'Aktiivinen näyttö',
@@ -65,7 +66,8 @@ export default {
 		conditionMatchAll: 'Kaikki ehdot',
 		conditionMatchAny: 'Mikä tahansa ehto',
 		conditionEmptyState: 'Yhtään ehtoa ei ole määritetty. Lisää ehto päästäksesi alkuun.',
-		ruleImagesHint: 'Valitse useampi kuin yksi kuva näyttääksesi satunnaisen jokaisella kirjautumisella.',
+		ruleImagesHint:
+			'Valitse useampi kuin yksi kuva näyttääksesi satunnaisen jokaisella kirjautumisella.',
 		fieldWeekday: 'Viikonpäivä',
 		fieldMonth: 'Kuukausi',
 		operatorIs: 'On',

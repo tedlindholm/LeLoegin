@@ -2,7 +2,7 @@ import {
 	LOGIN_SCREEN_ASSET_ROOT_ENTITY_TYPE,
 	LOGIN_SCREEN_ASSET_GROUP_BACKGROUND_ENTITY_TYPE,
 	LOGIN_SCREEN_ASSET_GROUP_LOGO_ENTITY_TYPE,
-	LOGIN_SCREEN_ASSET_ENTITY_TYPE,
+	LOGIN_SCREEN_ASSET_ENTITY_TYPE
 } from './types.js';
 import { UMB_WORKSPACE_CONDITION_ALIAS } from '@umbraco-cms/backoffice/workspace';
 import { LOGIN_SCREEN_SETTINGS_MENU_ALIAS } from '../section/manifests.ts';
@@ -11,7 +11,7 @@ import { createLeLøginScreenManagePermissionCondition } from '../user-permissio
 import {
 	LOGIN_SCREEN_ASSET_UPLOAD_BACKGROUND_WORKSPACE_ALIAS,
 	LOGIN_SCREEN_ASSET_UPLOAD_LOGO_WORKSPACE_ALIAS,
-	LOGIN_SCREEN_ASSET_WORKSPACE_ALIAS,
+	LOGIN_SCREEN_ASSET_WORKSPACE_ALIAS
 } from '../workspaces/manifests.js';
 
 const TREE_ALIAS = 'LeLøgin.Tree.Assets';
@@ -22,7 +22,7 @@ const repositoryManifest: UmbExtensionManifest = {
 	alias: 'LeLøgin.Repository.AssetTree',
 	name: 'Login Screen Asset Tree Repository',
 	api: () => import('./asset-tree.repository.js'),
-	conditions: [manageLeLøginScreenCondition],
+	conditions: [manageLeLøginScreenCondition]
 };
 
 const treeManifest: UmbExtensionManifest = {
@@ -31,9 +31,9 @@ const treeManifest: UmbExtensionManifest = {
 	alias: TREE_ALIAS,
 	name: 'Login Screen Asset Tree',
 	meta: {
-		repositoryAlias: repositoryManifest.alias,
+		repositoryAlias: repositoryManifest.alias
 	},
-	conditions: [manageLeLøginScreenCondition],
+	conditions: [manageLeLøginScreenCondition]
 };
 
 const treeItemManifest: UmbExtensionManifest = {
@@ -45,8 +45,8 @@ const treeItemManifest: UmbExtensionManifest = {
 		LOGIN_SCREEN_ASSET_ROOT_ENTITY_TYPE,
 		LOGIN_SCREEN_ASSET_GROUP_BACKGROUND_ENTITY_TYPE,
 		LOGIN_SCREEN_ASSET_GROUP_LOGO_ENTITY_TYPE,
-		LOGIN_SCREEN_ASSET_ENTITY_TYPE,
-	],
+		LOGIN_SCREEN_ASSET_ENTITY_TYPE
+	]
 };
 
 const menuItemManifest: UmbExtensionManifest = {
@@ -61,9 +61,9 @@ const menuItemManifest: UmbExtensionManifest = {
 		entityType: LOGIN_SCREEN_ASSET_ROOT_ENTITY_TYPE,
 		menus: [LOGIN_SCREEN_SETTINGS_MENU_ALIAS],
 		treeAlias: TREE_ALIAS,
-		hideTreeRoot: false,
+		hideTreeRoot: false
 	},
-	conditions: [manageLeLøginScreenCondition],
+	conditions: [manageLeLøginScreenCondition]
 };
 
 const assetWorkspaceMenuStructureManifest: UmbExtensionManifest = {
@@ -73,14 +73,14 @@ const assetWorkspaceMenuStructureManifest: UmbExtensionManifest = {
 	name: 'Login Screen Asset Menu Structure Workspace Context',
 	api: () => import('./asset-menu-structure.context.js'),
 	meta: {
-		menuItemAlias: menuItemManifest.alias,
+		menuItemAlias: menuItemManifest.alias
 	},
 	conditions: [
 		{
 			alias: UMB_WORKSPACE_CONDITION_ALIAS,
-			match: LOGIN_SCREEN_ASSET_WORKSPACE_ALIAS,
-		},
-	],
+			match: LOGIN_SCREEN_ASSET_WORKSPACE_ALIAS
+		}
+	]
 };
 
 const assetWorkspaceBreadcrumbManifest: UmbExtensionManifest = {
@@ -91,9 +91,9 @@ const assetWorkspaceBreadcrumbManifest: UmbExtensionManifest = {
 	conditions: [
 		{
 			alias: UMB_WORKSPACE_CONDITION_ALIAS,
-			match: LOGIN_SCREEN_ASSET_WORKSPACE_ALIAS,
-		},
-	],
+			match: LOGIN_SCREEN_ASSET_WORKSPACE_ALIAS
+		}
+	]
 };
 
 const assetUploadBackgroundMenuStructureManifest: UmbExtensionManifest = {
@@ -103,14 +103,14 @@ const assetUploadBackgroundMenuStructureManifest: UmbExtensionManifest = {
 	name: 'Login Screen Asset Upload Background Menu Structure Workspace Context',
 	api: () => import('./asset-menu-structure.context.js'),
 	meta: {
-		menuItemAlias: menuItemManifest.alias,
+		menuItemAlias: menuItemManifest.alias
 	},
 	conditions: [
 		{
 			alias: UMB_WORKSPACE_CONDITION_ALIAS,
-			match: LOGIN_SCREEN_ASSET_UPLOAD_BACKGROUND_WORKSPACE_ALIAS,
-		},
-	],
+			match: LOGIN_SCREEN_ASSET_UPLOAD_BACKGROUND_WORKSPACE_ALIAS
+		}
+	]
 };
 
 const assetUploadBackgroundBreadcrumbManifest: UmbExtensionManifest = {
@@ -121,9 +121,9 @@ const assetUploadBackgroundBreadcrumbManifest: UmbExtensionManifest = {
 	conditions: [
 		{
 			alias: UMB_WORKSPACE_CONDITION_ALIAS,
-			match: LOGIN_SCREEN_ASSET_UPLOAD_BACKGROUND_WORKSPACE_ALIAS,
-		},
-	],
+			match: LOGIN_SCREEN_ASSET_UPLOAD_BACKGROUND_WORKSPACE_ALIAS
+		}
+	]
 };
 
 const assetUploadLogoMenuStructureManifest: UmbExtensionManifest = {
@@ -133,14 +133,14 @@ const assetUploadLogoMenuStructureManifest: UmbExtensionManifest = {
 	name: 'Login Screen Asset Upload Logo Menu Structure Workspace Context',
 	api: () => import('./asset-menu-structure.context.js'),
 	meta: {
-		menuItemAlias: menuItemManifest.alias,
+		menuItemAlias: menuItemManifest.alias
 	},
 	conditions: [
 		{
 			alias: UMB_WORKSPACE_CONDITION_ALIAS,
-			match: LOGIN_SCREEN_ASSET_UPLOAD_LOGO_WORKSPACE_ALIAS,
-		},
-	],
+			match: LOGIN_SCREEN_ASSET_UPLOAD_LOGO_WORKSPACE_ALIAS
+		}
+	]
 };
 
 const assetUploadLogoBreadcrumbManifest: UmbExtensionManifest = {
@@ -151,9 +151,9 @@ const assetUploadLogoBreadcrumbManifest: UmbExtensionManifest = {
 	conditions: [
 		{
 			alias: UMB_WORKSPACE_CONDITION_ALIAS,
-			match: LOGIN_SCREEN_ASSET_UPLOAD_LOGO_WORKSPACE_ALIAS,
-		},
-	],
+			match: LOGIN_SCREEN_ASSET_UPLOAD_LOGO_WORKSPACE_ALIAS
+		}
+	]
 };
 
 export const manifests: Array<UmbExtensionManifest> = [
@@ -167,5 +167,5 @@ export const manifests: Array<UmbExtensionManifest> = [
 	assetUploadBackgroundBreadcrumbManifest,
 	assetUploadLogoMenuStructureManifest,
 	assetUploadLogoBreadcrumbManifest,
-	...entityActionManifests,
+	...entityActionManifests
 ];

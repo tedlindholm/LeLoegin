@@ -25,7 +25,9 @@ describe('auth view preview customiser', () => {
 		expect(source).toContain('observer.disconnect();');
 		expect(source).toContain('state.frameHandle = requestAnimationFrame(() => {');
 		expect(source).toContain('cancelAnimationFrame(state.frameHandle);');
-		expect(source).not.toContain('const observer = new MutationObserver(() => {\n\t\tapply();\n\t});');
+		expect(source).not.toContain(
+			'const observer = new MutationObserver(() => {\n\t\tapply();\n\t});'
+		);
 	});
 
 	it('can hide the native greeting when the preview overlays its own editor input', async () => {

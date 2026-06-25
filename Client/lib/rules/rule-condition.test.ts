@@ -5,7 +5,7 @@ import { createEmptyRuleConditionGroup } from './rule-condition.js';
 const testMetadata: ConditionMetadata = {
 	operators: new Map([
 		['is', { arity: 'single' }],
-		['isNot', { arity: 'single' }],
+		['isNot', { arity: 'single' }]
 	]),
 	fields: new Map([
 		[
@@ -13,10 +13,18 @@ const testMetadata: ConditionMetadata = {
 			{
 				operators: ['is', 'isNot'],
 				defaultValue: 'monday',
-				allowedValues: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
-			},
-		],
-	]),
+				allowedValues: [
+					'monday',
+					'tuesday',
+					'wednesday',
+					'thursday',
+					'friday',
+					'saturday',
+					'sunday'
+				]
+			}
+		]
+	])
 };
 
 describe('rule condition factory', () => {

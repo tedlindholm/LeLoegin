@@ -8,7 +8,11 @@ import type {
 	LoginRuleConditionOperator,
 	LoginRuleField
 } from './rule-condition.js';
-import { isLoginRuleConditionOperator, isLoginRuleField, normaliseValuesForOperator } from './rule-condition.js';
+import {
+	isLoginRuleConditionOperator,
+	isLoginRuleField,
+	normaliseValuesForOperator
+} from './rule-condition.js';
 import { cloneTemplate } from '../utils/template.js';
 
 interface SelectOption {
@@ -61,8 +65,8 @@ const isHtmlElement = (value: Element | null): value is HTMLElement => value ins
 const isSelectElement = (value: Element | null): value is SelectElement =>
 	value instanceof HTMLElement && value.localName === 'uui-select';
 const isValueElement = (value: Element | null): value is ValueElement =>
-	value instanceof HTMLElement
-		&& (value.localName === 'uui-input' || value.localName === 'uui-select');
+	value instanceof HTMLElement &&
+	(value.localName === 'uui-input' || value.localName === 'uui-select');
 const isLabelElement = (value: Element | null): value is LabelElement =>
 	value instanceof HTMLElement && value.localName === 'uui-button';
 const isConditionGroupOperator = (value: string): value is LoginRuleConditionGroupOperator =>
@@ -197,9 +201,24 @@ export class LeLøginScreenConditionEditor extends UmbElementMixin(HTMLElement) 
 				</uui-action-bar>
 			`;
 
-			this.#conditionList = getRequiredById(shadow, 'condition-list', isHtmlElement, 'condition list');
-			this.#groupSelect = getRequiredById(shadow, 'group-operator-select', isSelectElement, 'group operator select');
-			const addConditionButton = getRequiredById(shadow, 'add-condition-btn', isHtmlElement, 'add condition button');
+			this.#conditionList = getRequiredById(
+				shadow,
+				'condition-list',
+				isHtmlElement,
+				'condition list'
+			);
+			this.#groupSelect = getRequiredById(
+				shadow,
+				'group-operator-select',
+				isSelectElement,
+				'group operator select'
+			);
+			const addConditionButton = getRequiredById(
+				shadow,
+				'add-condition-btn',
+				isHtmlElement,
+				'add condition button'
+			);
 
 			this.#groupSelect.addEventListener('change', () => {
 				const value = this.#groupSelect?.value;
@@ -271,7 +290,12 @@ export class LeLøginScreenConditionEditor extends UmbElementMixin(HTMLElement) 
 		fieldSelect.options = this.#fieldOptions(condition.field);
 		fieldSelect.value = condition.field;
 
-		const operatorSelect = queryRequired(row, '.operator-select', isSelectElement, 'operator select');
+		const operatorSelect = queryRequired(
+			row,
+			'.operator-select',
+			isSelectElement,
+			'operator select'
+		);
 		operatorSelect.dataset.index = indexText;
 		operatorSelect.options = this.#operatorOptions(condition.field, condition.operator);
 		operatorSelect.value = condition.operator;
@@ -342,7 +366,13 @@ export class LeLøginScreenConditionEditor extends UmbElementMixin(HTMLElement) 
 			const newField = el.value;
 			if (!isLoginRuleField(newField)) return;
 			condition.field = newField;
-			if (this.#metadata !== null) condition.values = normaliseValuesForOperator(condition.operator, condition.field, condition.values, this.#metadata);
+			if (this.#metadata !== null)
+				condition.values = normaliseValuesForOperator(
+					condition.operator,
+					condition.field,
+					condition.values,
+					this.#metadata
+				);
 			this.#render();
 			this.#emitChange();
 		} else if (el.classList.contains('operator-select')) {
@@ -350,7 +380,13 @@ export class LeLøginScreenConditionEditor extends UmbElementMixin(HTMLElement) 
 			const newOperator = el.value;
 			if (!isLoginRuleConditionOperator(newOperator)) return;
 			condition.operator = newOperator;
-			if (this.#metadata !== null) condition.values = normaliseValuesForOperator(condition.operator, condition.field, condition.values, this.#metadata);
+			if (this.#metadata !== null)
+				condition.values = normaliseValuesForOperator(
+					condition.operator,
+					condition.field,
+					condition.values,
+					this.#metadata
+				);
 			this.#render();
 			this.#emitChange();
 		} else if (el.classList.contains('value-input')) {
@@ -373,9 +409,10 @@ export class LeLøginScreenConditionEditor extends UmbElementMixin(HTMLElement) 
 		const condition = this.#conditionGroup.conditions[index];
 		if (condition === undefined) return;
 		const value = el.value;
-		condition.values = this.#metadata !== null
-			? normaliseValuesForOperator(condition.operator, condition.field, [value], this.#metadata)
-			: [value];
+		condition.values =
+			this.#metadata !== null
+				? normaliseValuesForOperator(condition.operator, condition.field, [value], this.#metadata)
+				: [value];
 		this.#emitChange();
 	};
 
@@ -398,7 +435,8 @@ export class LeLøginScreenConditionEditor extends UmbElementMixin(HTMLElement) 
 		}
 		if (field === 'month') {
 			const monthNum = parseInt(value, 10);
-			if (monthNum >= 1 && monthNum <= 12) return this.localize.date(new Date(2023, monthNum - 1, 1), { month: 'long' });
+			if (monthNum >= 1 && monthNum <= 12)
+				return this.localize.date(new Date(2023, monthNum - 1, 1), { month: 'long' });
 		}
 		return value.charAt(0).toUpperCase() + value.slice(1);
 	}
@@ -502,9 +540,12 @@ export class LeLøginScreenConditionEditor extends UmbElementMixin(HTMLElement) 
 	 * @param selected - The currently selected operator value
 	 * @returns Array of select options for the operator
 	 */
-	#operatorOptions(field: LoginRuleField, selected: LoginRuleConditionOperator): Array<SelectOption> {
-		const ops: ReadonlyArray<LoginRuleConditionOperator> =
-			this.#metadata?.fields.get(field)?.operators ?? ['is', 'isNot'];
+	#operatorOptions(
+		field: LoginRuleField,
+		selected: LoginRuleConditionOperator
+	): Array<SelectOption> {
+		const ops: ReadonlyArray<LoginRuleConditionOperator> = this.#metadata?.fields.get(field)
+			?.operators ?? ['is', 'isNot'];
 		return [...ops].map((op) => ({
 			name: this.#operatorLabel(op),
 			value: op,

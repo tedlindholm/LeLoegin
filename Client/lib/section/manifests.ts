@@ -1,6 +1,4 @@
-import {
-	createLeLøginScreenManagePermissionCondition
-} from '../user-permissions/constants.js';
+import { createLeLøginScreenManagePermissionCondition } from '../user-permissions/constants.js';
 
 const SETTINGS_SECTION_ALIAS = 'Umb.Section.Settings';
 
@@ -11,7 +9,7 @@ const manageLeLøginScreenCondition = createLeLøginScreenManagePermissionCondit
 const menuManifest: UmbExtensionManifest = {
 	type: 'menu',
 	alias: LOGIN_SCREEN_SETTINGS_MENU_ALIAS,
-	name: 'Login Screen Settings Menu',
+	name: 'Login Screen Settings Menu'
 };
 
 const sidebarManifest: UmbExtensionManifest = {
@@ -22,15 +20,15 @@ const sidebarManifest: UmbExtensionManifest = {
 	weight: 200,
 	meta: {
 		label: 'Le Løgin',
-		menu: LOGIN_SCREEN_SETTINGS_MENU_ALIAS,
+		menu: LOGIN_SCREEN_SETTINGS_MENU_ALIAS
 	},
 	conditions: [
 		{
 			alias: 'Umb.Condition.SectionAlias',
-			match: SETTINGS_SECTION_ALIAS,
+			match: SETTINGS_SECTION_ALIAS
 		},
-		manageLeLøginScreenCondition,
-	],
+		manageLeLøginScreenCondition
+	]
 };
 
 const overviewMenuItem: UmbExtensionManifest = {
@@ -42,13 +40,13 @@ const overviewMenuItem: UmbExtensionManifest = {
 		label: '#loginScreen_overview',
 		icon: 'icon-dashboard',
 		entityType: 'login-screen-root',
-		menus: [LOGIN_SCREEN_SETTINGS_MENU_ALIAS],
+		menus: [LOGIN_SCREEN_SETTINGS_MENU_ALIAS]
 	},
-	conditions: [manageLeLøginScreenCondition],
+	conditions: [manageLeLøginScreenCondition]
 };
 
 export const manifests: Array<UmbExtensionManifest> = [
 	menuManifest,
 	sidebarManifest,
-	overviewMenuItem,
+	overviewMenuItem
 ];

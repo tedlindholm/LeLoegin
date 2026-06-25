@@ -4,7 +4,7 @@ import { UmbContextToken } from '@umbraco-cms/backoffice/context-api';
 import {
 	UmbBooleanState,
 	UmbObjectState,
-	UmbStringState,
+	UmbStringState
 } from '@umbraco-cms/backoffice/observable-api';
 import { UmbWorkspaceRouteManager } from '@umbraco-cms/backoffice/workspace';
 import type { UmbWorkspaceContext } from '@umbraco-cms/backoffice/workspace';
@@ -17,7 +17,7 @@ import type { LoginImageAssetKind } from '../models/index.js';
 import {
 	LOGIN_SCREEN_ASSET_ROOT_ENTITY_TYPE,
 	LOGIN_SCREEN_ASSET_UPLOAD_BACKGROUND_ENTITY_TYPE,
-	LOGIN_SCREEN_ASSET_UPLOAD_LOGO_ENTITY_TYPE,
+	LOGIN_SCREEN_ASSET_UPLOAD_LOGO_ENTITY_TYPE
 } from '../tree/types.js';
 
 const buildAssetEditWorkspacePath = (assetId: string): string =>
@@ -104,7 +104,7 @@ abstract class LeLøginScreenAssetUploadWorkspaceContextBase extends UmbContextB
 		this.#assetWorkspaceContext = new LeLøginScreenAssetWorkspaceContext(this);
 		this.#createUnderParent.setValue({
 			unique: null,
-			entityType: LOGIN_SCREEN_ASSET_ROOT_ENTITY_TYPE,
+			entityType: LOGIN_SCREEN_ASSET_ROOT_ENTITY_TYPE
 		});
 
 		this.routes.setRoutes([
@@ -118,8 +118,8 @@ abstract class LeLøginScreenAssetUploadWorkspaceContextBase extends UmbContextB
 					// UmbSubmitWorkspaceAction disables the Save button while unique is
 					// undefined; we don't have a server entity yet, so use a draft UUID.
 					this.#unique.setValue(globalThis.crypto.randomUUID());
-				},
-			},
+				}
+			}
 		]);
 	}
 
@@ -166,10 +166,7 @@ abstract class LeLøginScreenAssetUploadWorkspaceContextBase extends UmbContextB
 		const name = this.#name.getValue().trim();
 
 		if (file === undefined) {
-			await this.#notify(
-				'danger',
-				this.#localize.term('loginScreen_uploadSelectionInvalid')
-			);
+			await this.#notify('danger', this.#localize.term('loginScreen_uploadSelectionInvalid'));
 			return false;
 		}
 
@@ -200,7 +197,7 @@ export class LeLøginScreenAssetUploadBackgroundWorkspaceContext extends LeLøgi
 		super(host, {
 			kind: 'background',
 			entityType: LOGIN_SCREEN_ASSET_UPLOAD_BACKGROUND_ENTITY_TYPE,
-			workspaceAlias: BACKGROUND_WORKSPACE_ALIAS,
+			workspaceAlias: BACKGROUND_WORKSPACE_ALIAS
 		});
 	}
 }
@@ -210,7 +207,7 @@ export class LeLøginScreenAssetUploadLogoWorkspaceContext extends LeLøginScree
 		super(host, {
 			kind: 'logo',
 			entityType: LOGIN_SCREEN_ASSET_UPLOAD_LOGO_ENTITY_TYPE,
-			workspaceAlias: LOGO_WORKSPACE_ALIAS,
+			workspaceAlias: LOGO_WORKSPACE_ALIAS
 		});
 	}
 }

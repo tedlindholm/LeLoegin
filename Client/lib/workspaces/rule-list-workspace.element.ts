@@ -3,7 +3,10 @@ import { UmbElementMixin } from '@umbraco-cms/backoffice/element-api';
 import { escapeHTML } from '@umbraco-cms/backoffice/utils';
 import styles from './rule-list-workspace.element.css?inline';
 import type { LoginRule } from '../models/index.js';
-import { buildRuleWorkspacePath, LOGIN_SCREEN_RULE_CREATE_WORKSPACE_PATH } from '../rules/entity-types.js';
+import {
+	buildRuleWorkspacePath,
+	LOGIN_SCREEN_RULE_CREATE_WORKSPACE_PATH
+} from '../rules/entity-types.js';
 import { LeLøginScreenRuleWorkspaceContext } from '../rules/rule-workspace.context.js';
 import { cloneTemplate } from '../utils/template.js';
 
@@ -24,7 +27,8 @@ interface LabelElement extends HTMLElement {
 type ElementGuard<T extends Element> = (value: Element | null) => value is T;
 
 const isHtmlElement = (el: Element | null): el is HTMLElement => el instanceof HTMLElement;
-const isTemplateElement = (el: Element | null): el is HTMLTemplateElement => el instanceof HTMLTemplateElement;
+const isTemplateElement = (el: Element | null): el is HTMLTemplateElement =>
+	el instanceof HTMLTemplateElement;
 // Tag-name guards: a property-existence check is unreliable both for un-upgraded
 // template clones (the custom properties don't exist yet) AND for freshly upgraded
 // UUI elements where the initial property values may be undefined rather than the
@@ -87,8 +91,14 @@ export class LeLøginScreenRuleListWorkspace extends UmbElementMixin(HTMLElement
 			this.#rules = [...(rules ?? [])].sort((a, b) => a.priority - b.priority);
 			this.#render();
 		});
-		this.observe(this.#workspaceContext.isLoading, (loading) => { this.#isLoading = loading; this.#render(); });
-		this.observe(this.#workspaceContext.loadError, (err) => { this.#loadError = err; this.#render(); });
+		this.observe(this.#workspaceContext.isLoading, (loading) => {
+			this.#isLoading = loading;
+			this.#render();
+		});
+		this.observe(this.#workspaceContext.loadError, (err) => {
+			this.#loadError = err;
+			this.#render();
+		});
 	}
 
 	override connectedCallback() {
@@ -218,7 +228,8 @@ export class LeLøginScreenRuleListWorkspace extends UmbElementMixin(HTMLElement
 
 	#onDragOverDelegate = (e: Event) => {
 		const target = getEventTargetElement(e);
-		if (!(e instanceof DragEvent) || target === null || target.closest('.rule-row') === null) return;
+		if (!(e instanceof DragEvent) || target === null || target.closest('.rule-row') === null)
+			return;
 		e.preventDefault();
 		if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
 	};
@@ -235,7 +246,9 @@ export class LeLøginScreenRuleListWorkspace extends UmbElementMixin(HTMLElement
 		if (target === null) return;
 		const row = target.closest<HTMLElement>('.rule-row');
 		if (row === null) return;
-		this.shadowRoot?.querySelectorAll('.rule-row.drag-over').forEach((r) => r.classList.remove('drag-over'));
+		this.shadowRoot
+			?.querySelectorAll('.rule-row.drag-over')
+			.forEach((r) => r.classList.remove('drag-over'));
 		row.classList.add('drag-over');
 	};
 
@@ -257,7 +270,10 @@ export class LeLøginScreenRuleListWorkspace extends UmbElementMixin(HTMLElement
 		const id = handle.dataset.id;
 		if (id === undefined) return;
 		this.#dragSourceId = id;
-		if (event.dataTransfer) { event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', id); }
+		if (event.dataTransfer) {
+			event.dataTransfer.effectAllowed = 'move';
+			event.dataTransfer.setData('text/plain', id);
+		}
 		handle.closest<HTMLElement>('.rule-row')?.classList.add('dragging');
 	}
 
@@ -265,7 +281,8 @@ export class LeLøginScreenRuleListWorkspace extends UmbElementMixin(HTMLElement
 		event.preventDefault();
 		row.classList.remove('drag-over');
 		const targetId = row.dataset.id;
-		if (this.#dragSourceId === null || targetId === undefined || targetId === this.#dragSourceId) return;
+		if (this.#dragSourceId === null || targetId === undefined || targetId === this.#dragSourceId)
+			return;
 		const ids = this.#rules.map((r) => r.id);
 		const from = ids.indexOf(this.#dragSourceId);
 		const to = ids.indexOf(targetId);

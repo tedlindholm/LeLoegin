@@ -19,7 +19,7 @@ function queryRequired<T extends Element>(
 	root: ParentNode,
 	selector: string,
 	guard: ElementGuard<T>,
-	description: string,
+	description: string
 ): T {
 	const element = root.querySelector(selector);
 	if (!guard(element)) {
@@ -88,11 +88,14 @@ export class LeLøginScreenAssetGroupCardCollectionView extends UmbElementMixin(
 			name: item.name,
 			href: item.editHref,
 			src: item.thumbnailUrl,
-			alt: item.altText ?? item.name,
+			alt: item.altText ?? item.name
 		};
 		return card;
 	}
 }
 
-customElements.define('login-screen-asset-group-card-collection-view', LeLøginScreenAssetGroupCardCollectionView);
+customElements.define(
+	'login-screen-asset-group-card-collection-view',
+	LeLøginScreenAssetGroupCardCollectionView
+);
 export default LeLøginScreenAssetGroupCardCollectionView;

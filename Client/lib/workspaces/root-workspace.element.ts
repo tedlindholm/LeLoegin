@@ -20,7 +20,7 @@ function getRequiredById<T extends Element>(
 	root: ParentNode,
 	id: string,
 	guard: ElementGuard<T>,
-	description: string,
+	description: string
 ): T {
 	const element = root.querySelector(`#${id}`);
 	if (!guard(element)) {
@@ -63,11 +63,28 @@ export class LeLøginScreenRootWorkspace extends UmbElementMixin(HTMLElement) {
 		`;
 
 		this.#ruleMenu = getRequiredById(shadow, 'rule-menu', isHtmlElement, 'rule menu');
-		this.#selectorButton = getRequiredById(shadow, 'rule-selector-button', isHtmlElement, 'rule selector button');
-		this.#selectorLabel = getRequiredById(shadow, 'rule-selector-label', isHtmlElement, 'rule selector label');
-		this.#expandSymbol = getRequiredById(shadow, 'rule-expand', isHtmlElement, 'rule expand symbol');
+		this.#selectorButton = getRequiredById(
+			shadow,
+			'rule-selector-button',
+			isHtmlElement,
+			'rule selector button'
+		);
+		this.#selectorLabel = getRequiredById(
+			shadow,
+			'rule-selector-label',
+			isHtmlElement,
+			'rule selector label'
+		);
+		this.#expandSymbol = getRequiredById(
+			shadow,
+			'rule-expand',
+			isHtmlElement,
+			'rule expand symbol'
+		);
 
-		shadow.getElementById('le-løgin-rule-popover')?.addEventListener('toggle', this.#onPopoverToggle);
+		shadow
+			.getElementById('le-løgin-rule-popover')
+			?.addEventListener('toggle', this.#onPopoverToggle);
 		this.#ruleMenu.addEventListener('click', this.#onRuleSelect);
 	}
 
@@ -81,8 +98,10 @@ export class LeLøginScreenRootWorkspace extends UmbElementMixin(HTMLElement) {
 		const { data } = await this.#ruleRepository.requestItems();
 		this.#rules = [...(data ?? [])].sort((a, b) => a.priority - b.priority);
 		// If the currently selected rule was deleted, fall back to "Active screen".
-		if (this.#selectedRuleId !== undefined &&
-			this.#rules.find((r) => r.id === this.#selectedRuleId) === undefined) {
+		if (
+			this.#selectedRuleId !== undefined &&
+			this.#rules.find((r) => r.id === this.#selectedRuleId) === undefined
+		) {
 			this.#selectedRuleId = undefined;
 		}
 		this.#render();
@@ -111,10 +130,14 @@ export class LeLøginScreenRootWorkspace extends UmbElementMixin(HTMLElement) {
 		}
 
 		const menuItems = [
-			this.#buildRuleMenuItem(this.#activeScreenLabel(), undefined, this.#selectedRuleId === undefined),
-			...this.#rules.map((rule) =>
-				this.#buildRuleMenuItem(rule.name, rule.id, rule.id === this.#selectedRuleId),
+			this.#buildRuleMenuItem(
+				this.#activeScreenLabel(),
+				undefined,
+				this.#selectedRuleId === undefined
 			),
+			...this.#rules.map((rule) =>
+				this.#buildRuleMenuItem(rule.name, rule.id, rule.id === this.#selectedRuleId)
+			)
 		];
 		this.#ruleMenu.replaceChildren(...menuItems);
 

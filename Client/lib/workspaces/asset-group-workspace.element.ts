@@ -4,7 +4,7 @@ import { escapeHTML } from '@umbraco-cms/backoffice/utils';
 import styles from './asset-group-workspace.element.css?inline';
 import {
 	UMB_LOGIN_SCREEN_ASSET_GROUP_WORKSPACE_CONTEXT,
-	type LeLøginScreenAssetGroupWorkspaceContext,
+	type LeLøginScreenAssetGroupWorkspaceContext
 } from './asset-group-workspace.context.js';
 
 const COLLECTION_ALIAS = 'LeLøgin.Collection.AssetGroup';

@@ -4,7 +4,7 @@ import type {
 	FocalPoint as ApiFocalPoint,
 	LoginImageAsset as ApiLoginImageAsset,
 	LoginRuleConditionGroupModel,
-	SaveRuleRequest,
+	SaveRuleRequest
 } from '../api/index.js';
 import type {
 	ActiveLeLøginScreenResponse,
@@ -18,7 +18,7 @@ import type {
 	LoginRuleCondition,
 	LoginRuleConditionGroup,
 	LoginRuleConditionOperator,
-	LoginRuleField,
+	LoginRuleField
 } from './index.js';
 import {
 	conditionField,
@@ -26,7 +26,7 @@ import {
 	conditionOperator,
 	type ApiLoginRuleConditionGroupInput,
 	type ApiLoginRuleConditionInput,
-	type ApiLoginRuleResponseInput,
+	type ApiLoginRuleResponseInput
 } from './api-rule-contract.js';
 
 // The C# enum was lowercase on the wire in earlier versions; the adapter accepts both
@@ -66,7 +66,9 @@ export const toApiLoginImageAssetKind = (kind: LoginImageAssetKind): ApiLoginIma
 	}
 };
 
-const mapApiLoginRuleConditionGroup = (conditionGroup: ApiLoginRuleConditionGroupInput): LoginRuleConditionGroup => ({
+const mapApiLoginRuleConditionGroup = (
+	conditionGroup: ApiLoginRuleConditionGroupInput
+): LoginRuleConditionGroup => ({
 	operator: conditionGroupOperator.fromWire(conditionGroup.operator),
 	conditions: conditionGroup.conditions.map(mapApiLoginRuleCondition)
 });
@@ -78,7 +80,9 @@ const mapApiLoginRuleCondition = (condition: ApiLoginRuleConditionInput): LoginR
 	values: [...condition.values]
 });
 
-const toSaveRuleConditionGroup = (conditionGroup: LoginRuleConditionGroup): LoginRuleConditionGroupModel => ({
+const toSaveRuleConditionGroup = (
+	conditionGroup: LoginRuleConditionGroup
+): LoginRuleConditionGroupModel => ({
 	operator: conditionGroupOperator.toWire(conditionGroup.operator),
 	conditions: conditionGroup.conditions.map((condition) => ({
 		id: condition.id,
@@ -103,9 +107,10 @@ export const mapApiLoginAsset = (asset: ApiLoginImageAssetInput): LoginImageAsse
 	// Preserve zoom=1 from the wire so round-trips don't lose information; downstream
 	// rendering and persistence both treat 1 as a no-op anyway. Non-finite values get
 	// stripped so a corrupted store record can't poison the editor.
-	const zoom = typeof asset.zoom === 'number' && Number.isFinite(asset.zoom) && asset.zoom >= 1
-		? asset.zoom
-		: undefined;
+	const zoom =
+		typeof asset.zoom === 'number' && Number.isFinite(asset.zoom) && asset.zoom >= 1
+			? asset.zoom
+			: undefined;
 	return {
 		id: asset.id,
 		name: asset.name,
@@ -162,7 +167,9 @@ const readOptionalString = (value: unknown, fieldName: string): string | undefin
 const readOptionalFocalPoint = (value: unknown, fieldName: string): FocalPoint | undefined => {
 	if (value === null || value === undefined) return undefined;
 	if (!isObject(value) || typeof value.left !== 'number' || typeof value.top !== 'number') {
-		throw new Error(`Expected '${fieldName}' to be an object with numeric 'left' and 'top' fields when present.`);
+		throw new Error(
+			`Expected '${fieldName}' to be an object with numeric 'left' and 'top' fields when present.`
+		);
 	}
 	return { left: value.left, top: value.top };
 };
@@ -170,7 +177,9 @@ const readOptionalFocalPoint = (value: unknown, fieldName: string): FocalPoint |
 const readOptionalZoom = (value: unknown, fieldName: string): number | undefined => {
 	if (value === null || value === undefined) return undefined;
 	if (typeof value !== 'number' || !Number.isFinite(value) || value < 1) {
-		throw new Error(`Expected '${fieldName}' to be a finite number greater than or equal to 1 when present.`);
+		throw new Error(
+			`Expected '${fieldName}' to be a finite number greater than or equal to 1 when present.`
+		);
 	}
 	return value;
 };
@@ -219,7 +228,10 @@ const parseConditionFieldMetadata = (meta: unknown): ConditionFieldMetadata => {
 	}
 
 	const operators = expectStringArray(meta.operators, "condition field metadata 'operators'");
-	const defaultValue = expectStringOrNumber(meta.defaultValue, "condition field metadata 'defaultValue'");
+	const defaultValue = expectStringOrNumber(
+		meta.defaultValue,
+		"condition field metadata 'defaultValue'"
+	);
 	const allowedValues = expectOptionalStringOrNumberArray(
 		meta.allowedValues,
 		"condition field metadata 'allowedValues'"
@@ -250,7 +262,9 @@ export const toConditionMetadata = (api: ApiConditionMetadata): ConditionMetadat
 	return { operators, fields };
 };
 
-export const parseActiveLeLøginScreenResponse = (response: unknown): ActiveLeLøginScreenResponse => {
+export const parseActiveLeLøginScreenResponse = (
+	response: unknown
+): ActiveLeLøginScreenResponse => {
 	if (!isObject(response)) {
 		throw new Error('Expected the active login screen response to be an object.');
 	}

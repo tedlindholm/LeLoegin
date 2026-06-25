@@ -1,12 +1,6 @@
 export type LoginRuleField = 'weekday' | 'month';
 
-export type LoginRuleConditionOperator =
-	| 'is'
-	| 'isNot'
-	| 'in'
-	| 'notIn'
-	| 'between'
-	| 'notBetween';
+export type LoginRuleConditionOperator = 'is' | 'isNot' | 'in' | 'notIn' | 'between' | 'notBetween';
 
 export type LoginRuleConditionGroupOperator = 'all' | 'any';
 export type LoginRuleConditionValue = string | number;
@@ -87,7 +81,9 @@ export const normaliseValuesForOperator = (
 	}
 };
 
-export const createEmptyRuleConditionGroup = (metadata: ConditionMetadata): LoginRuleConditionGroup => {
+export const createEmptyRuleConditionGroup = (
+	metadata: ConditionMetadata
+): LoginRuleConditionGroup => {
 	const field: LoginRuleField = 'weekday';
 	const operator: LoginRuleConditionOperator = 'is';
 	const defaultValue = metadata.fields.get(field)?.defaultValue ?? 'monday';

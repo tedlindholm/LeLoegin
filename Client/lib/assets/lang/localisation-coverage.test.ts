@@ -54,9 +54,7 @@ describe('Le Løgin localisations', () => {
 			Object.keys(englishDictionary.loginScreen).map((key) => `loginScreen_${key}`)
 		);
 
-		const missingKeys = [...referencedKeys]
-			.filter((key) => !availableKeys.has(key))
-			.sort();
+		const missingKeys = [...referencedKeys].filter((key) => !availableKeys.has(key)).sort();
 
 		expect(missingKeys).toEqual([]);
 	});

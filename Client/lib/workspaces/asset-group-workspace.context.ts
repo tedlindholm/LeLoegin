@@ -9,23 +9,25 @@ import type { LoginImageAsset, LoginImageAssetKind } from '../models/index.js';
 import {
 	LOGIN_SCREEN_ASSET_GROUP_ENTITY_TYPE,
 	LOGIN_SCREEN_ASSET_UPLOAD_BACKGROUND_ENTITY_TYPE,
-	LOGIN_SCREEN_ASSET_UPLOAD_LOGO_ENTITY_TYPE,
+	LOGIN_SCREEN_ASSET_UPLOAD_LOGO_ENTITY_TYPE
 } from '../tree/types.js';
 
 const GROUP_ID_TO_KIND: Record<string, LoginImageAssetKind> = {
 	'login-screen-assets-welcome': 'background',
-	'login-screen-assets-logos': 'logo',
+	'login-screen-assets-logos': 'logo'
 };
 
 const WORKSPACE_ALIAS = 'LeLøgin.Workspace.AssetGroup';
 
-export const UMB_LOGIN_SCREEN_ASSET_GROUP_WORKSPACE_CONTEXT =
-	new UmbContextToken<UmbWorkspaceContext, LeLøginScreenAssetGroupWorkspaceContext>(
-		'UmbWorkspaceContext',
-		undefined,
-		(context): context is LeLøginScreenAssetGroupWorkspaceContext =>
-			context.getEntityType?.() === LOGIN_SCREEN_ASSET_GROUP_ENTITY_TYPE
-	);
+export const UMB_LOGIN_SCREEN_ASSET_GROUP_WORKSPACE_CONTEXT = new UmbContextToken<
+	UmbWorkspaceContext,
+	LeLøginScreenAssetGroupWorkspaceContext
+>(
+	'UmbWorkspaceContext',
+	undefined,
+	(context): context is LeLøginScreenAssetGroupWorkspaceContext =>
+		context.getEntityType?.() === LOGIN_SCREEN_ASSET_GROUP_ENTITY_TYPE
+);
 
 export class LeLøginScreenAssetGroupWorkspaceContext extends UmbContextBase {
 	readonly workspaceAlias = WORKSPACE_ALIAS;
@@ -55,8 +57,8 @@ export class LeLøginScreenAssetGroupWorkspaceContext extends UmbContextBase {
 					const kind = GROUP_ID_TO_KIND[unique ?? ''];
 					this.#kind.setValue(kind);
 					await this.#loadAssets(kind);
-				},
-			},
+				}
+			}
 		]);
 	}
 

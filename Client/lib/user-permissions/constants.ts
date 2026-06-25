@@ -10,7 +10,7 @@ export const LOGIN_SCREEN_MANAGE_PERMISSION_VERB = 'LeLøgin.Manage';
  *
  * @example
  * ```typescript
-	 * const condition = createLeLøginScreenManagePermissionCondition();
+ * const condition = createLeLøginScreenManagePermissionCondition();
  * // Use in manifest conditions array
  * ```
  */

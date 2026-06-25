@@ -7,7 +7,8 @@ console.log(chalk.green('Generating OpenAPI client...'));
 
 const DEFAULT_SWAGGER_URL = 'https://localhost:44312/umbraco/swagger/le-løgin-api-v1/swagger.json';
 const isCi = process.env.CI === 'true';
-const swaggerUrl = process.argv[2] ?? process.env.OPENAPI_URL ?? (isCi ? undefined : DEFAULT_SWAGGER_URL);
+const swaggerUrl =
+	process.argv[2] ?? process.env.OPENAPI_URL ?? (isCi ? undefined : DEFAULT_SWAGGER_URL);
 if (swaggerUrl === undefined) {
 	console.error(chalk.red('ERROR: Missing URL to OpenAPI spec.'));
 	console.error(
@@ -23,13 +24,8 @@ const outputDirectory = 'lib/api';
 const postGenerationTypeFixes = [
 	{
 		filePath: path.join(outputDirectory, 'client/client.gen.ts'),
-		replacements: [
-			[
-				'      // TODO: we probably want to return error and improve types\n',
-				''
-			],
-		],
-	},
+		replacements: [['      // TODO: we probably want to return error and improve types\n', '']]
+	}
 ];
 
 const applyPostGenerationTypeFixes = async () => {

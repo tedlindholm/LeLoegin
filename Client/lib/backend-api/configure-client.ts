@@ -9,9 +9,7 @@ export async function configureLeLøginScreenClient(host: UmbElement) {
 	const authContext = await host.getContext(UMB_AUTH_CONTEXT, { preventTimeout: true });
 
 	if (!authContext) {
-		throw new Error(
-			'Le Løgin requires UMB_AUTH_CONTEXT to configure the generated API client.'
-		);
+		throw new Error('Le Løgin requires UMB_AUTH_CONTEXT to configure the generated API client.');
 	}
 
 	authContext.configureClient(client);

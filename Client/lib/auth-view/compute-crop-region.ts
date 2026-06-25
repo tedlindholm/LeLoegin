@@ -36,9 +36,8 @@ export const computeCropRegion = (
 	focalPoint: FocalPoint | undefined,
 	zoom: number | undefined
 ): CropRegion => {
-	const z = typeof zoom === 'number' && Number.isFinite(zoom) && zoom > ZOOM_NOOP_THRESHOLD
-		? zoom
-		: 1;
+	const z =
+		typeof zoom === 'number' && Number.isFinite(zoom) && zoom > ZOOM_NOOP_THRESHOLD ? zoom : 1;
 	if (z === 1) {
 		return { x1: 0, y1: 0, x2: 1, y2: 1 };
 	}

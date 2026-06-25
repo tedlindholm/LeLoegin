@@ -20,17 +20,17 @@ import type { LoginImageAssetKind } from '../models/index.js';
 
 const ASSET_KIND_ICON: Record<LoginImageAssetKind, string> = {
 	background: 'icon-picture',
-	logo: 'icon-tag',
+	logo: 'icon-tag'
 };
 
 const GROUP_ID: Record<LoginImageAssetKind, string> = {
 	background: 'login-screen-assets-welcome',
-	logo: 'login-screen-assets-logos',
+	logo: 'login-screen-assets-logos'
 };
 
 const GROUP_NAME: Record<LoginImageAssetKind, string> = {
 	background: '#loginScreen_assetsWelcomeImages',
-	logo: '#loginScreen_assetsLogos',
+	logo: '#loginScreen_assetsLogos'
 };
 
 const KIND_BY_GROUP_ID = Object.fromEntries(
@@ -61,21 +61,25 @@ const toGroupServerItem = (kind: LoginImageAssetKind): AssetTreeGroupServerItem 
 	id: GROUP_ID[kind],
 	name: GROUP_NAME[kind],
 	hasChildren: true,
-	groupKind: kind,
+	groupKind: kind
 });
 
-const toLeafServerItem = (asset: { id: string; name: string; kind: LoginImageAssetKind }): AssetTreeLeafServerItem => ({
+const toLeafServerItem = (asset: {
+	id: string;
+	name: string;
+	kind: LoginImageAssetKind;
+}): AssetTreeLeafServerItem => ({
 	isGroup: false,
 	id: asset.id,
 	name: asset.name,
 	hasChildren: false,
 	icon: ASSET_KIND_ICON[asset.kind],
-	assetKind: asset.kind,
+	assetKind: asset.kind
 });
 
 const GROUP_ENTITY_TYPE = {
 	background: LOGIN_SCREEN_ASSET_GROUP_BACKGROUND_ENTITY_TYPE,
-	logo: LOGIN_SCREEN_ASSET_GROUP_LOGO_ENTITY_TYPE,
+	logo: LOGIN_SCREEN_ASSET_GROUP_LOGO_ENTITY_TYPE
 } as const;
 
 const toTreeItemModel = (item: AssetTreeServerItem): LeLøginScreenAnyAssetTreeItemModel => {
@@ -87,7 +91,7 @@ const toTreeItemModel = (item: AssetTreeServerItem): LeLøginScreenAnyAssetTreeI
 			entityType: GROUP_ENTITY_TYPE[item.groupKind],
 			hasChildren: true,
 			isFolder: true,
-			icon: ASSET_KIND_ICON[item.groupKind],
+			icon: ASSET_KIND_ICON[item.groupKind]
 		};
 	}
 	return {
@@ -97,7 +101,7 @@ const toTreeItemModel = (item: AssetTreeServerItem): LeLøginScreenAnyAssetTreeI
 		entityType: LOGIN_SCREEN_ASSET_ENTITY_TYPE,
 		hasChildren: false,
 		isFolder: false,
-		icon: item.icon,
+		icon: item.icon
 	};
 };
 
@@ -120,7 +124,7 @@ const buildDataSourceConfig = (assetRepository: LeLøginScreenAssetRepository) =
 			await fetchLeaves();
 			const items: AssetTreeServerItem[] = [
 				toGroupServerItem('background'),
-				toGroupServerItem('logo'),
+				toGroupServerItem('logo')
 			];
 			return { data: { items, total: items.length }, error: undefined };
 		},
@@ -151,7 +155,7 @@ const buildDataSourceConfig = (assetRepository: LeLøginScreenAssetRepository) =
 			return { data: [toGroupServerItem(asset.assetKind)] };
 		},
 
-		mapper: toTreeItemModel,
+		mapper: toTreeItemModel
 	};
 };
 

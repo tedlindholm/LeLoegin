@@ -1,7 +1,7 @@
 import type { ManifestWorkspace } from '@umbraco-cms/backoffice/workspace';
 import {
 	UMB_WORKSPACE_CONDITION_ALIAS,
-	UmbSubmitWorkspaceAction,
+	UmbSubmitWorkspaceAction
 } from '@umbraco-cms/backoffice/workspace';
 import {
 	LOGIN_SCREEN_ASSET_ENTITY_TYPE,
@@ -10,7 +10,7 @@ import {
 	LOGIN_SCREEN_ASSET_GROUP_LOGO_ENTITY_TYPE,
 	LOGIN_SCREEN_ASSET_ROOT_ENTITY_TYPE,
 	LOGIN_SCREEN_ASSET_UPLOAD_BACKGROUND_ENTITY_TYPE,
-	LOGIN_SCREEN_ASSET_UPLOAD_LOGO_ENTITY_TYPE,
+	LOGIN_SCREEN_ASSET_UPLOAD_LOGO_ENTITY_TYPE
 } from '../tree/types.js';
 import {
 	LOGIN_SCREEN_RULE_ENTITY_TYPE,
@@ -20,8 +20,7 @@ import {
 export const LOGIN_SCREEN_ASSET_WORKSPACE_ALIAS = 'LeLøgin.Workspace.Asset';
 export const LOGIN_SCREEN_ASSET_UPLOAD_BACKGROUND_WORKSPACE_ALIAS =
 	'LeLøgin.Workspace.AssetUpload.Background';
-export const LOGIN_SCREEN_ASSET_UPLOAD_LOGO_WORKSPACE_ALIAS =
-	'LeLøgin.Workspace.AssetUpload.Logo';
+export const LOGIN_SCREEN_ASSET_UPLOAD_LOGO_WORKSPACE_ALIAS = 'LeLøgin.Workspace.AssetUpload.Logo';
 
 const rootWorkspaceManifest = {
 	type: 'workspace',
@@ -29,8 +28,8 @@ const rootWorkspaceManifest = {
 	name: 'Login Screen Root Workspace',
 	element: () => import('./root-workspace.element.js'),
 	meta: {
-		entityType: 'login-screen-root',
-	},
+		entityType: 'login-screen-root'
+	}
 } satisfies ManifestWorkspace;
 
 const assetRootWorkspaceManifest = {
@@ -39,8 +38,8 @@ const assetRootWorkspaceManifest = {
 	name: 'Login Screen Asset Root Workspace',
 	element: () => import('./asset-root-workspace.element.js'),
 	meta: {
-		entityType: LOGIN_SCREEN_ASSET_ROOT_ENTITY_TYPE,
-	},
+		entityType: LOGIN_SCREEN_ASSET_ROOT_ENTITY_TYPE
+	}
 } satisfies ManifestWorkspace;
 
 const assetGroupWorkspaceManifest = {
@@ -50,8 +49,8 @@ const assetGroupWorkspaceManifest = {
 	name: 'Login Screen Asset Group Workspace',
 	api: () => import('./asset-group-workspace.context.js'),
 	meta: {
-		entityType: LOGIN_SCREEN_ASSET_GROUP_ENTITY_TYPE,
-	},
+		entityType: LOGIN_SCREEN_ASSET_GROUP_ENTITY_TYPE
+	}
 } satisfies ManifestWorkspace;
 
 const assetGroupBackgroundWorkspaceManifest = {
@@ -61,8 +60,8 @@ const assetGroupBackgroundWorkspaceManifest = {
 	name: 'Login Screen Background Asset Group Workspace',
 	api: () => import('./asset-group-workspace.context.js'),
 	meta: {
-		entityType: LOGIN_SCREEN_ASSET_GROUP_BACKGROUND_ENTITY_TYPE,
-	},
+		entityType: LOGIN_SCREEN_ASSET_GROUP_BACKGROUND_ENTITY_TYPE
+	}
 } satisfies ManifestWorkspace;
 
 const assetGroupLogoWorkspaceManifest = {
@@ -72,8 +71,8 @@ const assetGroupLogoWorkspaceManifest = {
 	name: 'Login Screen Logo Asset Group Workspace',
 	api: () => import('./asset-group-workspace.context.js'),
 	meta: {
-		entityType: LOGIN_SCREEN_ASSET_GROUP_LOGO_ENTITY_TYPE,
-	},
+		entityType: LOGIN_SCREEN_ASSET_GROUP_LOGO_ENTITY_TYPE
+	}
 } satisfies ManifestWorkspace;
 
 const assetWorkspaceManifest = {
@@ -83,8 +82,8 @@ const assetWorkspaceManifest = {
 	name: 'Login Screen Asset Workspace',
 	api: () => import('./asset-editor-workspace.context.js'),
 	meta: {
-		entityType: LOGIN_SCREEN_ASSET_ENTITY_TYPE,
-	},
+		entityType: LOGIN_SCREEN_ASSET_ENTITY_TYPE
+	}
 } satisfies ManifestWorkspace;
 
 const assetWorkspaceSaveActionManifest = {
@@ -96,14 +95,14 @@ const assetWorkspaceSaveActionManifest = {
 	meta: {
 		label: '#buttons_save',
 		look: 'primary',
-		color: 'positive',
+		color: 'positive'
 	},
 	conditions: [
 		{
 			alias: UMB_WORKSPACE_CONDITION_ALIAS,
-			match: LOGIN_SCREEN_ASSET_WORKSPACE_ALIAS,
-		},
-	],
+			match: LOGIN_SCREEN_ASSET_WORKSPACE_ALIAS
+		}
+	]
 };
 
 const assetUploadBackgroundWorkspaceManifest = {
@@ -113,11 +112,11 @@ const assetUploadBackgroundWorkspaceManifest = {
 	name: 'Login Screen Background Asset Upload Workspace',
 	api: () =>
 		import('./asset-upload-workspace.context.js').then((module) => ({
-			api: module.LeLøginScreenAssetUploadBackgroundWorkspaceContext,
+			api: module.LeLøginScreenAssetUploadBackgroundWorkspaceContext
 		})),
 	meta: {
-		entityType: LOGIN_SCREEN_ASSET_UPLOAD_BACKGROUND_ENTITY_TYPE,
-	},
+		entityType: LOGIN_SCREEN_ASSET_UPLOAD_BACKGROUND_ENTITY_TYPE
+	}
 } satisfies ManifestWorkspace;
 
 const assetUploadLogoWorkspaceManifest = {
@@ -127,11 +126,11 @@ const assetUploadLogoWorkspaceManifest = {
 	name: 'Login Screen Logo Asset Upload Workspace',
 	api: () =>
 		import('./asset-upload-workspace.context.js').then((module) => ({
-			api: module.LeLøginScreenAssetUploadLogoWorkspaceContext,
+			api: module.LeLøginScreenAssetUploadLogoWorkspaceContext
 		})),
 	meta: {
-		entityType: LOGIN_SCREEN_ASSET_UPLOAD_LOGO_ENTITY_TYPE,
-	},
+		entityType: LOGIN_SCREEN_ASSET_UPLOAD_LOGO_ENTITY_TYPE
+	}
 } satisfies ManifestWorkspace;
 
 const assetUploadBackgroundSaveActionManifest = {
@@ -143,14 +142,14 @@ const assetUploadBackgroundSaveActionManifest = {
 	meta: {
 		label: '#buttons_save',
 		look: 'primary',
-		color: 'positive',
+		color: 'positive'
 	},
 	conditions: [
 		{
 			alias: UMB_WORKSPACE_CONDITION_ALIAS,
-			match: LOGIN_SCREEN_ASSET_UPLOAD_BACKGROUND_WORKSPACE_ALIAS,
-		},
-	],
+			match: LOGIN_SCREEN_ASSET_UPLOAD_BACKGROUND_WORKSPACE_ALIAS
+		}
+	]
 };
 
 const assetUploadLogoSaveActionManifest = {
@@ -162,14 +161,14 @@ const assetUploadLogoSaveActionManifest = {
 	meta: {
 		label: '#buttons_save',
 		look: 'primary',
-		color: 'positive',
+		color: 'positive'
 	},
 	conditions: [
 		{
 			alias: UMB_WORKSPACE_CONDITION_ALIAS,
-			match: LOGIN_SCREEN_ASSET_UPLOAD_LOGO_WORKSPACE_ALIAS,
-		},
-	],
+			match: LOGIN_SCREEN_ASSET_UPLOAD_LOGO_WORKSPACE_ALIAS
+		}
+	]
 };
 
 const ruleListWorkspaceManifest = {
@@ -178,8 +177,8 @@ const ruleListWorkspaceManifest = {
 	name: 'Login Screen Rule List Workspace',
 	element: () => import('./rule-list-workspace.element.js'),
 	meta: {
-		entityType: LOGIN_SCREEN_RULE_LIST_ENTITY_TYPE,
-	},
+		entityType: LOGIN_SCREEN_RULE_LIST_ENTITY_TYPE
+	}
 } satisfies ManifestWorkspace;
 
 const LOGIN_SCREEN_RULE_WORKSPACE_ALIAS = 'LeLøgin.Workspace.Rule';
@@ -191,8 +190,8 @@ const ruleWorkspaceManifest = {
 	name: 'Login Screen Rule Workspace',
 	api: () => import('./rule-editor-workspace.context.js'),
 	meta: {
-		entityType: LOGIN_SCREEN_RULE_ENTITY_TYPE,
-	},
+		entityType: LOGIN_SCREEN_RULE_ENTITY_TYPE
+	}
 } satisfies ManifestWorkspace;
 
 const ruleWorkspaceSaveActionManifest = {
@@ -204,28 +203,28 @@ const ruleWorkspaceSaveActionManifest = {
 	meta: {
 		label: '#buttons_save',
 		look: 'primary',
-		color: 'positive',
+		color: 'positive'
 	},
 	conditions: [
 		{
 			alias: UMB_WORKSPACE_CONDITION_ALIAS,
-			match: LOGIN_SCREEN_RULE_WORKSPACE_ALIAS,
-		},
-	],
+			match: LOGIN_SCREEN_RULE_WORKSPACE_ALIAS
+		}
+	]
 };
 
 const logoPickerModalManifest = {
 	type: 'modal',
 	alias: 'LeLøgin.Modal.LogoPicker',
 	name: 'Login Screen Logo Picker Modal',
-	element: () => import('./logo-picker-modal.element.js'),
+	element: () => import('./logo-picker-modal.element.js')
 };
 
 const createAssetModalManifest = {
 	type: 'modal',
 	alias: 'LeLøgin.Modal.CreateAsset',
 	name: 'Login Screen Create Asset Modal',
-	element: () => import('./create-asset-modal.element.js'),
+	element: () => import('./create-asset-modal.element.js')
 };
 
 const imageUploadPreviewManifest = {
@@ -234,14 +233,14 @@ const imageUploadPreviewManifest = {
 	name: 'Login Screen Image Upload Preview',
 	weight: 100,
 	element: () => import('./image-upload-preview.element.js'),
-	forMimeTypes: ['image/*'],
+	forMimeTypes: ['image/*']
 } as unknown as UmbExtensionManifest;
 
 const assetGroupCollectionRepositoryManifest: UmbExtensionManifest = {
 	type: 'repository',
 	alias: 'LeLøgin.Repository.AssetGroupCollection',
 	name: 'Login Screen Asset Group Collection Repository',
-	api: () => import('./asset-group-collection.repository.js'),
+	api: () => import('./asset-group-collection.repository.js')
 };
 
 const assetGroupCollectionManifest: UmbExtensionManifest = {
@@ -250,8 +249,8 @@ const assetGroupCollectionManifest: UmbExtensionManifest = {
 	alias: 'LeLøgin.Collection.AssetGroup',
 	name: 'Login Screen Asset Group Collection',
 	meta: {
-		repositoryAlias: assetGroupCollectionRepositoryManifest.alias,
-	},
+		repositoryAlias: assetGroupCollectionRepositoryManifest.alias
+	}
 };
 
 const assetGroupCardCollectionViewManifest: UmbExtensionManifest = {
@@ -262,14 +261,14 @@ const assetGroupCardCollectionViewManifest: UmbExtensionManifest = {
 	meta: {
 		label: 'Grid',
 		icon: 'icon-grid',
-		pathName: 'grid',
+		pathName: 'grid'
 	},
 	conditions: [
 		{
 			alias: 'Umb.Condition.CollectionAlias',
-			match: assetGroupCollectionManifest.alias,
-		},
-	],
+			match: assetGroupCollectionManifest.alias
+		}
+	]
 };
 
 export const manifests = [
@@ -292,5 +291,5 @@ export const manifests = [
 	assetUploadLogoSaveActionManifest,
 	ruleListWorkspaceManifest,
 	ruleWorkspaceManifest,
-	ruleWorkspaceSaveActionManifest,
+	ruleWorkspaceSaveActionManifest
 ];

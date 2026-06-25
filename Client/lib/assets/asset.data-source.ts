@@ -36,7 +36,7 @@ export class LeLøginScreenAssetDataSource extends UmbControllerBase {
 		const { data, error } = await tryExecute(this, V1.getUmbracoLeLøginApiV1Assets());
 		return {
 			data: data === undefined ? undefined : mapApiLoginAssets(data),
-			error,
+			error
 		};
 	}
 
@@ -62,14 +62,14 @@ export class LeLøginScreenAssetDataSource extends UmbControllerBase {
 					file,
 					name,
 					kind: toApiLoginImageAssetKind(kind),
-					altText,
-				},
+					altText
+				}
 			})
 		);
 
 		return {
 			data: data === undefined ? undefined : mapApiLoginAsset(data),
-			error,
+			error
 		};
 	}
 
@@ -88,13 +88,13 @@ export class LeLøginScreenAssetDataSource extends UmbControllerBase {
 		const { data, error } = await tryExecute(
 			this,
 			V1.getUmbracoLeLøginApiV1AssetsById({
-				path: { id: assetId },
+				path: { id: assetId }
 			})
 		);
 
 		return {
 			data: data === undefined ? undefined : mapApiLoginAsset(data),
-			error,
+			error
 		};
 	}
 
@@ -151,20 +151,20 @@ export class LeLøginScreenAssetDataSource extends UmbControllerBase {
 			...(update.greetingText === undefined ? {} : { greetingText: update.greetingText }),
 			...(update.logoAssetId === undefined ? {} : { logoAssetId: update.logoAssetId }),
 			...(update.focalPoint === undefined ? {} : { focalPoint: update.focalPoint }),
-			...(update.zoom === undefined ? {} : { zoom: update.zoom }),
+			...(update.zoom === undefined ? {} : { zoom: update.zoom })
 		};
 		const { error } = await tryExecute(
 			this,
 			V1.putUmbracoLeLøginApiV1AssetsById({
 				path: { id: assetId },
-				body,
+				body
 			})
 		);
 
 		if (error) {
 			return {
 				data: undefined,
-				error,
+				error
 			};
 		}
 
@@ -189,14 +189,13 @@ export class LeLøginScreenAssetDataSource extends UmbControllerBase {
 		const { error } = await tryExecute(
 			this,
 			V1.deleteUmbracoLeLøginApiV1AssetsById({
-				path: { id: assetId },
+				path: { id: assetId }
 			})
 		);
 
 		return {
 			data: error ? false : true,
-			error,
+			error
 		};
 	}
-
 }

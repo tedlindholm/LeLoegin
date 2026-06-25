@@ -9,7 +9,7 @@ import {
 	measureGreetingPosition,
 	computeFocalPointFromDrag,
 	ZOOM_MIN,
-	ZOOM_MAX,
+	ZOOM_MAX
 } from './asset-workspace.helpers.js';
 
 const ZOOM_STEP = 1.1;
@@ -35,7 +35,10 @@ const isValueElement = (value: Element | null): value is ValueElement =>
 
 // Spreadable optional field — collapses the noisy `...(x === undefined ? {} : { foo: x })`
 // pattern at the call site so the customisation object reads like a flat record.
-const optional = <K extends string, V>(key: K, value: V | undefined): Record<K, V> | Record<string, never> =>
+const optional = <K extends string, V>(
+	key: K,
+	value: V | undefined
+): Record<K, V> | Record<string, never> =>
 	value === undefined ? {} : ({ [key]: value } as Record<K, V>);
 
 function getRequiredById(root: ShadowRoot, id: string): HTMLElement {
@@ -119,12 +122,24 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 			this.#applyAssetDraft(asset ?? null);
 			this.#render();
 		});
-		this.observe(ctx.assets, (assets) => { this.#assets = assets; this.#render(); });
-		this.observe(ctx.isLoading, (isLoading) => { this.#isLoading = isLoading; this.#render(); });
-		this.observe(ctx.unique, (assetId) => { this.#assetId = assetId ?? undefined; this.#render(); });
+		this.observe(ctx.assets, (assets) => {
+			this.#assets = assets;
+			this.#render();
+		});
+		this.observe(ctx.isLoading, (isLoading) => {
+			this.#isLoading = isLoading;
+			this.#render();
+		});
+		this.observe(ctx.unique, (assetId) => {
+			this.#assetId = assetId ?? undefined;
+			this.#render();
+		});
 	}
 
-	override connectedCallback() { super.connectedCallback(); this.#render(); }
+	override connectedCallback() {
+		super.connectedCallback();
+		this.#render();
+	}
 
 	override disconnectedCallback() {
 		this.#disposeAuthPreviewObserver();
@@ -133,17 +148,20 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 	}
 
 	#render() {
-		const previewUrl = this.#asset?.id !== undefined ? this.#thumbnailUrl(this.#asset.id) : undefined;
-		this.#layout.replaceChildren(...buildWorkspaceBody({
-			localize: this.localize,
-			isLoading: this.#isLoading,
-			asset: this.#asset,
-			previewUrl,
-			logoAssets: this.#logoAssets(),
-			greetingText: this.#currentGreetingText(),
-			selectedLogoAssetId: this.#selectedLogoAssetId(),
-			zoom: this.#draftZoom,
-		}));
+		const previewUrl =
+			this.#asset?.id !== undefined ? this.#thumbnailUrl(this.#asset.id) : undefined;
+		this.#layout.replaceChildren(
+			...buildWorkspaceBody({
+				localize: this.localize,
+				isLoading: this.#isLoading,
+				asset: this.#asset,
+				previewUrl,
+				logoAssets: this.#logoAssets(),
+				greetingText: this.#currentGreetingText(),
+				selectedLogoAssetId: this.#selectedLogoAssetId(),
+				zoom: this.#draftZoom
+			})
+		);
 		this.#syncAuthPreview();
 	}
 
@@ -176,8 +194,8 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 		const result = await umbOpenModal(this, LOGO_PICKER_MODAL_TOKEN, {
 			data: {
 				logoAssets: this.#logoAssets(),
-				selectedLogoAssetId: this.#selectedLogoAssetId(),
-			},
+				selectedLogoAssetId: this.#selectedLogoAssetId()
+			}
 		}).catch(() => undefined);
 
 		if (result !== undefined) {
@@ -191,7 +209,11 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 
 	#syncAuthPreview() {
 		const authPreview = this.shadowRoot?.querySelector('#auth-preview');
-		if (!(authPreview instanceof HTMLElement) || this.#asset === null || this.#assetId === undefined) {
+		if (
+			!(authPreview instanceof HTMLElement) ||
+			this.#asset === null ||
+			this.#assetId === undefined
+		) {
 			this.#disposeAuthPreviewObserver();
 			this.#authPreview = undefined;
 			return;
@@ -274,7 +296,7 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 				startFocalPoint,
 				deltaX: event.clientX - startClientX,
 				deltaY: event.clientY - startClientY,
-				zoom: this.#draftZoom,
+				zoom: this.#draftZoom
 			});
 			this.#applyDraggedFocalPoint(next);
 		};
@@ -339,7 +361,7 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 		field.style.setProperty('--greeting-top', `${pos.topPct.toFixed(1)}%`);
 	}
 
-#isBackgroundAssetLoaded(): boolean {
+	#isBackgroundAssetLoaded(): boolean {
 		return this.#asset !== null && isBackgroundLoginImageAsset(this.#asset);
 	}
 
@@ -380,8 +402,16 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 		// move into a forced-layout re-positioning pass (the overlays themselves
 		// then set CSS vars, which fed the loop). Host size changes are picked up
 		// by the ResizeObserver inside observeAuthViewCustomisation instead.
-		observer.observe(authPreview.shadowRoot, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'hidden', 'class'] });
-		this.#authPreviewMutationCleanup = () => { observer.disconnect(); if (rafHandle !== undefined) cancelAnimationFrame(rafHandle); };
+		observer.observe(authPreview.shadowRoot, {
+			childList: true,
+			subtree: true,
+			attributes: true,
+			attributeFilter: ['src', 'hidden', 'class']
+		});
+		this.#authPreviewMutationCleanup = () => {
+			observer.disconnect();
+			if (rafHandle !== undefined) cancelAnimationFrame(rafHandle);
+		};
 	}
 
 	#disposeAuthPreviewObserver() {
@@ -397,14 +427,18 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 
 	#applyAssetDraft(asset: LoginImageAsset | null) {
 		const bg = asset !== null && isBackgroundLoginImageAsset(asset) ? asset : null;
-		this.#draftGreetingTextValue = bg !== null ? bg.greetingText ?? '' : undefined;
-		this.#draftLogoAssetId = bg !== null ? bg.logoAssetId ?? '' : undefined;
+		this.#draftGreetingTextValue = bg !== null ? (bg.greetingText ?? '') : undefined;
+		this.#draftLogoAssetId = bg !== null ? (bg.logoAssetId ?? '') : undefined;
 		this.#draftFocalPoint = bg?.focalPoint;
 		this.#draftZoom = bg?.zoom ?? 1;
 	}
 
-	#logoAssets() { return this.#assets.filter(isLogoLoginImageAsset); }
-	#currentGreetingText() { return this.#draftGreetingTextValue ?? ''; }
+	#logoAssets() {
+		return this.#assets.filter(isLogoLoginImageAsset);
+	}
+	#currentGreetingText() {
+		return this.#draftGreetingTextValue ?? '';
+	}
 
 	#selectedLogoAssetId() {
 		if (this.#asset === null || !isBackgroundLoginImageAsset(this.#asset)) return '';

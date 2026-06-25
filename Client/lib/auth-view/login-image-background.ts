@@ -22,9 +22,10 @@ export const toLoginImageBackground = (
 	imageUrl: string,
 	focalPoint?: { left: number; top: number }
 ) => {
-	const position = focalPoint === undefined
-		? 'center center'
-		: `${formatPositionPercent(focalPoint.left)} ${formatPositionPercent(focalPoint.top)}`;
+	const position =
+		focalPoint === undefined
+			? 'center center'
+			: `${formatPositionPercent(focalPoint.left)} ${formatPositionPercent(focalPoint.top)}`;
 	return `url("${safeCssUrl(imageUrl)}") no-repeat ${position} / cover`;
 };
 

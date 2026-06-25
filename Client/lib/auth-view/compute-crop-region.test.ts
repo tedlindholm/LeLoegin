@@ -21,19 +21,39 @@ describe('computeCropRegion', () => {
 	});
 
 	it('treats zoom within 1.001 of 1 as a no-op (matches server tolerance)', () => {
-		expect(computeCropRegion({ left: 0.3, top: 0.6 }, 1.0005)).toEqual({ x1: 0, y1: 0, x2: 1, y2: 1 });
+		expect(computeCropRegion({ left: 0.3, top: 0.6 }, 1.0005)).toEqual({
+			x1: 0,
+			y1: 0,
+			x2: 1,
+			y2: 1
+		});
 	});
 
 	// Pins the same input that LeLøgin.Tests/Api/Runtime/RuntimeControllerTests.cs uses
 	// for "cc=0.05,0.35,0.45,0.15" — the editor and server must agree to four decimals
 	// on this case or the preview drifts from runtime.
 	it('matches the server cc= golden: fp=(0.3, 0.6), zoom=2', () => {
-		expectClose(computeCropRegion({ left: 0.3, top: 0.6 }, 2), { x1: 0.05, y1: 0.35, x2: 0.55, y2: 0.85 });
+		expectClose(computeCropRegion({ left: 0.3, top: 0.6 }, 2), {
+			x1: 0.05,
+			y1: 0.35,
+			x2: 0.55,
+			y2: 0.85
+		});
 	});
 
 	it('returns a centred 1/zoom × 1/zoom window when the focal point is in the middle', () => {
-		expectClose(computeCropRegion({ left: 0.5, top: 0.5 }, 2), { x1: 0.25, y1: 0.25, x2: 0.75, y2: 0.75 });
-		expectClose(computeCropRegion({ left: 0.5, top: 0.5 }, 4), { x1: 0.375, y1: 0.375, x2: 0.625, y2: 0.625 });
+		expectClose(computeCropRegion({ left: 0.5, top: 0.5 }, 2), {
+			x1: 0.25,
+			y1: 0.25,
+			x2: 0.75,
+			y2: 0.75
+		});
+		expectClose(computeCropRegion({ left: 0.5, top: 0.5 }, 4), {
+			x1: 0.375,
+			y1: 0.375,
+			x2: 0.625,
+			y2: 0.625
+		});
 	});
 
 	it('clamps the focal point so the window stays a symmetric 1/zoom × 1/zoom near an edge', () => {
@@ -41,7 +61,12 @@ describe('computeCropRegion', () => {
 		// window slides up against the left edge but keeps its full 0.5 width. Without
 		// this clamp the window would narrow to 0.35 wide and dragging would read as
 		// "the image is zooming in" to the user.
-		expectClose(computeCropRegion({ left: 0.1, top: 0.5 }, 2), { x1: 0, y1: 0.25, x2: 0.5, y2: 0.75 });
+		expectClose(computeCropRegion({ left: 0.1, top: 0.5 }, 2), {
+			x1: 0,
+			y1: 0.25,
+			x2: 0.5,
+			y2: 0.75
+		});
 	});
 
 	it('keeps a symmetric window when the focal point sits in a corner', () => {

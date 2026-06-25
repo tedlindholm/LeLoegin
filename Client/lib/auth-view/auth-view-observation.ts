@@ -1,4 +1,7 @@
-import { applyAuthViewCustomisation, type LoginAuthViewCustomisation } from './auth-view-customiser.js';
+import {
+	applyAuthViewCustomisation,
+	type LoginAuthViewCustomisation
+} from './auth-view-customiser.js';
 
 interface AuthViewObservationState {
 	frameHandle: number | undefined;

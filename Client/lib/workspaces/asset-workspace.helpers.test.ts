@@ -10,7 +10,7 @@ const helperFilePath = resolve(currentDirectory, 'asset-workspace.helpers.ts');
 describe('computeFocalPointFromDrag', () => {
 	const wideImageOnTallContainer = {
 		image: { width: 2000, height: 1000 },
-		container: { width: 400, height: 400 },
+		container: { width: 400, height: 400 }
 	};
 
 	it('shifts focal point along the overflowing axis only', () => {
@@ -20,7 +20,7 @@ describe('computeFocalPointFromDrag', () => {
 			...wideImageOnTallContainer,
 			startFocalPoint: { left: 0.5, top: 0.5 },
 			deltaX: 100,
-			deltaY: 100,
+			deltaY: 100
 		});
 		expect(result.top).toBe(0.5);
 		expect(result.left).toBeCloseTo(0.25, 5);
@@ -31,7 +31,7 @@ describe('computeFocalPointFromDrag', () => {
 			...wideImageOnTallContainer,
 			startFocalPoint: { left: 0.5, top: 0.5 },
 			deltaX: 9999,
-			deltaY: 9999,
+			deltaY: 9999
 		});
 		expect(result.left).toBe(0);
 		expect(result.top).toBe(0.5);
@@ -46,7 +46,7 @@ describe('computeFocalPointFromDrag', () => {
 			startFocalPoint: { left: 0.5, top: 0.5 },
 			deltaX: 0,
 			deltaY: -100,
-			zoom: 2,
+			zoom: 2
 		});
 		expect(result.left).toBe(0.5);
 		expect(result.top).toBeCloseTo(0.75, 5);
@@ -60,7 +60,7 @@ describe('computeFocalPointFromDrag', () => {
 			startFocalPoint: { left: 0.5, top: 0.5 },
 			deltaX: 100,
 			deltaY: 0,
-			zoom: 2,
+			zoom: 2
 		});
 		expect(result.left).toBeCloseTo(0.5 - 100 / 1200, 5);
 	});
@@ -72,7 +72,7 @@ describe('computeFocalPointFromDrag', () => {
 			container: { width: 400, height: 400 },
 			startFocalPoint: start,
 			deltaX: 50,
-			deltaY: 50,
+			deltaY: 50
 		});
 		expect(result).toEqual(start);
 	});
@@ -83,7 +83,7 @@ describe('computeFocalPointFromDrag', () => {
 			...wideImageOnTallContainer,
 			startFocalPoint: start,
 			deltaX: Number.NaN,
-			deltaY: 50,
+			deltaY: 50
 		});
 		expect(result).toEqual(start);
 	});
@@ -95,7 +95,7 @@ describe('computeFocalPointFromDrag', () => {
 			startFocalPoint: { left: 0.5, top: 0.5 },
 			deltaX: 100,
 			deltaY: 100,
-			zoom: Number.NaN,
+			zoom: Number.NaN
 		});
 		expect(result.left).toBeCloseTo(0.25, 5);
 		expect(result.top).toBe(0.5);

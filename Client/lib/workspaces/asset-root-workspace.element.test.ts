@@ -42,7 +42,9 @@ describe('asset root workspace imports', () => {
 		expect(source).toContain('new UmbEntityContext(this)');
 		expect(source).toContain('setEntityType(value?.entityType)');
 		expect(source).toContain('setUnique(value?.unique ?? null)');
-		expect(source).toContain('<umb-entity-actions-bundle slot="actions" label="${escapeHTML(this.#value.name)}"></umb-entity-actions-bundle>');
+		expect(source).toContain(
+			'<umb-entity-actions-bundle slot="actions" label="${escapeHTML(this.#value.name)}"></umb-entity-actions-bundle>'
+		);
 		expect(source).not.toContain('.entityType=${');
 		expect(source).not.toContain('.unique=${');
 		expect(source).not.toContain('<umb-entity-actions-table-column-view');

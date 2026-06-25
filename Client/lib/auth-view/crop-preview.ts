@@ -71,10 +71,7 @@ const ensureCropPreviewWrapper = (graphic: HTMLElement, existing: Element | null
 	return wrapper;
 };
 
-export const applyCropPreview = (
-	shadowRoot: ShadowRoot,
-	inputs: CropPreviewInputs | undefined
-) => {
+export const applyCropPreview = (shadowRoot: ShadowRoot, inputs: CropPreviewInputs | undefined) => {
 	const graphic = shadowRoot.getElementById('graphic');
 	if (!(graphic instanceof HTMLElement)) return;
 

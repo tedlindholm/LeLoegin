@@ -1,6 +1,6 @@
 import {
 	LOGIN_SCREEN_RULE_ENTITY_TYPE,
-	LOGIN_SCREEN_RULE_LIST_ENTITY_TYPE,
+	LOGIN_SCREEN_RULE_LIST_ENTITY_TYPE
 } from './entity-types.js';
 import { LOGIN_SCREEN_SETTINGS_MENU_ALIAS } from '../section/manifests.ts';
 import { createLeLøginScreenManagePermissionCondition } from '../user-permissions/constants.js';
@@ -15,7 +15,7 @@ const treeRepositoryManifest: UmbExtensionManifest = {
 	alias: TREE_REPOSITORY_ALIAS,
 	name: 'Login Screen Rule Tree Repository',
 	api: () => import('./rule-tree.repository.js'),
-	conditions: [manageLeLøginScreenCondition],
+	conditions: [manageLeLøginScreenCondition]
 };
 
 const ruleRepositoryManifest: UmbExtensionManifest = {
@@ -23,7 +23,7 @@ const ruleRepositoryManifest: UmbExtensionManifest = {
 	alias: RULE_REPOSITORY_ALIAS,
 	name: 'Login Screen Rule Repository',
 	api: () => import('./rule.repository.js'),
-	conditions: [manageLeLøginScreenCondition],
+	conditions: [manageLeLøginScreenCondition]
 };
 
 const treeManifest: UmbExtensionManifest = {
@@ -32,9 +32,9 @@ const treeManifest: UmbExtensionManifest = {
 	alias: TREE_ALIAS,
 	name: 'Login Screen Rule Tree',
 	meta: {
-		repositoryAlias: TREE_REPOSITORY_ALIAS,
+		repositoryAlias: TREE_REPOSITORY_ALIAS
 	},
-	conditions: [manageLeLøginScreenCondition],
+	conditions: [manageLeLøginScreenCondition]
 };
 
 const treeItemManifest: UmbExtensionManifest = {
@@ -42,10 +42,7 @@ const treeItemManifest: UmbExtensionManifest = {
 	kind: 'default',
 	alias: 'LeLøgin.TreeItem.Rule',
 	name: 'Login Screen Rule Tree Item',
-	forEntityTypes: [
-		LOGIN_SCREEN_RULE_LIST_ENTITY_TYPE,
-		LOGIN_SCREEN_RULE_ENTITY_TYPE,
-	],
+	forEntityTypes: [LOGIN_SCREEN_RULE_LIST_ENTITY_TYPE, LOGIN_SCREEN_RULE_ENTITY_TYPE]
 };
 
 const menuItemManifest: UmbExtensionManifest = {
@@ -60,9 +57,9 @@ const menuItemManifest: UmbExtensionManifest = {
 		entityType: LOGIN_SCREEN_RULE_LIST_ENTITY_TYPE,
 		menus: [LOGIN_SCREEN_SETTINGS_MENU_ALIAS],
 		treeAlias: TREE_ALIAS,
-		hideTreeRoot: false,
+		hideTreeRoot: false
 	},
-	conditions: [manageLeLøginScreenCondition],
+	conditions: [manageLeLøginScreenCondition]
 };
 
 const createRuleActionManifest: UmbExtensionManifest = {
@@ -74,9 +71,9 @@ const createRuleActionManifest: UmbExtensionManifest = {
 	weight: 1200,
 	meta: {
 		icon: 'icon-add',
-		label: '#actions_create',
+		label: '#actions_create'
 	},
-	conditions: [manageLeLøginScreenCondition],
+	conditions: [manageLeLøginScreenCondition]
 };
 
 const createRuleOptionManifest: UmbExtensionManifest = {
@@ -85,15 +82,15 @@ const createRuleOptionManifest: UmbExtensionManifest = {
 	name: 'Create Login Screen Rule Create Option Action',
 	api: () =>
 		import('./entity-actions/create-rule-create-option-action.js').then((m) => ({
-			api: m.LeLøginScreenCreateRuleCreateOptionAction,
+			api: m.LeLøginScreenCreateRuleCreateOptionAction
 		})),
 	forEntityTypes: [LOGIN_SCREEN_RULE_LIST_ENTITY_TYPE],
 	weight: 1000,
 	meta: {
 		icon: 'icon-autofill',
-		label: '#loginScreen_createRule',
+		label: '#loginScreen_createRule'
 	},
-	conditions: [manageLeLøginScreenCondition],
+	conditions: [manageLeLøginScreenCondition]
 };
 
 const reloadRulesActionManifest: UmbExtensionManifest = {
@@ -104,9 +101,9 @@ const reloadRulesActionManifest: UmbExtensionManifest = {
 	forEntityTypes: [LOGIN_SCREEN_RULE_LIST_ENTITY_TYPE],
 	weight: 100,
 	meta: {
-		icon: 'icon-refresh',
+		icon: 'icon-refresh'
 	},
-	conditions: [manageLeLøginScreenCondition],
+	conditions: [manageLeLøginScreenCondition]
 };
 
 const toggleRuleEnabledActionManifest: UmbExtensionManifest = {
@@ -119,13 +116,13 @@ const toggleRuleEnabledActionManifest: UmbExtensionManifest = {
 	element: () => import('./entity-actions/toggle-rule-enabled.element.js'),
 	api: () =>
 		import('./entity-actions/toggle-rule-enabled-entity-action.js').then((m) => ({
-			api: m.LeLøginScreenToggleRuleEnabledEntityAction,
+			api: m.LeLøginScreenToggleRuleEnabledEntityAction
 		})),
 	meta: {
 		icon: 'icon-check',
-		label: '#loginScreen_toggleEnabled',
+		label: '#loginScreen_toggleEnabled'
 	},
-	conditions: [manageLeLøginScreenCondition],
+	conditions: [manageLeLøginScreenCondition]
 };
 
 const deleteRuleActionManifest: UmbExtensionManifest = {
@@ -142,10 +139,10 @@ const deleteRuleActionManifest: UmbExtensionManifest = {
 		detailRepositoryAlias: RULE_REPOSITORY_ALIAS,
 		confirm: {
 			headline: '#actions_delete',
-			message: '#loginScreen_ruleTreeDeleteMessage',
-		},
+			message: '#loginScreen_ruleTreeDeleteMessage'
+		}
 	},
-	conditions: [manageLeLøginScreenCondition],
+	conditions: [manageLeLøginScreenCondition]
 };
 
 export const manifests: Array<UmbExtensionManifest> = [
@@ -158,5 +155,5 @@ export const manifests: Array<UmbExtensionManifest> = [
 	createRuleOptionManifest,
 	reloadRulesActionManifest,
 	toggleRuleEnabledActionManifest,
-	deleteRuleActionManifest,
+	deleteRuleActionManifest
 ];

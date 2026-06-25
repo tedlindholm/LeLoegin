@@ -58,11 +58,13 @@ export class LeLøginScreenRuleWorkspaceContext extends UmbContextBase {
 
 		const withNewPriorities = reordered.map((rule, index) => ({
 			...rule,
-			priority: (index + 1) * 100,
+			priority: (index + 1) * 100
 		}));
 		this.#rules.setValue(withNewPriorities);
 
-		const changed = withNewPriorities.filter((rule, index) => rule.priority !== reordered[index]?.priority);
+		const changed = withNewPriorities.filter(
+			(rule, index) => rule.priority !== reordered[index]?.priority
+		);
 		const updates = changed.map((rule) => this.#repository.update(rule.id, rule));
 		await Promise.all(updates);
 	}
@@ -81,9 +83,7 @@ export class LeLøginScreenRuleWorkspaceContext extends UmbContextBase {
 
 		const next = { ...rule, enabled };
 		this.#rules.setValue(
-			this.#rules.getValue().map((candidate) =>
-				candidate.id === ruleId ? next : candidate
-			)
+			this.#rules.getValue().map((candidate) => (candidate.id === ruleId ? next : candidate))
 		);
 
 		const { error } = await this.#repository.update(ruleId, next);
@@ -100,9 +100,7 @@ export class LeLøginScreenRuleWorkspaceContext extends UmbContextBase {
 		}
 
 		if (data) {
-			this.#rules.setValue(
-				this.#rules.getValue().filter((rule) => rule.id !== ruleId)
-			);
+			this.#rules.setValue(this.#rules.getValue().filter((rule) => rule.id !== ruleId));
 		}
 
 		return { data, error: undefined };

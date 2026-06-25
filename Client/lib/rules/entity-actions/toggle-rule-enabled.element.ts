@@ -18,11 +18,16 @@ export class LeLøginScreenToggleRuleEnabledElement extends UmbElementMixin(HTML
 	manifest?: ManifestEntityAction;
 	entityType?: string | null;
 
-	get unique() { return this.#unique; }
+	get unique() {
+		return this.#unique;
+	}
 	set unique(value: string | null | undefined) {
 		this.#unique = value ?? null;
 		const match = this.#rules.find((r) => r.id === this.#unique);
-		if (match !== undefined) { this.#enabled = match.enabled; this.#update(); }
+		if (match !== undefined) {
+			this.#enabled = match.enabled;
+			this.#update();
+		}
 	}
 
 	set api(value: LeLøginScreenToggleRuleEnabledEntityAction | undefined) {
@@ -40,12 +45,17 @@ export class LeLøginScreenToggleRuleEnabledElement extends UmbElementMixin(HTML
 			e.stopPropagation();
 			void this.#api?.execute().then(() => this.dispatchEvent(new UmbActionExecutedEvent()));
 		});
-		this.#menuItem.addEventListener('click', (e) => { e.stopPropagation(); });
+		this.#menuItem.addEventListener('click', (e) => {
+			e.stopPropagation();
+		});
 
 		this.consumeContext(UMB_LOGIN_SCREEN_RULE_EDITOR_WORKSPACE_CONTEXT, (ctx) => {
 			if (!ctx) return;
 			this.observe(ctx.currentRule, (rule) => {
-				if (rule != null) { this.#enabled = rule.enabled; this.#update(); }
+				if (rule != null) {
+					this.#enabled = rule.enabled;
+					this.#update();
+				}
 			});
 		});
 
@@ -54,12 +64,18 @@ export class LeLøginScreenToggleRuleEnabledElement extends UmbElementMixin(HTML
 			this.observe(ctx.rules, (rules) => {
 				this.#rules = rules ?? [];
 				const match = this.#rules.find((r) => r.id === this.#unique);
-				if (match !== undefined) { this.#enabled = match.enabled; this.#update(); }
+				if (match !== undefined) {
+					this.#enabled = match.enabled;
+					this.#update();
+				}
 			});
 		});
 	}
 
-	override connectedCallback() { super.connectedCallback(); this.#update(); }
+	override connectedCallback() {
+		super.connectedCallback();
+		this.#update();
+	}
 
 	#update() {
 		this.#menuItem.setAttribute('label', this.localize.term('loginScreen_toggleEnabled'));

@@ -4,9 +4,7 @@ import type { UmbCollectionRepository } from '@umbraco-cms/backoffice/collection
 import type { UmbCollectionFilterModel } from '@umbraco-cms/backoffice/collection';
 import type { LoginImageAsset } from '../models/index.js';
 import { LOGIN_SCREEN_ASSET_ENTITY_TYPE } from '../tree/types.js';
-import {
-	UMB_LOGIN_SCREEN_ASSET_GROUP_WORKSPACE_CONTEXT,
-} from './asset-group-workspace.context.js';
+import { UMB_LOGIN_SCREEN_ASSET_GROUP_WORKSPACE_CONTEXT } from './asset-group-workspace.context.js';
 
 export interface LeLøginAssetCollectionItemModel {
 	unique: string;
@@ -41,7 +39,7 @@ export class LeLøginScreenAssetGroupCollectionRepository
 			name: asset.name,
 			altText: asset.altText,
 			thumbnailUrl: `/umbraco/le-løgin/api/v1/assets/${encodeURIComponent(asset.id)}/thumbnail`,
-			editHref: `/umbraco/section/settings/workspace/${LOGIN_SCREEN_ASSET_ENTITY_TYPE}/edit/${encodeURIComponent(asset.id)}`,
+			editHref: `/umbraco/section/settings/workspace/${LOGIN_SCREEN_ASSET_ENTITY_TYPE}/edit/${encodeURIComponent(asset.id)}`
 		}));
 
 		return { data: { items, total: items.length }, error: undefined };

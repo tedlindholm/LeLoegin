@@ -5,16 +5,13 @@ import {
 	UmbTreeServerDataSourceBase,
 	type UmbTreeAncestorsOfRequestArgs,
 	type UmbTreeChildrenOfRequestArgs,
-	type UmbTreeRootItemsRequestArgs,
+	type UmbTreeRootItemsRequestArgs
 } from '@umbraco-cms/backoffice/tree';
 import {
 	LOGIN_SCREEN_RULE_ENTITY_TYPE,
-	LOGIN_SCREEN_RULE_LIST_ENTITY_TYPE,
+	LOGIN_SCREEN_RULE_LIST_ENTITY_TYPE
 } from './entity-types.js';
-import type {
-	LeLøginScreenRuleTreeItemModel,
-	LeLøginScreenRuleTreeRootModel,
-} from './types.js';
+import type { LeLøginScreenRuleTreeItemModel, LeLøginScreenRuleTreeRootModel } from './types.js';
 import { LeLøginScreenRuleRepository } from './rule.repository.js';
 
 const RULE_ICON = 'icon-autofill';
@@ -26,29 +23,24 @@ interface RuleTreeServerItem {
 	icon: string;
 }
 
-const toRuleTreeServerItem = (rule: {
-	id: string;
-	name: string;
-}): RuleTreeServerItem => ({
+const toRuleTreeServerItem = (rule: { id: string; name: string }): RuleTreeServerItem => ({
 	id: rule.id,
 	name: rule.name,
 	hasChildren: false,
-	icon: RULE_ICON,
+	icon: RULE_ICON
 });
 
-const toRuleTreeItemModel = (
-	item: RuleTreeServerItem
-): LeLøginScreenRuleTreeItemModel => ({
+const toRuleTreeItemModel = (item: RuleTreeServerItem): LeLøginScreenRuleTreeItemModel => ({
 	unique: item.id,
 	parent: {
 		unique: null,
-		entityType: LOGIN_SCREEN_RULE_LIST_ENTITY_TYPE,
+		entityType: LOGIN_SCREEN_RULE_LIST_ENTITY_TYPE
 	},
 	name: item.name,
 	entityType: LOGIN_SCREEN_RULE_ENTITY_TYPE,
 	hasChildren: false,
 	isFolder: false,
-	icon: item.icon,
+	icon: item.icon
 });
 
 const loadRuleTreeItems = async (
@@ -75,7 +67,7 @@ const buildDataSourceConfig = (ruleRepository: LeLøginScreenRuleRepository) => 
 		const currentItem = items.find((item) => item.id === args.treeItem.unique);
 		return { data: currentItem === undefined ? [] : [currentItem] };
 	},
-	mapper: toRuleTreeItemModel,
+	mapper: toRuleTreeItemModel
 });
 
 class RuleTreeDataSource extends UmbTreeServerDataSourceBase<
@@ -105,7 +97,7 @@ export class LeLøginScreenRuleTreeRepository
 			name: '#loginScreen_rules',
 			icon: 'icon-autofill',
 			hasChildren: true,
-			isFolder: true,
+			isFolder: true
 		};
 		return { data };
 	}

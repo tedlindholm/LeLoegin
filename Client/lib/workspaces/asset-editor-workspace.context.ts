@@ -1,7 +1,11 @@
 import { UmbContextBase } from '@umbraco-cms/backoffice/class-api';
 import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
 import { UmbContextToken } from '@umbraco-cms/backoffice/context-api';
-import { UmbBooleanState, UmbObjectState, UmbStringState } from '@umbraco-cms/backoffice/observable-api';
+import {
+	UmbBooleanState,
+	UmbObjectState,
+	UmbStringState
+} from '@umbraco-cms/backoffice/observable-api';
 import { UmbWorkspaceRouteManager } from '@umbraco-cms/backoffice/workspace';
 import type { UmbWorkspaceContext } from '@umbraco-cms/backoffice/workspace';
 import { UmbEntityContext, type UmbEntityModel } from '@umbraco-cms/backoffice/entity';
@@ -10,19 +14,24 @@ import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import { LeLøginScreenAssetRepository } from '../assets/asset.repository.js';
 import type { FocalPoint, LoginImageAsset } from '../models/index.js';
-import { LOGIN_SCREEN_ASSET_ENTITY_TYPE, LOGIN_SCREEN_ASSET_ROOT_ENTITY_TYPE } from '../tree/types.js';
+import {
+	LOGIN_SCREEN_ASSET_ENTITY_TYPE,
+	LOGIN_SCREEN_ASSET_ROOT_ENTITY_TYPE
+} from '../tree/types.js';
 
 const LOADING_STATE_UNIQUE = 'loginScreenAssetWorkspaceLoading';
 
 const LOGIN_SCREEN_ASSET_WORKSPACE_ALIAS = 'LeLøgin.Workspace.Asset';
 
-export const UMB_LOGIN_SCREEN_ASSET_EDITOR_WORKSPACE_CONTEXT =
-	new UmbContextToken<UmbWorkspaceContext, LeLøginScreenAssetEditorWorkspaceContext>(
-		'UmbWorkspaceContext',
-		undefined,
-		(context): context is LeLøginScreenAssetEditorWorkspaceContext =>
-			context.getEntityType?.() === LOGIN_SCREEN_ASSET_ENTITY_TYPE
-	);
+export const UMB_LOGIN_SCREEN_ASSET_EDITOR_WORKSPACE_CONTEXT = new UmbContextToken<
+	UmbWorkspaceContext,
+	LeLøginScreenAssetEditorWorkspaceContext
+>(
+	'UmbWorkspaceContext',
+	undefined,
+	(context): context is LeLøginScreenAssetEditorWorkspaceContext =>
+		context.getEntityType?.() === LOGIN_SCREEN_ASSET_ENTITY_TYPE
+);
 
 /**
  * Routable workspace context for editing a single login screen asset.
@@ -77,7 +86,7 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 		});
 		this.#createUnderParent.setValue({
 			unique: null,
-			entityType: LOGIN_SCREEN_ASSET_ROOT_ENTITY_TYPE,
+			entityType: LOGIN_SCREEN_ASSET_ROOT_ENTITY_TYPE
 		});
 		this.routes.setRoutes([
 			{
@@ -176,7 +185,7 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 			...this.#draft,
 			...rest,
 			...(focalPointUpdate === undefined ? {} : { focalPoint: focalPointUpdate ?? undefined }),
-			...(zoomUpdate === undefined ? {} : { zoom: zoomUpdate ?? undefined }),
+			...(zoomUpdate === undefined ? {} : { zoom: zoomUpdate ?? undefined })
 		};
 
 		if (update.name !== undefined) {
@@ -200,12 +209,12 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 			altText: this.#draft.altText,
 			...(this.#draft.kind === 'background'
 				? {
-					greetingText: this.#draft.greetingText,
-					logoAssetId: this.#draft.logoAssetId,
-					focalPoint: this.#draft.focalPoint ?? null,
-					zoom: this.#draft.zoom ?? null,
-				}
-				: {}),
+						greetingText: this.#draft.greetingText,
+						logoAssetId: this.#draft.logoAssetId,
+						focalPoint: this.#draft.focalPoint ?? null,
+						zoom: this.#draft.zoom ?? null
+					}
+				: {})
 		});
 
 		if (error || data === undefined) {

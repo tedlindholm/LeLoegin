@@ -29,7 +29,10 @@ function getRequiredById(root: ShadowRoot, id: string): HTMLElement {
 	return element;
 }
 
-const optional = <K extends string, V>(key: K, value: V | undefined): Record<K, V> | Record<string, never> =>
+const optional = <K extends string, V>(
+	key: K,
+	value: V | undefined
+): Record<K, V> | Record<string, never> =>
 	value === undefined ? {} : ({ [key]: value } as Record<K, V>);
 
 // Focal point is meaningful at zoom=1 (server omits cc=, client positions via fp%);
@@ -150,9 +153,10 @@ export class LeLøginScreenOverviewDashboard extends UmbElementMixin(HTMLElement
 		// Capture the selection at fetch time so a fast-changing picker doesn't render
 		// a stale response over a newer one.
 		const selectedAtFetch = this.#previewContext;
-		const { data, error } = selectedAtFetch === undefined
-			? await this.#repository.requestActive()
-			: await this.#repository.requestPreviewForRule(selectedAtFetch.id);
+		const { data, error } =
+			selectedAtFetch === undefined
+				? await this.#repository.requestActive()
+				: await this.#repository.requestPreviewForRule(selectedAtFetch.id);
 
 		// Drop the response if the user has since changed selection.
 		if (selectedAtFetch?.id !== this.#previewContext?.id) return;
@@ -179,7 +183,11 @@ export class LeLøginScreenOverviewDashboard extends UmbElementMixin(HTMLElement
 	#syncAuthPreview() {
 		const authPreview = this.shadowRoot?.querySelector('#auth-preview');
 
-		if (!(authPreview instanceof HTMLElement) || this.#activeImage === undefined || this.#state !== 'loaded') {
+		if (
+			!(authPreview instanceof HTMLElement) ||
+			this.#activeImage === undefined ||
+			this.#state !== 'loaded'
+		) {
 			this.#disposeAuthPreviewObserver();
 			this.#authPreview = undefined;
 			return;

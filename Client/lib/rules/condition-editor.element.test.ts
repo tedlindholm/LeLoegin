@@ -33,7 +33,9 @@ describe('LeLøginScreenConditionEditor source', () => {
 		expect(source).toContain('replaceChildren(');
 		expect(source).toContain('#buildConditionRow(');
 		expect(source).not.toContain('this.#conditionList.innerHTML =');
-		expect(source).not.toContain('#renderConditionRow(condition: LoginRuleCondition, index: number): string');
+		expect(source).not.toContain(
+			'#renderConditionRow(condition: LoginRuleCondition, index: number): string'
+		);
 	});
 
 	it('initialises and mutates the condition group in the editor methods', async () => {
@@ -76,8 +78,12 @@ describe('LeLøginScreenConditionEditor source', () => {
 		const source = await readFile(conditionEditorFilePath, 'utf8');
 
 		expect(source).toContain("this.localize.date(new Date(2023, 0, i + 1), { weekday: 'long' })");
-		expect(source).toContain("this.localize.date(new Date(2023, monthNum - 1, 1), { month: 'long' })");
-		expect(source).not.toContain("new Intl.DateTimeFormat(navigator.language, { weekday: 'long' })");
+		expect(source).toContain(
+			"this.localize.date(new Date(2023, monthNum - 1, 1), { month: 'long' })"
+		);
+		expect(source).not.toContain(
+			"new Intl.DateTimeFormat(navigator.language, { weekday: 'long' })"
+		);
 		expect(source).not.toContain("new Intl.DateTimeFormat(navigator.language, { month: 'long' })");
 	});
 });

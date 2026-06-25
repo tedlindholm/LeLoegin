@@ -5,7 +5,7 @@ import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import styles from './asset-upload-workspace.element.css?inline';
 import {
 	UMB_LOGIN_SCREEN_ASSET_UPLOAD_WORKSPACE_CONTEXT,
-	type LeLøginScreenAssetUploadWorkspaceContext,
+	type LeLøginScreenAssetUploadWorkspaceContext
 } from './asset-upload-workspace.context.js';
 import { cloneTemplate } from '../utils/template.js';
 import './image-upload-preview.element.js';
@@ -72,7 +72,7 @@ function getRequiredById<T extends Element>(
 	root: ParentNode,
 	id: string,
 	guard: ElementGuard<T>,
-	description: string,
+	description: string
 ): T {
 	const element = root.querySelector(`#${id}`);
 	if (!guard(element)) {
@@ -186,7 +186,12 @@ export class LeLøginScreenAssetUploadWorkspace extends UmbElementMixin(HTMLElem
 
 	#buildFileDropzone(): HTMLElement {
 		const fragment = cloneTemplate(fileDropzoneTemplate, 'file dropzone');
-		const dropzone = getRequiredById(fragment, 'asset-file', isFileDropzoneElement, 'file dropzone');
+		const dropzone = getRequiredById(
+			fragment,
+			'asset-file',
+			isFileDropzoneElement,
+			'file dropzone'
+		);
 		const browseButton = getRequiredById(fragment, 'browse-button', isHtmlElement, 'browse button');
 		const uploadLabel = this.localize.term('media_clickToUpload');
 		dropzone.setAttribute('label', uploadLabel);
@@ -205,7 +210,9 @@ export class LeLøginScreenAssetUploadWorkspace extends UmbElementMixin(HTMLElem
 	}
 
 	#buildSelectedFileNode(file: File): HTMLElement {
-		const preview = document.createElement('login-screen-image-upload-preview') as LoginScreenImageUploadPreviewElement;
+		const preview = document.createElement(
+			'login-screen-image-upload-preview'
+		) as LoginScreenImageUploadPreviewElement;
 		preview.file = file;
 
 		const fragment = cloneTemplate(selectedFileTemplate, 'selected file');
@@ -221,7 +228,12 @@ export class LeLøginScreenAssetUploadWorkspace extends UmbElementMixin(HTMLElem
 		refNode.setAttribute('name', file.name);
 		refNode.setAttribute('detail', detail);
 
-		const removeButton = getRequiredById(refNode, 'remove-file-button', isHtmlElement, 'remove file button');
+		const removeButton = getRequiredById(
+			refNode,
+			'remove-file-button',
+			isHtmlElement,
+			'remove file button'
+		);
 		removeButton.setAttribute('label', this.localize.term('content_uploadClear'));
 		removeButton.addEventListener('click', () => {
 			this.#workspaceContext?.setSelectedFile(undefined);

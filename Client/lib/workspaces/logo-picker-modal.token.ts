@@ -12,5 +12,5 @@ export type LogoPickerModalValue = {
 
 export const LOGO_PICKER_MODAL_TOKEN = new UmbModalToken<LogoPickerModalData, LogoPickerModalValue>(
 	'LeLøgin.Modal.LogoPicker',
-	{ modal: { type: 'dialog' } },
+	{ modal: { type: 'dialog' } }
 );

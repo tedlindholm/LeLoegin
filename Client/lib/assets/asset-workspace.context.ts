@@ -1,20 +1,15 @@
 import { UmbContextBase } from '@umbraco-cms/backoffice/class-api';
 import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
 import { UmbContextToken } from '@umbraco-cms/backoffice/context-api';
-import {
-	UmbArrayState,
-	UmbBooleanState,
-} from '@umbraco-cms/backoffice/observable-api';
-import type {
-	LoginImageAsset,
-	LoginImageAssetKind,
-} from '../models/index.js';
+import { UmbArrayState, UmbBooleanState } from '@umbraco-cms/backoffice/observable-api';
+import type { LoginImageAsset, LoginImageAssetKind } from '../models/index.js';
 import { LeLøginScreenAssetRepository } from './asset.repository.js';
 
-export const UMB_LOGIN_SCREEN_ASSET_WORKSPACE_CONTEXT = new UmbContextToken<LeLøginScreenAssetWorkspaceContext>(
-	'UmbWorkspaceContext',
-	'LeLøgin.WorkspaceContext.Asset'
-);
+export const UMB_LOGIN_SCREEN_ASSET_WORKSPACE_CONTEXT =
+	new UmbContextToken<LeLøginScreenAssetWorkspaceContext>(
+		'UmbWorkspaceContext',
+		'LeLøgin.WorkspaceContext.Asset'
+	);
 
 /**
  * Workspace context for asset management.
@@ -112,9 +107,7 @@ export class LeLøginScreenAssetWorkspaceContext extends UmbContextBase {
 		}
 
 		if (data) {
-			this.#assets.setValue(
-				this.#assets.getValue().filter((asset) => asset.id !== assetId)
-			);
+			this.#assets.setValue(this.#assets.getValue().filter((asset) => asset.id !== assetId));
 		}
 
 		return { data, error: undefined };

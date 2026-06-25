@@ -4,7 +4,7 @@ import styles from './create-asset-modal.element.css?inline';
 import type {
 	CreateAssetKind,
 	CreateAssetModalData,
-	CreateAssetModalValue,
+	CreateAssetModalValue
 } from './create-asset-modal.token.js';
 import { cloneTemplate } from '../utils/template.js';
 
@@ -33,7 +33,7 @@ function queryRequired<T extends Element>(
 	root: ParentNode,
 	selector: string,
 	guard: ElementGuard<T>,
-	description: string,
+	description: string
 ): T {
 	const element = root.querySelector(selector);
 	if (!guard(element)) {
@@ -46,14 +46,19 @@ function getEventTargetElement(event: Event): Element | null {
 	return event.target instanceof Element ? event.target : null;
 }
 
-export class LeLøginCreateAssetModalElement extends UmbElementMixin(HTMLElement)
-	implements UmbModalExtensionElement<CreateAssetModalData, CreateAssetModalValue> {
-
+export class LeLøginCreateAssetModalElement
+	extends UmbElementMixin(HTMLElement)
+	implements UmbModalExtensionElement<CreateAssetModalData, CreateAssetModalValue>
+{
 	#modalContext: UmbModalContext<CreateAssetModalData, CreateAssetModalValue> | undefined;
 	#layout: HTMLElement;
 
-	get modalContext() { return this.#modalContext; }
-	set modalContext(value: UmbModalContext<CreateAssetModalData, CreateAssetModalValue> | undefined) {
+	get modalContext() {
+		return this.#modalContext;
+	}
+	set modalContext(
+		value: UmbModalContext<CreateAssetModalData, CreateAssetModalValue> | undefined
+	) {
 		this.#modalContext = value;
 		this.#render();
 	}
@@ -105,7 +110,12 @@ export class LeLøginCreateAssetModalElement extends UmbElementMixin(HTMLElement
 
 		body.setAttribute('headline', this.localize.term('general_create'));
 
-		const backgroundOption = queryRequired(body, '.background-option', isHtmlElement, 'background option');
+		const backgroundOption = queryRequired(
+			body,
+			'.background-option',
+			isHtmlElement,
+			'background option'
+		);
 		const backgroundLabel = `${this.localize.term('grid_media')}...`;
 		backgroundOption.setAttribute('label', backgroundLabel);
 		backgroundOption.dataset['kind'] = 'background';

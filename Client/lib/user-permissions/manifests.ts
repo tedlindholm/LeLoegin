@@ -18,4 +18,6 @@ const manageLeLøginScreenPermissionManifest = {
 	}
 } satisfies ManifestEntityUserPermission;
 
-export const manifests = [manageLeLøginScreenPermissionManifest] satisfies ReadonlyArray<ManifestEntityUserPermission>;
+export const manifests = [
+	manageLeLøginScreenPermissionManifest
+] satisfies ReadonlyArray<ManifestEntityUserPermission>;

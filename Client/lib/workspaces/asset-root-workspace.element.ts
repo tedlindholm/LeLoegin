@@ -10,7 +10,7 @@ import { LeLøginScreenAssetWorkspaceContext } from '../assets/asset-workspace.c
 import {
 	LOGIN_SCREEN_ASSET_ENTITY_TYPE,
 	LOGIN_SCREEN_ASSET_UPLOAD_BACKGROUND_ENTITY_TYPE,
-	LOGIN_SCREEN_ASSET_UPLOAD_LOGO_ENTITY_TYPE,
+	LOGIN_SCREEN_ASSET_UPLOAD_LOGO_ENTITY_TYPE
 } from '../tree/types.js';
 import { CREATE_ASSET_MODAL_TOKEN, type CreateAssetKind } from './create-asset-modal.token.js';
 import { cloneTemplate } from '../utils/template.js';
@@ -31,7 +31,7 @@ function getRequiredById<T extends Element>(
 	root: ShadowRoot,
 	id: string,
 	guard: ElementGuard<T>,
-	description: string,
+	description: string
 ): T {
 	const element = root.getElementById(id);
 	if (!guard(element)) {
@@ -44,7 +44,7 @@ function queryRequired<T extends Element>(
 	root: ParentNode,
 	selector: string,
 	guard: ElementGuard<T>,
-	description: string,
+	description: string
 ): T {
 	const element = root.querySelector(selector);
 	if (!guard(element)) {
@@ -149,7 +149,12 @@ export class LeLøginScreenAssetRootWorkspace extends UmbElementMixin(HTMLElemen
 		}
 
 		if (this.#loadError) {
-			return [this.#buildStatusSection('Failed to load assets. Check browser console for details.', 'var(--uui-color-danger)')];
+			return [
+				this.#buildStatusSection(
+					'Failed to load assets. Check browser console for details.',
+					'var(--uui-color-danger)'
+				)
+			];
 		}
 
 		const backgrounds = this.#assets.filter((a) => a.kind === 'background');
@@ -160,14 +165,14 @@ export class LeLøginScreenAssetRootWorkspace extends UmbElementMixin(HTMLElemen
 				this.localize.term('loginScreen_assetsWelcomeImages'),
 				backgrounds,
 				'backgrounds-card-grid',
-				this.localize.term('loginScreen_assetsWelcomeImagesEmpty'),
+				this.localize.term('loginScreen_assetsWelcomeImagesEmpty')
 			),
 			this.#buildAssetSection(
 				this.localize.term('loginScreen_assetsLogos'),
 				logos,
 				'logos-card-grid',
-				this.localize.term('loginScreen_assetsLogosEmpty'),
-			),
+				this.localize.term('loginScreen_assetsLogosEmpty')
+			)
 		];
 	}
 
@@ -187,7 +192,7 @@ export class LeLøginScreenAssetRootWorkspace extends UmbElementMixin(HTMLElemen
 		headline: string,
 		assets: Array<LoginImageAsset>,
 		gridId: string,
-		emptyLabel: string,
+		emptyLabel: string
 	): HTMLElement {
 		const section = this.#buildEmptySection();
 		section.setAttribute('headline', headline);
