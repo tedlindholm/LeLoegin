@@ -12,7 +12,7 @@ public static class LeLøginBuilderExtensions
     /// <remarks>
     /// Call this in a composer decorated with
     /// <c>[ComposeAfter(typeof(LeLøginScreenComposer))]</c> so it runs after the default
-    /// <see cref="Umbraco.Cms.Core.IO.PhysicalFileSystem"/> is registered.
+    /// <see cref="PhysicalFileSystem"/> is registered.
     /// </remarks>
     public static IUmbracoBuilder SetLoginAssetFileSystem(
         this IUmbracoBuilder builder,
