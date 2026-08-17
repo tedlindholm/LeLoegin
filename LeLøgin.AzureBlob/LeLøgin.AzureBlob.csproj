@@ -8,6 +8,13 @@
     <AssemblyName>LeLøgin.AzureBlob</AssemblyName>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Supplied by Umbraco.Cms.Targets when referencing the Umbraco.Cms meta-package; declared
+         here because LeLøgin references only the Umbraco assemblies it actually uses. -->
+    <Using Include="Umbraco.Cms.Core.DependencyInjection" />
+    <Using Include="Umbraco.Extensions" />
+  </ItemGroup>
+
   <PropertyGroup>
     <Version>1.2.2</Version>
     <PackageId>LeLøgin.AzureBlob</PackageId>

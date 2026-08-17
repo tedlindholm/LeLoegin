@@ -9,6 +9,13 @@
     <AssemblyName>LeLøgin</AssemblyName>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Supplied by Umbraco.Cms.Targets when referencing the Umbraco.Cms meta-package; declared
+         here because this project references only the Umbraco assemblies it actually uses. -->
+    <Using Include="Umbraco.Cms.Core.DependencyInjection" />
+    <Using Include="Umbraco.Extensions" />
+  </ItemGroup>
+
   <PropertyGroup>
     <Version>1.2.1</Version>
     <PackageId>LeLøgin</PackageId>
@@ -27,7 +34,13 @@
 
   <ItemGroup>
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
-    <PackageReference Include="Umbraco.Cms" Version="18.1.0" />
+    <!-- Api.Management transitively covers Core, Infrastructure, Web.Common and Api.Common.
+         Imaging.ImageSharp supplies the ImageSharp.Web middleware options and HMAC request
+         authorisation that LoginScreenImageUrlBuilder signs its URLs against. Referencing the
+         Umbraco.Cms meta-package instead would force every consumer to take both persistence
+         providers, EF Core and the backoffice static assets. -->
+    <PackageReference Include="Umbraco.Cms.Api.Management" Version="18.1.0" />
+    <PackageReference Include="Umbraco.Cms.Imaging.ImageSharp" Version="18.1.0" />
   </ItemGroup>
 
   <ItemGroup>

@@ -27,6 +27,26 @@ When packing, the project now:
 
 Add the NuGet package to the Umbraco host application, restore packages, and run the site. Umbraco will discover the packaged static web assets and the included `umbraco-package.json` automatically.
 
+## Building an adapter against Le Løgin
+
+Le Løgin references only the Umbraco assemblies it uses — `Umbraco.Cms.Api.Management` and
+`Umbraco.Cms.Imaging.ImageSharp` — rather than the `Umbraco.Cms` meta-package, so consumers are
+not forced to take both persistence providers, EF Core and the backoffice static assets.
+
+One consequence catches adapter authors out. `Umbraco.Cms.Targets`, which the meta-package pulls
+in, contributes two global usings; without it, `IUmbracoBuilder` and the `Umbraco.Extensions`
+extension methods stop resolving even though the assemblies are present. A project referencing
+Le Løgin but not `Umbraco.Cms` needs them declared:
+
+```xml
+<ItemGroup>
+  <Using Include="Umbraco.Cms.Core.DependencyInjection" />
+  <Using Include="Umbraco.Extensions" />
+</ItemGroup>
+```
+
+Umbraco *sites* are unaffected — they reference `Umbraco.Cms` directly.
+
 ## Notes
 
 - Requires Umbraco 18+
