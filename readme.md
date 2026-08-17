@@ -23,6 +23,15 @@ When packing, the project now:
 2. builds the client bundle with pnpm
 3. packs the NuGet package with the built static web assets
 
+## Versioning
+
+The package major tracks the Umbraco major it targets: Le Løgin 18.x targets Umbraco 18.x. Minor
+and patch follow SemVer within that major. The previous 1.x line targeted Umbraco 17 — 18.0.0
+follows 1.2.2 because of this switch, not because of a sixteen-major jump in the package's own
+API.
+
+`LeLøgin` and `LeLøgin.AzureBlob` are released together on the same version.
+
 ## Installing into an Umbraco site
 
 Add the NuGet package to the Umbraco host application, restore packages, and run the site. Umbraco will discover the packaged static web assets and the included `umbraco-package.json` automatically.
