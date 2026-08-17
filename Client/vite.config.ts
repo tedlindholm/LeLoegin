@@ -6,12 +6,6 @@ const OUT_DIR = '../wwwroot/App_Plugins/le-løgin';
 const ENTRY_POINTS = {
 	main: 'lib/index.ts'
 };
-const UUI_CSS_ALIAS = [
-	{
-		find: '@umbraco-ui/uui-css/lib',
-		replacement: '@umbraco-ui/uui-css/lib/index.js'
-	}
-];
 const INLINE_TEST_DEPS = [/^@umbraco-ui\//, /^@umbraco-cms\/backoffice\//];
 
 /**
@@ -35,9 +29,6 @@ function createClientConfig(isWatchBuild: boolean) {
 	const entryPattern = isWatchBuild ? '[name].js' : '[name]-[hash].js';
 
 	return {
-		resolve: {
-			alias: UUI_CSS_ALIAS
-		},
 		test: {
 			server: {
 				deps: {
