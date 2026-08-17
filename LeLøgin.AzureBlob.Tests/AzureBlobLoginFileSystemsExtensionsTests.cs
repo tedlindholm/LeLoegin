@@ -133,10 +133,10 @@ public sealed class AzureBlobLoginFileSystemsExtensionsTests
 		IConfiguration configuration = new ConfigurationBuilder()
 			.AddInMemoryCollection(new Dictionary<string, string?>
 			{
-				["Umbraco:Storage:AzureBlob:LeLøginAssets:ConnectionString"] = "https://example.blob.core.windows.net/",
-				["Umbraco:Storage:AzureBlob:LeLøginAssets:ContainerName"] = "login",
-				["Umbraco:Storage:AzureBlob:LeLøginPublish:ConnectionString"] = "https://example.blob.core.windows.net/",
-				["Umbraco:Storage:AzureBlob:LeLøginPublish:ContainerName"] = "login",
+				[$"Umbraco:Storage:AzureBlob:{AzureBlobLoginFileSystemsExtensions.AssetsFileSystemName}:ConnectionString"] = "https://example.blob.core.windows.net/",
+				[$"Umbraco:Storage:AzureBlob:{AzureBlobLoginFileSystemsExtensions.AssetsFileSystemName}:ContainerName"] = "login",
+				[$"Umbraco:Storage:AzureBlob:{AzureBlobLoginFileSystemsExtensions.PublishFileSystemName}:ConnectionString"] = "https://example.blob.core.windows.net/",
+				[$"Umbraco:Storage:AzureBlob:{AzureBlobLoginFileSystemsExtensions.PublishFileSystemName}:ContainerName"] = "login",
 			})
 			.Build();
 		services.AddSingleton(configuration);
@@ -236,10 +236,10 @@ public sealed class AzureBlobLoginFileSystemsExtensionsTests
 		IConfiguration configuration = new ConfigurationBuilder()
 			.AddInMemoryCollection(new Dictionary<string, string?>
 			{
-				["Umbraco:Storage:AzureBlob:LeLøginAssets:ConnectionString"] = "UseDevelopmentStorage=true",
-				["Umbraco:Storage:AzureBlob:LeLøginAssets:ContainerName"] = "login",
-				["Umbraco:Storage:AzureBlob:LeLøginPublish:ConnectionString"] = "UseDevelopmentStorage=true",
-				["Umbraco:Storage:AzureBlob:LeLøginPublish:ContainerName"] = "login",
+				[$"Umbraco:Storage:AzureBlob:{AzureBlobLoginFileSystemsExtensions.AssetsFileSystemName}:ConnectionString"] = "UseDevelopmentStorage=true",
+				[$"Umbraco:Storage:AzureBlob:{AzureBlobLoginFileSystemsExtensions.AssetsFileSystemName}:ContainerName"] = "login",
+				[$"Umbraco:Storage:AzureBlob:{AzureBlobLoginFileSystemsExtensions.PublishFileSystemName}:ConnectionString"] = "UseDevelopmentStorage=true",
+				[$"Umbraco:Storage:AzureBlob:{AzureBlobLoginFileSystemsExtensions.PublishFileSystemName}:ContainerName"] = "login",
 			})
 			.Build();
 		services.AddSingleton(configuration);

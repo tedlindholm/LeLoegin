@@ -9,7 +9,7 @@
 | Type                | Full backoffice product (Settings menu group + tree + workspaces + public runtime)    |
 | Framework (client)  | Pure TypeScript + Vite (custom elements using `UmbElementMixin(HTMLElement)`) |
 | Framework (backend) | C# / .NET 10 / Razor Class Library                                                   |
-| Umbraco version     | 17+                                                                                  |
+| Umbraco version     | 18+                                                                                  |
 
 ## What This Package Is
 

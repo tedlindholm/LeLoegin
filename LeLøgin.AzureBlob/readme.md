@@ -6,10 +6,28 @@ so the backoffice login-screen assets can live in Azure Blob Storage instead of 
 ## Install
 
 ```
+dotnet add package Umbraco.StorageProviders.AzureBlob
 dotnet add package LeLøgin.AzureBlob
 ```
 
-This brings `LeLøgin` and `Umbraco.StorageProviders.AzureBlob` in as transitive dependencies.
+`LeLøgin.AzureBlob` brings `LeLøgin` in as a transitive dependency. The Azure storage provider is
+an explicit host dependency so the Umbraco application remains in control of its runtime version.
+
+### Why the storage-provider dependency is explicit
+
+The adapter compiles against `Umbraco.StorageProviders.AzureBlob`, but marks that reference with
+`PrivateAssets="all"`. Consequently, `LeLøgin.AzureBlob.nupkg` declares only its dependency on
+`LeLøgin`; it does not transitively install the storage provider, Umbraco, or the adapter's private
+cryptography pin.
+
+Install a storage-provider release compatible with the host's Umbraco major version. An Umbraco 18
+site should supply an 18.x provider; when moving the host to Umbraco 19, the host should supply the
+corresponding 19.x provider. This lets the site upgrade its Umbraco dependency graph without the
+adapter pinning it to the version used to compile the adapter.
+
+The same caveats as the core package apply: NuGet does not enforce the host version, and private
+security pins do not flow to the site. Successful restore therefore means only that the package can
+be installed; the application must still provide compatible and patched runtime assemblies.
 
 ## Wire up
 
@@ -50,11 +68,11 @@ builder.CreateUmbracoBuilder()
   "Umbraco": {
     "Storage": {
       "AzureBlob": {
-        "LeLøginAssets": {
+        "LeLoginAssets": {
           "ConnectionString": "<connection-string-or-service-endpoint-uri>",
           "ContainerName": "login"
         },
-        "LeLøginPublish": {
+        "LeLoginPublish": {
           "ConnectionString": "<connection-string-or-service-endpoint-uri>",
           "ContainerName": "login"
         }

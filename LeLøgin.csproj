@@ -33,19 +33,29 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
-    <!-- Api.Management transitively covers Core, Infrastructure, Web.Common and Api.Common.
-         Imaging.ImageSharp supplies the ImageSharp.Web middleware options and HMAC request
-         authorisation that LoginScreenImageUrlBuilder signs its URLs against. Referencing the
-         Umbraco.Cms meta-package instead would force every consumer to take both persistence
-         providers, EF Core and the backoffice static assets. -->
-    <PackageReference Include="Umbraco.Cms.Api.Management" Version="18.1.0" />
-    <PackageReference Include="Umbraco.Cms.Imaging.ImageSharp" Version="18.1.0" />
+    <!-- PrivateAssets="all" pattern: This package is compiled against Umbraco 18.0 but does NOT
+         declare Umbraco as a transitive dependency. The installed host (consumer's Umbraco site) owns
+         and supplies its own Umbraco version at runtime (18.x or 19.x). This allows LeLøgin to
+         work with multiple Umbraco majors without the consumer being locked to a specific version.
+         See: docs/architecture.md#host-owned-dependencies -->
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" PrivateAssets="all" />
+    <!-- Keep vulnerable transitive versions from the 18.0 floor out of this package's consumers. -->
+    <PackageReference Include="Microsoft.OpenApi" Version="2.11.0" PrivateAssets="all" />
+    <PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.11" PrivateAssets="all" />
+    <!-- Build-time only. The host supplies the runtime assemblies and owns their versions.
+         - Api.Management: transitively covers Core, Infrastructure, Web.Common, Api.Common
+         - Imaging.ImageSharp: provides middleware options and HMAC signing utilities for LoginScreenImageUrlBuilder -->
+    <PackageReference Include="Umbraco.Cms.Api.Management" Version="18.0.0" PrivateAssets="all" />
+    <PackageReference Include="Umbraco.Cms.Imaging.ImageSharp" Version="18.0.0" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Dont include the client folder as part of packaging nuget build -->
+    <!-- Don't include the client folder as part of the NuGet package build. -->
     <Content Remove="Client\**" />
+
+    <!-- Exclude repository tooling, editor schemas and local emulator state from the package. -->
+    <Content Remove="AzuriteConfig;AzuriteConfig\**;__azurite_db_*.json;__blobstorage__\**;__queuestorage__\**;appsettings-schema.json;appsettings-schema.*.json;umbraco-package-schema.json;skills-lock.json" />
+    <None Remove="AzuriteConfig;AzuriteConfig\**;__azurite_db_*.json;__blobstorage__\**;__queuestorage__\**;appsettings-schema.json;appsettings-schema.*.json;umbraco-package-schema.json;skills-lock.json" />
 
     <!-- Exclude generated artefacts and scratch repro projects from SDK default globs. -->
     <Compile Remove="artifacts\**" />

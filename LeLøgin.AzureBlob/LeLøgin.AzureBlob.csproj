@@ -28,7 +28,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Umbraco.StorageProviders.AzureBlob" Version="18.0.0" />
+    <!-- PrivateAssets="all" pattern: Build-time only. The host supplies and owns these runtime
+         assemblies; see LeLøgin.csproj for rationale. This adapter works with any Umbraco 18+
+         and any compatible StorageProviders.AzureBlob version the host has installed. -->
+    <PackageReference Include="Umbraco.StorageProviders.AzureBlob" Version="18.0.0" PrivateAssets="all" />
+    <PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.11" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

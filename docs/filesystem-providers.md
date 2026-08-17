@@ -31,6 +31,8 @@ Out of the box, both managers are backed by `PhysicalFileSystem` — Umbraco's b
 
 Both managers expose Umbraco's `IFileSystem` abstraction. You can replace either one in a custom Umbraco composer to point at any storage backend — Azure Blob Storage, Amazon S3, or any other provider that implements `IFileSystem`.
 
+The packaged `LeLøgin.AzureBlob` adapter treats the Azure storage provider as a host-owned dependency. Its `Umbraco.StorageProviders.AzureBlob` reference uses `PrivateAssets="all"`, so consuming sites must install a provider version compatible with their own Umbraco major version. The adapter nupkg declares only its dependency on `LeLøgin`; see the [adapter installation notes](../LeLøgin.AzureBlob/readme.md#why-the-storage-provider-dependency-is-explicit) for the full dependency policy.
+
 ### Extension methods
 
 ```csharp

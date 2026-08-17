@@ -24,3 +24,5 @@ umbraco-package-schema.json
 # Azurite emulator state written by the Azure Blob adapter tests
 AzuriteConfig
 __azurite_db_*.json
+/__blobstorage__/
+/__queuestorage__/
