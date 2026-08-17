@@ -24,7 +24,7 @@ public class LeLøginScreenComposer : IComposer
 {
 	public void Compose(IUmbracoBuilder builder)
 	{
-		builder.Services.ConfigureOptions<ApiConfiguration>();
+		builder.AddLeLøginOpenApiDocument();
 		builder.Services.AddAuthorization(options =>
 		{
 			options.AddPolicy(LeLøginAuthorisationPolicies.ManageLeLøgin, policy =>

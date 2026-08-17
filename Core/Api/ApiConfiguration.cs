@@ -1,56 +1,84 @@
 using System.Text.Json.Nodes;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
-using Microsoft.OpenApi;
+using System.Text.Json.Serialization.Metadata;
 using LeLøgin.Core.Api.Rules;
 using LeLøgin.Core.Models;
-using Swashbuckle.AspNetCore.SwaggerGen;
+using Microsoft.AspNetCore.OpenApi;
+using Microsoft.OpenApi;
+using Umbraco.Cms.Api.Common.OpenApi;
+using Umbraco.Cms.Api.Management.OpenApi;
+using Umbraco.Cms.Core.DependencyInjection;
+
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("LeLøgin.Tests")]
 
 namespace LeLøgin.Core.Api;
 
 /// <summary>
-/// Registers the Login Screen Swagger document and security filter.
+/// Registers the Login Screen OpenAPI document and its schema overrides.
 /// </summary>
-public class ApiConfiguration : IConfigureOptions<SwaggerGenOptions>
+public static class ApiConfiguration
 {
-	public void Configure(SwaggerGenOptions options)
-	{
-		options.SwaggerDoc(
+	public static IUmbracoBuilder AddLeLøginOpenApiDocument(this IUmbracoBuilder builder) =>
+		builder.AddBackOfficeOpenApiDocument(
 			ApiBase.LeLøginScreenApiName,
-			new OpenApiInfo
-			{
-				Title = $"Løgin API v{ApiBase.Major}",
-				Version = ApiBase.LeLøginScreenApiVersion,
-			});
+			document => document
+				.WithTitle($"Løgin API v{ApiBase.Major}")
+				.WithBackOfficeAuthentication()
+				.ConfigureOpenApiOptions(ConfigureSchemas));
 
-		options.MapType<LoginRuleConditionValue>(() => new OpenApiSchema
+	private static void ConfigureSchemas(OpenApiOptions options) =>
+		options.AddSchemaTransformer((schema, context, _) =>
 		{
-			OneOf =
-			[
-				new OpenApiSchema
-				{
-					Type = JsonSchemaType.String
-				},
-				new OpenApiSchema
-				{
-					Type = JsonSchemaType.Integer,
-					Format = "int32"
-				}
-			]
+			ApplySchemaOverride(schema, context.JsonTypeInfo);
+			return Task.CompletedTask;
 		});
 
-		options.MapType<LoginImageAssetKind>(() => CreateStringEnumSchema("background", "logo"));
-		options.MapType<LoginRuleField>(() => CreateStringEnumSchema("weekday", "month"));
-		options.MapType<LoginRuleConditionOperator>(() => CreateStringEnumSchema(
-			"is", "isNot", "in", "notIn", "between", "notBetween"));
-		options.MapType<LoginRuleConditionGroupOperator>(() => CreateStringEnumSchema("all", "any"));
+	/// <summary>
+	/// Describes the models whose custom <see cref="System.Text.Json.Serialization.JsonConverter"/>s
+	/// hide their wire shape from the generator. Anything else is left untouched.
+	/// </summary>
+	internal static void ApplySchemaOverride(OpenApiSchema schema, JsonTypeInfo typeInfo)
+	{
+		var type = typeInfo.Type;
 
-		options.OperationFilter<ApiBase>();
+		if (type == typeof(LoginImageAssetKind))
+		{
+			ApplyStringEnum(schema, "background", "logo");
+		}
+		else if (type == typeof(LoginRuleField))
+		{
+			ApplyStringEnum(schema, "weekday", "month");
+		}
+		else if (type == typeof(LoginRuleConditionOperator))
+		{
+			ApplyStringEnum(schema, "is", "isNot", "in", "notIn", "between", "notBetween");
+		}
+		else if (type == typeof(LoginRuleConditionGroupOperator))
+		{
+			ApplyStringEnum(schema, "all", "any");
+		}
+		else if (typeInfo.ElementType == typeof(LoginRuleConditionValue))
+		{
+			// Keyed on the element type rather than LoginRuleConditionValue itself: the generator
+			// walks the collection but never descends into the element, because its converter
+			// leaves the element's JsonTypeInfo opaque. Key this on the element type and the
+			// override never fires — `values` then ships as a bare array with no items.
+			schema.Items = CreateStringOrIntegerSchema();
+		}
 	}
 
-	private static OpenApiSchema CreateStringEnumSchema(params string[] values) => new()
+	private static OpenApiSchema CreateStringOrIntegerSchema() => new()
 	{
-		Type = JsonSchemaType.String,
-		Enum = values.Select(value => (JsonNode)JsonValue.Create(value)!).ToList()
+		OneOf =
+		[
+			new OpenApiSchema { Type = JsonSchemaType.String },
+			new OpenApiSchema { Type = JsonSchemaType.Integer, Format = "int32" }
+		]
 	};
+
+	private static void ApplyStringEnum(OpenApiSchema schema, params string[] values)
+	{
+		schema.Type = JsonSchemaType.String;
+		schema.Format = null;
+		schema.Enum = values.Select(value => (JsonNode)JsonValue.Create(value)!).ToList();
+	}
 }

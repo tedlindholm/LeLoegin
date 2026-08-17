@@ -29,5 +29,5 @@ Add the NuGet package to the Umbraco host application, restore packages, and run
 
 ## Notes
 
-- Requires Umbraco 17+
+- Requires Umbraco 18+
 - Targets .NET 10
