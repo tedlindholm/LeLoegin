@@ -1,0 +1,151 @@
+# Login Image Voting Plan
+
+## Status
+
+Proposed. This document defines the first implementation slice for an intentionally unobtrusive login-image voting feature. It does not authorise implementation.
+
+## Outcome
+
+An authenticated backoffice user can leave one current positive or negative vote for each Le Løgin background asset. The controls are a hard-to-find, low-priority enhancement to the desktop login image: a small `👍 👎` overlay that appears when the image is hovered or the control receives keyboard focus. There are no counts, prompts, notifications, leaderboards, or editorial decisions driven automatically by votes.
+
+The database is authoritative. A browser-side vote made before login is only a short-lived pending intent that is attached to the authenticated user after login.
+
+## Constraints and decisions
+
+- Votes are attached to a stable Le Løgin background `AssetId`, not the generated runtime URL, file path, crop, or rule. Editing focal point, zoom, greeting, or the active rule does not discard votes. Uploading a replacement image creates a new asset and therefore starts with no votes.
+- One row represents one user's current vote for one asset. Selecting the other icon replaces the stored value. Re-selecting the current icon leaves it unchanged in the first release; vote removal is not required.
+- `UserKey` is obtained on the server from the authenticated Umbraco backoffice user. The client never sends a user ID.
+- The browser must never regard a cookie as proof of a user's prior vote. A cookie can only correlate the pre-login impression with the post-login submission.
+- Votes are not part of `ILeLøginScreenStore`. They have a separate write and concurrency profile, so they need a dedicated store and API surface.
+- When a background asset is deleted, its votes are deleted in the same database scope. There is no retained vote history for deleted images.
+- The feature is desktop-only because Le Løgin hides the image on small screens, which are normally touch devices.
+
+## Compatibility gate: a safe login-page host
+
+The desired overlay cannot be built against the current package without an explicit design decision:
+
+- Le Løgin currently has no public `appEntryPoint`; `Client/public/umbraco-package.json` registers only the authenticated `backofficeEntryPoint`.
+- Login customisation is server-side specifically because the former client runtime could prevent Umbraco's login form from initialising on warm-cache loads.
+- The package rules prohibit querying or mutating Umbraco-owned `umb-auth`, `umb-auth-layout`, or other login-component shadow DOM.
+
+Before production work, run a contained compatibility spike against the supported Umbraco version to establish an official public extension point that can host a focusable vote control without DOM or shadow-DOM mutation and without delaying localisation or form initialisation. The spike must demonstrate fresh, warm-cache, logout, password-reset, and MFA login flows.
+
+If no such host exists, do not reintroduce a login-page runtime just for voting. Keep the data model and authenticated vote synchronisation, but defer the visual voting control until Umbraco exposes an appropriate extension point. A post-login prompt is deliberately out of scope because the feature is intended to remain hard to find.
+
+## Desired interaction wireframe
+
+This is the target only if the compatibility gate succeeds. The image and authentication form remain Umbraco-owned; the vote surface must use a supported host.
+
+```text
+Desktop login page
+┌───────────────────────────────────────────────────────────────────┐
+│                         [Umbraco auth layout]                      │
+│                                                                   │
+│  Login image                                      Sign-in form     │
+│  ┌────────────────────────────────────────┐     ┌──────────────┐ │
+│  │                                        │     │ Email        │ │
+│  │                                        │     │ Password     │ │
+│  │                                        │     │ [Sign in]    │ │
+│  │                                👍  👎  │     └──────────────┘ │
+│  └────────────────────────────────────────┘                       │
+│       [supported public vote host; hidden until hover/focus]       │
+└───────────────────────────────────────────────────────────────────┘
+```
+
+- Controls use native buttons, accessible names, visible focus treatment, and keyboard activation.
+- On pointer devices, the control fades in only while the image is hovered. On keyboard navigation, focus reveals it.
+- No controls render where the image is absent on small screens.
+- A chosen local icon remains selected during the current login journey. No message confirms the action.
+
+## Data design
+
+Create a package-owned `LeLoginVotes` table via a new migration schema snapshot. Do not alter an existing migration snapshot.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `Id` | string GUID | Primary key, generated by Le Løgin. |
+| `AssetId` | string | Required Le Løgin background asset identifier. |
+| `UserKey` | GUID | Required Umbraco backoffice user key. |
+| `Value` | integer | Required; only `1` (`👍`) or `-1` (`👎`) are valid. |
+| `CreatedUtc` | UTC date/time | Set on the first vote. |
+| `UpdatedUtc` | UTC date/time | Set whenever the user changes vote. |
+
+Database indexes:
+
+```text
+PRIMARY KEY (Id)
+UNIQUE      (AssetId, UserKey)
+INDEX       (AssetId)
+```
+
+The unique index is the duplicate-prevention mechanism. The store performs an atomic upsert within one `IScopeProvider` scope, so concurrent submissions from multiple tabs cannot create duplicates. The `AssetId` index supports a future aggregate query without pre-emptively storing counters.
+
+No user-display name, email address, IP address, device identifier, image URL, or free text is stored.
+
+## Pre-login to post-login flow
+
+```text
+Login background request
+  → LeLøginBackgroundMiddleware resolves background AssetId
+  → server issues a short-lived, protected HttpOnly impression cookie
+
+User selects 👍 or 👎
+  → public vote control writes { value, expiresAt } to sessionStorage
+  → selected icon is shown locally for this tab only
+
+Successful authentication and backoffice entry point
+  → authenticated vote synchroniser reads the pending value
+  → POST /umbraco/le-løgin/api/v1/votes/pending { value }
+  → server reads and validates impression cookie, then resolves current UserKey
+  → ILeLøginVoteStore atomically inserts or updates (AssetId, UserKey)
+  → response returns the canonical current value
+  → client clears sessionStorage on success or expiry
+```
+
+The impression cookie is a short-lived ASP.NET Core Data Protection payload containing the resolved asset ID, issued/expiry timestamps, and a nonce. It is `Secure`, `HttpOnly`, and `SameSite=Lax`; its value is never exposed to JavaScript. `sessionStorage` is deliberately used for the pending choice because it survives the same-tab login redirects but disappears when that tab closes.
+
+The authenticated endpoint rejects expired, malformed, or absent impressions, values other than `1` and `-1`, logo assets, and removed assets. It does not accept an `AssetId` or `UserKey` from the client. A replay is harmless because it is an idempotent update of the same unique row.
+
+## Server work
+
+1. Add domain models for `LoginImageVote` and its `LoginImageVoteValue` enum, keeping persistence DTOs separate from API contracts.
+2. Add `LeLoginVoteDto`, a matching immutable migration schema snapshot, and a `CreateLeLoginVotes` migration step after `AddRuleAssetIds` in the existing `LeLogin` migration plan. The migration creates the table plus its unique and lookup indexes on every supported database provider.
+3. Add `ILeLøginVoteStore` and an NPoco/`IScopeProvider` implementation for:
+   - getting a user's vote for an asset;
+   - atomically creating or updating a vote;
+   - deleting votes when an asset is deleted.
+4. Extend the asset-delete path so its asset row, managed files, rules references, and vote rows remain coherent if deletion succeeds or fails.
+5. Add an impression-token service backed by ASP.NET Core Data Protection. `LeLøginBackgroundMiddleware` creates or refreshes the cookie only after a Le Løgin background has been resolved and its runtime image preparation has succeeded. Fall-through to Umbraco's default background creates no Le Løgin impression.
+6. Add an authenticated vote controller under the existing versioned Le Løgin route. It must be protected by backoffice authentication but must not require the Settings-section or `ManageLeLøgin` policy: users may rate an image without permission to manage Le Løgin. Confirm the least-privileged standard Umbraco policy/API-base pattern during implementation.
+7. Expose a single pending-vote endpoint that accepts only the value and derives both asset and user from server-controlled context. Return the canonical stored vote. Do not add public count endpoints in this slice.
+8. Generate the OpenAPI client only after the server contract and authentication requirements are final.
+
+## Client work, conditional on the compatibility gate
+
+1. Add a small, framework-free public vote surface only through the approved public host. It must not read or modify Umbraco login component DOM or shadow DOM, register localisations, or block login initialisation.
+2. Add a narrowly scoped `sessionStorage` adapter with versioned key, expiry handling, value validation, and a deletion method. It stores no user or asset identity.
+3. Add a backoffice vote synchroniser after `configureLeLøginScreenClient` in `Client/lib/index.ts`. It runs in the existing authenticated entry point, is fire-and-forget, and cannot prevent manifest registration or normal backoffice start-up.
+4. Generate the authenticated API client and call it through the existing `UMB_AUTH_CONTEXT` configuration; do not use raw `fetch()` for the authenticated submission.
+5. If the endpoint reports no valid impression, clear the pending browser state silently. If it returns the current vote, retain it only as a local UI cache for the current tab.
+
+## Test-first implementation order
+
+1. Write failing model/store tests for valid values, update-in-place semantics, separate assets/users, and duplicate submission under concurrency.
+2. Write failing migration tests for a fresh install and upgrade from the current migration-plan state, including the unique `(AssetId, UserKey)` index.
+3. Write failing controller tests proving anonymous requests fail, the user key is server-derived, invalid impressions/values fail, and valid requests upsert exactly one vote.
+4. Write failing middleware/token tests proving the impression records only a successfully resolved Le Løgin background and expires correctly.
+5. Write failing asset-deletion tests proving associated vote rows are removed.
+6. After the compatibility spike is approved, write failing client tests for hover/focus visibility, keyboard activation, local pending state, expiry, successful authenticated synchronisation, and silent handling of an expired impression.
+7. Implement each red test in order, with no fallback or compatibility UI path.
+
+## Post-Build Validation (REQUIRED)
+
+- [ ] Run the focused .NET vote-store, migration, middleware, controller, and asset-deletion tests.
+- [ ] Run `dotnet build` from the repository root.
+- [ ] Run `pnpm build` and `pnpm test:unit` from `Client/`.
+- [ ] Regenerate the OpenAPI client and verify no generated-contract drift remains.
+- [ ] Run a terminology/spelling review for project-owned text, preserving external API identifiers.
+- [ ] Browser-test a desktop pointer and keyboard flow: image appears, control stays hidden until hover/focus, selection survives the login redirect, exactly one authenticated vote is stored, and changing the vote updates rather than duplicates it.
+- [ ] Browser-test small-screen layout: the image and vote control are absent.
+- [ ] Run fresh-cache, warm-cache, logout, password-reset, and MFA login flows to prove that voting has not delayed or broken login form initialisation.
+- [ ] Review the implementation for raw management `fetch()` calls, `any`/unsafe casts, unauthorised asset/user input, and package DOM/shadow-DOM mutation.
