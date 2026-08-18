@@ -46,6 +46,33 @@ enforces nothing here, so:
 
 None of this makes Le Løgin independent of Umbraco. It only moves the decision to the host.
 
+## Database Readiness
+
+Le Løgin can be installed before a new Umbraco site has configured or created its database.
+Umbraco treats this as a bootable installation state, so package startup hooks and anonymous HTTP
+middleware can run while database services are deliberately unavailable.
+
+Le Løgin therefore treats exact `RuntimeLevel.Run` equality as its database-readiness boundary:
+
+| Boundary | Before `Run` | At `Run` |
+| --- | --- | --- |
+| Schema migration | Returns without opening an Umbraco scope | Runs the Le Løgin migration plan |
+| User-group provisioning | Returns without querying `IUserGroupService` | Ensures the package-managed group exists |
+| Login graphics middleware | Falls through to Umbraco's default graphics | Resolves the configured Le Løgin graphic |
+| Public runtime actions | Returns a safe empty response | Reads the current package configuration |
+
+The check intentionally uses equality, not runtime-level ordering. Install, upgrade, boot-failed,
+unknown, and future non-running states must remain database-free. The NPoco store itself stays
+strict: a database failure after Umbraco reaches `Run` is an operational error and is not hidden.
+During installation, Umbraco's own installer pipeline can answer a public runtime URL before MVC
+dispatches the Le Løgin action; in Umbraco 18.1 this is an empty `400` response. The package
+contract is that this path remains database-free and never becomes a Le Løgin `500`.
+
+`FreshInstallStartupTests` exercises unconfigured and empty SQLite installation states against the
+real site host, then completes an isolated unattended installation and restarts it to prove that
+migrations and group provisioning remain active at `Run`. Its content root, database, logs, and
+MainDom lock are temporary and never use the development site's database.
+
 ### Consumer responsibilities
 
 A consuming site supplies the runtime assemblies through its own Umbraco reference:
@@ -66,5 +93,6 @@ global-usings caveat that comes with not referencing the `Umbraco.Cms` meta-pack
 ### See Also
 
 - [readme.md — Runtime dependency ownership](../readme.md#runtime-dependency-ownership)
+- [Fresh-install database-readiness remedy](./plans/fresh-install-database-readiness-remedy-plan.md)
 - [Filesystem Providers](./filesystem-providers.md) — the host-owned pattern applied to storage backends
 - [LeLøgin.AzureBlob readme](../LeLøgin.AzureBlob/readme.md) — dependency policy for the Azure adapter

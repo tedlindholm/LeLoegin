@@ -5,6 +5,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SixLabors.ImageSharp.Web;
 using SixLabors.ImageSharp.Web.Middleware;
+using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Services;
 
 namespace LeLøgin.Core.Runtime;
 
@@ -32,9 +34,16 @@ public sealed class LeLøginBackgroundMiddleware(RequestDelegate next)
 		TimeProvider timeProvider,
 		IOptions<ImageSharpMiddlewareOptions> imageSharpOptions,
 		ILogger<LeLøginBackgroundMiddleware> logger,
+		IRuntimeState runtimeState,
 		RequestAuthorizationUtilities? requestAuthorizationUtilities = null)
 	{
 		if (!context.Request.Path.StartsWithSegments(BackgroundPath, StringComparison.OrdinalIgnoreCase))
+		{
+			await next(context);
+			return;
+		}
+
+		if (runtimeState.Level != RuntimeLevel.Run)
 		{
 			await next(context);
 			return;

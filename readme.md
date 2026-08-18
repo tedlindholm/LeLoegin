@@ -35,6 +35,12 @@ the minimum supported host, not because of a sixteen-major jump in the package's
 
 Add the NuGet package to the Umbraco host application, restore packages, and run the site. Umbraco will discover the packaged static web assets and the included `umbraco-package.json` automatically.
 
+Le Løgin may be added before the site's first Umbraco setup. While Umbraco has no configured
+database or is preparing an empty SQLite database, Le Løgin leaves the installer and Umbraco's
+default login graphics in control without querying database-backed package services. Its migrations,
+runtime resolution, and package-managed user-group provisioning become active when Umbraco reaches
+`RuntimeLevel.Run`.
+
 ## Runtime dependency ownership
 
 Le Løgin's production `PackageReference` items use `PrivateAssets="all"`. They are compile-time

@@ -8,6 +8,8 @@ using SixLabors.ImageSharp.Web.Middleware;
 using LeLøgin.Core.Models;
 using LeLøgin.Core.Runtime;
 using LeLøgin.Core.Storage;
+using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Services;
 
 namespace LeLøgin.Core.Api.Runtime;
 
@@ -23,6 +25,7 @@ public class RuntimeController(
 	ILogger<RuntimeController> logger,
 	LeLøginAssetFileManager assetManager,
 	IOptions<ImageSharpMiddlewareOptions> imageSharpOptions,
+	IRuntimeState runtimeState,
 	RequestAuthorizationUtilities? requestAuthorizationUtilities = null) : RuntimeControllerBase
 {
 	[HttpGet("runtime/active")]
@@ -30,6 +33,11 @@ public class RuntimeController(
 	[ProducesResponseType(StatusCodes.Status204NoContent)]
 	public async Task<IActionResult> GetActive()
 	{
+		if (runtimeState.Level != RuntimeLevel.Run)
+		{
+			return NoContent();
+		}
+
 		var allAssets = await store.GetAllAssetsAsync();
 		var backgroundAssets = allAssets
 			.Where(asset => asset.Kind == LoginImageAssetKind.Background)
@@ -86,6 +94,12 @@ public class RuntimeController(
 	[ApiExplorerSettings(IgnoreApi = true)]
 	public async Task<IActionResult> GreetingModule()
 	{
+		if (runtimeState.Level != RuntimeLevel.Run)
+		{
+			Response.Headers.CacheControl = "no-store";
+			return Content("export default {};", "text/javascript; charset=utf-8");
+		}
+
 		var allAssets = await store.GetAllAssetsAsync();
 		var backgroundAssets = allAssets
 			.Where(asset => asset.Kind == LoginImageAssetKind.Background)
@@ -125,6 +139,11 @@ public class RuntimeController(
 	[ProducesResponseType(StatusCodes.Status404NotFound)]
 	public async Task<IActionResult> Thumbnail(string id)
 	{
+		if (runtimeState.Level != RuntimeLevel.Run)
+		{
+			return NotFound();
+		}
+
 		var asset = await store.GetAssetAsync(id);
 		if (asset is null)
 		{

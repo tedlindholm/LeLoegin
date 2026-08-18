@@ -2,10 +2,10 @@
 
 Reference: [Umbraco Docs: Application Code](https://docs.umbraco.com/umbraco-cms/develop-with-umbraco/application-code)
 
-This document summarizes the core concepts and best practices for writing backend application code in modern Umbraco (running on .NET Core / .NET 5+). Umbraco aligns closely with standard ASP.NET Core paradigms.
+This document summarises the core concepts and best practices for writing backend application code in modern Umbraco. Umbraco aligns closely with standard ASP.NET Core paradigms.
 
 ## 1. Dependency Injection (DI)
-Umbraco utilizes the native `Microsoft.Extensions.DependencyInjection` container.
+Umbraco utilises the native `Microsoft.Extensions.DependencyInjection` container.
 - **Usage**: You can inject standard Umbraco services (like `IContentService`, `IMediaService`, `IUmbracoContextAccessor`) directly into your controllers, views, or custom services.
 - **Lifetimes**: Services can be registered as `Transient` (new instance every time), `Scoped` (one per HTTP request), or `Singleton` (one instance for the lifetime of the application).
 
@@ -68,9 +68,11 @@ Modern Umbraco development heavily leverages standard ASP.NET Core architectural
 
 - A package-specific API base and controller base define the authenticated management API surface under `/umbraco/le-løgin/api/v1/...`
 - Public pre-auth runtime endpoints are separated into a dedicated runtime controller base under `/umbraco/le-løgin/api/v1/runtime/...`
-- Entity data is persisted through a singleton-style `JsonFlatFileDataStore` wrapper rooted at `App_Data/LeLøgin/config.json`
+- Assets, rules, and settings are persisted in the Umbraco database through the NPoco-backed `LeLøginScreenStore`, which opens its own `IScopeProvider` scope for each operation
+- Umbraco migrations own the `LeLoginAssets`, `LeLoginRules`, and singleton `LeLoginSettings` tables
 - Source files are stored under `App_Data/LeLøgin/assets/`
 - ImageSharp is used to read uploaded image dimensions and generate GUID-backed runtime exposure files under `wwwroot/login-screen/`
+- Database-backed startup handlers, anonymous graphics middleware, and public runtime actions remain inert until `IRuntimeState.Level` is exactly `RuntimeLevel.Run`; this allows the package to be present during initial Umbraco database setup
 - The current implemented backend scope is:
   - asset upload / list / update / delete
   - publish selected asset as the explicit Le Løgin fallback image

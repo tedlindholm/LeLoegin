@@ -155,9 +155,17 @@ public sealed class LeLøginUserGroupProvisioner(
 /// Provisions the Le Løgin backoffice user group when Umbraco has fully started.
 /// </summary>
 public sealed class LeLøginUserGroupProvisioningNotificationHandler(
-	LeLøginUserGroupProvisioner provisioner)
+	LeLøginUserGroupProvisioner provisioner,
+	IRuntimeState runtimeState)
 	: INotificationAsyncHandler<UmbracoApplicationStartedNotification>
 {
 	public async Task HandleAsync(UmbracoApplicationStartedNotification notification, CancellationToken cancellationToken)
-		=> await provisioner.EnsureProvisionedAsync(cancellationToken);
+	{
+		if (runtimeState.Level != RuntimeLevel.Run)
+		{
+			return;
+		}
+
+		await provisioner.EnsureProvisionedAsync(cancellationToken);
+	}
 }

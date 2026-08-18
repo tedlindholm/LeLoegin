@@ -9,7 +9,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Moq;
 using SixLabors.ImageSharp.Web.Middleware;
+using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Services;
 using Xunit;
 
 namespace LeLøgin.Tests.Api.Runtime;
@@ -20,6 +23,75 @@ public sealed class RuntimeControllerTests : IDisposable
 		Path.GetTempPath(),
 		"LeLøgin.Tests",
 		Guid.NewGuid().ToString("N"));
+	private static readonly IRuntimeState RunningRuntimeState =
+		Mock.Of<IRuntimeState>(state => state.Level == RuntimeLevel.Run);
+
+	[Fact]
+	public async Task GetActive_Returns_NoContent_Without_Store_Access_During_Installation()
+	{
+		var runtimeState = new Mock<IRuntimeState>();
+		runtimeState.SetupGet(state => state.Level).Returns(RuntimeLevel.Install);
+		var controller = new RuntimeController(
+			new Mock<ILeLøginScreenStore>(MockBehavior.Strict).Object,
+			new Mock<ILeLøginScreenFileService>(MockBehavior.Strict).Object,
+			new LeLøginScreenRuntimeResolver(new StubRandom()),
+			TimeProvider.System,
+			new NullLogger<RuntimeController>(),
+			TestFileSystems.AssetFileManager(_contentRootPath),
+			Options.Create(new ImageSharpMiddlewareOptions()),
+			runtimeState: runtimeState.Object)
+		{
+			ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
+		};
+
+		Assert.IsType<NoContentResult>(await controller.GetActive());
+	}
+
+	[Fact]
+	public async Task GreetingModule_Returns_An_Empty_Uncached_Module_Without_Store_Access_During_Installation()
+	{
+		var runtimeState = new Mock<IRuntimeState>();
+		runtimeState.SetupGet(state => state.Level).Returns(RuntimeLevel.Install);
+		var controller = new RuntimeController(
+			new Mock<ILeLøginScreenStore>(MockBehavior.Strict).Object,
+			new Mock<ILeLøginScreenFileService>(MockBehavior.Strict).Object,
+			new LeLøginScreenRuntimeResolver(new StubRandom()),
+			TimeProvider.System,
+			new NullLogger<RuntimeController>(),
+			TestFileSystems.AssetFileManager(_contentRootPath),
+			Options.Create(new ImageSharpMiddlewareOptions()),
+			runtimeState.Object)
+		{
+			ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
+		};
+
+		var result = Assert.IsType<ContentResult>(await controller.GreetingModule());
+
+		Assert.Equal("export default {};", result.Content);
+		Assert.Equal("text/javascript; charset=utf-8", result.ContentType);
+		Assert.Equal("no-store", controller.Response.Headers.CacheControl);
+	}
+
+	[Fact]
+	public async Task Thumbnail_Returns_NotFound_Without_Store_Access_During_Installation()
+	{
+		var runtimeState = new Mock<IRuntimeState>();
+		runtimeState.SetupGet(state => state.Level).Returns(RuntimeLevel.Install);
+		var controller = new RuntimeController(
+			new Mock<ILeLøginScreenStore>(MockBehavior.Strict).Object,
+			new Mock<ILeLøginScreenFileService>(MockBehavior.Strict).Object,
+			new LeLøginScreenRuntimeResolver(new StubRandom()),
+			TimeProvider.System,
+			new NullLogger<RuntimeController>(),
+			TestFileSystems.AssetFileManager(_contentRootPath),
+			Options.Create(new ImageSharpMiddlewareOptions()),
+			runtimeState.Object)
+		{
+			ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
+		};
+
+		Assert.IsType<NotFoundResult>(await controller.Thumbnail("asset-id"));
+	}
 
 	[Fact]
 	public async Task GetActive_Publishes_The_Resolved_Rule_Assets_And_Returns_Guid_Backed_Public_Paths()
@@ -95,7 +167,8 @@ public sealed class RuntimeControllerTests : IDisposable
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
 			new NullLogger<RuntimeController>(),
 			TestFileSystems.AssetFileManager(_contentRootPath),
-			Options.Create(new ImageSharpMiddlewareOptions()))
+			Options.Create(new ImageSharpMiddlewareOptions()),
+			RunningRuntimeState)
 		{
 			ControllerContext = new ControllerContext
 			{
@@ -181,7 +254,8 @@ public sealed class RuntimeControllerTests : IDisposable
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 20, 9, 0, 0, TimeSpan.Zero)),
 			new NullLogger<RuntimeController>(),
 			TestFileSystems.AssetFileManager(_contentRootPath),
-			Options.Create(new ImageSharpMiddlewareOptions()))
+			Options.Create(new ImageSharpMiddlewareOptions()),
+			RunningRuntimeState)
 		{
 			ControllerContext = new ControllerContext
 			{
@@ -246,7 +320,8 @@ public sealed class RuntimeControllerTests : IDisposable
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 20, 9, 0, 0, TimeSpan.Zero)),
 			new NullLogger<RuntimeController>(),
 			TestFileSystems.AssetFileManager(_contentRootPath),
-			Options.Create(new ImageSharpMiddlewareOptions()))
+			Options.Create(new ImageSharpMiddlewareOptions()),
+			RunningRuntimeState)
 		{
 			ControllerContext = new ControllerContext
 			{
@@ -284,7 +359,8 @@ public sealed class RuntimeControllerTests : IDisposable
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
 			new NullLogger<RuntimeController>(),
 			TestFileSystems.AssetFileManager(_contentRootPath),
-			Options.Create(new ImageSharpMiddlewareOptions()))
+			Options.Create(new ImageSharpMiddlewareOptions()),
+			RunningRuntimeState)
 		{
 			ControllerContext = new ControllerContext
 			{
@@ -336,7 +412,8 @@ public sealed class RuntimeControllerTests : IDisposable
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
 			new NullLogger<RuntimeController>(),
 			TestFileSystems.AssetFileManager(_contentRootPath),
-			Options.Create(new ImageSharpMiddlewareOptions()))
+			Options.Create(new ImageSharpMiddlewareOptions()),
+			RunningRuntimeState)
 		{
 			ControllerContext = new ControllerContext
 			{
@@ -386,7 +463,8 @@ public sealed class RuntimeControllerTests : IDisposable
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
 			new NullLogger<RuntimeController>(),
 			TestFileSystems.AssetFileManager(_contentRootPath),
-			Options.Create(new ImageSharpMiddlewareOptions()))
+			Options.Create(new ImageSharpMiddlewareOptions()),
+			RunningRuntimeState)
 		{
 			ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
 		};
@@ -439,7 +517,8 @@ public sealed class RuntimeControllerTests : IDisposable
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
 			new NullLogger<RuntimeController>(),
 			TestFileSystems.AssetFileManager(_contentRootPath),
-			Options.Create(new ImageSharpMiddlewareOptions()))
+			Options.Create(new ImageSharpMiddlewareOptions()),
+			RunningRuntimeState)
 		{
 			ControllerContext = new ControllerContext
 			{
@@ -502,7 +581,8 @@ public sealed class RuntimeControllerTests : IDisposable
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
 			new NullLogger<RuntimeController>(),
 			TestFileSystems.AssetFileManager(_contentRootPath),
-			Options.Create(new ImageSharpMiddlewareOptions()))
+			Options.Create(new ImageSharpMiddlewareOptions()),
+			RunningRuntimeState)
 		{
 			ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
 		};
@@ -569,7 +649,8 @@ public sealed class RuntimeControllerTests : IDisposable
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
 			new NullLogger<RuntimeController>(),
 			TestFileSystems.AssetFileManager(_contentRootPath),
-			Options.Create(new ImageSharpMiddlewareOptions()))
+			Options.Create(new ImageSharpMiddlewareOptions()),
+			RunningRuntimeState)
 		{
 			ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
 		};
@@ -634,7 +715,8 @@ public sealed class RuntimeControllerTests : IDisposable
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
 			new NullLogger<RuntimeController>(),
 			TestFileSystems.AssetFileManager(_contentRootPath),
-			Options.Create(new ImageSharpMiddlewareOptions()))
+			Options.Create(new ImageSharpMiddlewareOptions()),
+			RunningRuntimeState)
 		{
 			ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
 		};
@@ -699,6 +781,7 @@ public sealed class RuntimeControllerTests : IDisposable
 			logger,
 			TestFileSystems.AssetFileManager(_contentRootPath),
 			options,
+			RunningRuntimeState,
 			requestAuthorizationUtilities: null)
 		{
 			ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
@@ -886,7 +969,8 @@ public sealed class RuntimeControllerTests : IDisposable
 			new FixedTimeProvider(localNow),
 			new NullLogger<RuntimeController>(),
 			TestFileSystems.AssetFileManager(_contentRootPath),
-			Options.Create(new ImageSharpMiddlewareOptions()))
+			Options.Create(new ImageSharpMiddlewareOptions()),
+			RunningRuntimeState)
 		{
 			ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
 		};

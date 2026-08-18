@@ -35,7 +35,7 @@ public sealed class LeLoginMigrationNotificationHandler : INotificationAsyncHand
 
     public async Task HandleAsync(UmbracoApplicationStartingNotification notification, CancellationToken cancellationToken)
     {
-        if (_runtimeState.Level < RuntimeLevel.Run)
+        if (_runtimeState.Level != RuntimeLevel.Run)
         {
             return;
         }

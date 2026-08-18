@@ -3,6 +3,9 @@ using LeLøgin.Core.Storage;
 using LeLøgin.Tests.Storage;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
+using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Services;
 using Xunit;
 
 namespace LeLøgin.Tests.Runtime;
@@ -18,6 +21,32 @@ public sealed class LeLøginLogoMiddlewareTests : IDisposable
 		Path.GetTempPath(),
 		"LeLøgin.Tests",
 		Guid.NewGuid().ToString("N"));
+
+	[Theory]
+	[InlineData(LogoUrl)]
+	[InlineData(LogoAlternativeUrl)]
+	public async Task Falls_Through_Without_Store_Access_During_Installation(string path)
+	{
+		var nextCalled = false;
+		var middleware = new LeLøginLogoMiddleware(_ =>
+		{
+			nextCalled = true;
+			return Task.CompletedTask;
+		});
+		var runtimeState = new Mock<IRuntimeState>();
+		runtimeState.SetupGet(state => state.Level).Returns(RuntimeLevel.Install);
+
+		await middleware.InvokeAsync(
+			BuildContext(path),
+			new Mock<ILeLøginScreenStore>(MockBehavior.Strict).Object,
+			new LeLøginScreenRuntimeResolver(new StubRandom()),
+			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
+			TestFileSystems.AssetFileManager(_contentRootPath),
+			new NullLogger<LeLøginLogoMiddleware>(),
+			runtimeState: runtimeState.Object);
+
+		Assert.True(nextCalled);
+	}
 
 	[Fact]
 	public async Task Falls_Through_When_Path_Does_Not_Match()
@@ -278,7 +307,8 @@ public sealed class LeLøginLogoMiddlewareTests : IDisposable
 			new LeLøginScreenRuntimeResolver(new StubRandom()),
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
 			TestFileSystems.AssetFileManager(_contentRootPath),
-			new NullLogger<LeLøginLogoMiddleware>());
+			new NullLogger<LeLøginLogoMiddleware>(),
+			Mock.Of<IRuntimeState>(state => state.Level == RuntimeLevel.Run));
 
 	private static DefaultHttpContext BuildContext(string path)
 	{

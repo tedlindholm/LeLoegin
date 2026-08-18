@@ -3,6 +3,8 @@ using LeLøgin.Core.Storage;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Logging;
+using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Services;
 
 namespace LeLøgin.Core.Runtime;
 
@@ -29,11 +31,18 @@ public sealed class LeLøginLogoMiddleware(RequestDelegate next)
 		LeLøginScreenRuntimeResolver runtimeResolver,
 		TimeProvider timeProvider,
 		LeLøginAssetFileManager assetManager,
-		ILogger<LeLøginLogoMiddleware> logger)
+		ILogger<LeLøginLogoMiddleware> logger,
+		IRuntimeState runtimeState)
 	{
 		// StartsWithSegments is segment-aware, so each candidate matches its own exact endpoint
 		// (not its prefix). We check all configured logo endpoints.
 		if (!LogoPaths.Any(path => context.Request.Path.StartsWithSegments(path, StringComparison.OrdinalIgnoreCase)))
+		{
+			await next(context);
+			return;
+		}
+
+		if (runtimeState.Level != RuntimeLevel.Run)
 		{
 			await next(context);
 			return;
