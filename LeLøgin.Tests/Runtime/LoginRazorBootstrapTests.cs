@@ -32,7 +32,7 @@ public sealed class LoginRazorBootstrapTests
 
 		var greetingRegistration = source.IndexOf("umbExtensionsRegistry.registerMany", StringComparison.Ordinal);
 		var localisationLoad = source.IndexOf("umbLocalizationRegistry.loadLanguage", StringComparison.Ordinal);
-		var loginImport = source.IndexOf("import(loginScriptUrl)", StringComparison.Ordinal);
+		var loginImport = source.IndexOf("import(loginScriptUrl", StringComparison.Ordinal);
 
 		Assert.True(greetingRegistration >= 0, "The login entry must register a greeting localisation manifest.");
 		Assert.Contains("'localization'", source, StringComparison.Ordinal);

@@ -3,8 +3,10 @@ import { join } from 'node:path';
 import { defineConfig, type UserConfig } from 'vite';
 
 const OUT_DIR = '../wwwroot/App_Plugins/le-løgin';
+/** Referenced by name from the Razor login shell, so this entry's filename cannot be hashed. */
+const RAZOR_ENTRY_NAME = 'login';
 const ENTRY_POINTS = {
-	login: 'lib/login-bootstrap.ts',
+	[RAZOR_ENTRY_NAME]: 'lib/login-bootstrap.ts',
 	backoffice: 'lib/backoffice-entry.ts'
 };
 const INLINE_TEST_DEPS = [/^@umbraco-ui\//, /^@umbraco-cms\/backoffice\//];
@@ -60,7 +62,12 @@ function createBuildConfig(
 		rolldownOptions: {
 			external: [/^@umbraco/],
 			output: {
-				entryFileNames: '[name].js',
+				// The Razor shell cache-busts `login.js` with asp-append-version, so that name has
+				// to stay put. Umbraco imports the backoffice entry from the bare URL in
+				// umbraco-package.json with no version query, so its hash is the only
+				// cache-buster it gets — umbracoManifestPlugin rewrites the manifest to match.
+				entryFileNames: (chunk: { name: string }) =>
+					chunk.name === RAZOR_ENTRY_NAME ? `${RAZOR_ENTRY_NAME}.js` : entryPattern,
 				chunkFileNames: entryPattern,
 				// Watch builds stay unminified so the package can be read and breakpointed in
 				// the backoffice; release builds get the full treatment.

@@ -38,16 +38,7 @@ public class RuntimeController(
 			return NoContent();
 		}
 
-		var allAssets = await store.GetAllAssetsAsync();
-		var backgroundAssets = allAssets
-			.Where(asset => asset.Kind == LoginImageAssetKind.Background)
-			.ToList();
-		var context = BuildRuntimeContext(timeProvider);
-		var rules = await store.GetAllRulesAsync();
-		var asset = runtimeResolver.ResolveAsset(
-			backgroundAssets,
-			rules,
-			context);
+		var asset = await ResolveActiveBackgroundAssetAsync();
 		if (asset is null)
 		{
 			logger.LogDebug("No matching rule or catch-all asset resolved for current context");
@@ -100,13 +91,7 @@ public class RuntimeController(
 			return Content("export default {};", "text/javascript; charset=utf-8");
 		}
 
-		var allAssets = await store.GetAllAssetsAsync();
-		var backgroundAssets = allAssets
-			.Where(asset => asset.Kind == LoginImageAssetKind.Background)
-			.ToList();
-		var context = BuildRuntimeContext(timeProvider);
-		var rules = await store.GetAllRulesAsync();
-		var asset = runtimeResolver.ResolveAsset(backgroundAssets, rules, context);
+		var asset = await ResolveActiveBackgroundAssetAsync();
 
 		var greeting = asset?.GreetingText;
 		object payload;
@@ -180,6 +165,21 @@ public class RuntimeController(
 		{
 			return NotFound();
 		}
+	}
+
+	/// <summary>
+	/// Resolves the background asset that applies to the current request. Shared by the two
+	/// endpoints that must always agree on which asset is active — the runtime payload and the
+	/// greeting module — so a rule change can never apply to one and not the other.
+	/// </summary>
+	private async Task<LoginImageAsset?> ResolveActiveBackgroundAssetAsync()
+	{
+		var allAssets = await store.GetAllAssetsAsync();
+		var backgroundAssets = allAssets
+			.Where(asset => asset.Kind == LoginImageAssetKind.Background)
+			.ToList();
+		var rules = await store.GetAllRulesAsync();
+		return runtimeResolver.ResolveAsset(backgroundAssets, rules, BuildRuntimeContext(timeProvider));
 	}
 
 	private static LoginRuntimeContext BuildRuntimeContext(TimeProvider timeProvider)

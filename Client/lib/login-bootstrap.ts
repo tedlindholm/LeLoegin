@@ -41,6 +41,7 @@ if (greetingModulePath && culture) {
 	}
 }
 
-if (loginScriptUrl) {
-	await import(loginScriptUrl);
-}
+// Guaranteed by the package's Razor login shell and asserted by LoginRazorBootstrapTests.
+// Imported unconditionally: a missing value must surface as a module-resolution error rather
+// than leave umb-auth undefined on a blank login screen.
+await import(loginScriptUrl!);
