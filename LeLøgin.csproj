@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <Version>18.0.0</Version>
+    <Version>18.0.0-rc.1</Version>
     <PackageId>LeLøgin</PackageId>
     <Authors>Le Løgin contributors</Authors>
     <Description>Le Løgin is a distributable Umbraco package for managing the backoffice login-screen image from a Settings-integrated product area.</Description>

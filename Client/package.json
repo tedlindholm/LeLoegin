@@ -2,7 +2,7 @@
 	"name": "le-login",
 	"description": "Le Løgin Umbraco client assets and build tooling.",
 	"private": false,
-	"version": "18.0.0",
+	"version": "18.0.0-rc.1",
 	"type": "module",
 	"engines": {
 		"node": ">=24.13"
