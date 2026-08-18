@@ -15,7 +15,7 @@
 		"build": "tsc && vite build",
 		"fmt": "oxfmt lib scripts types vite.config.ts oxlint.config.ts",
 		"fmt:check": "oxfmt --check lib scripts types vite.config.ts oxlint.config.ts",
-		"generate-client": "node scripts/generate-openapi.js https://localhost:5001/umbraco/swagger/le-løgin-api-v1/swagger.json",
+		"generate-client": "node scripts/generate-openapi.js https://localhost:5001/umbraco/openapi/le-løgin-api-v1.json",
 		"sync-version": "node scripts/sync-package-version.mjs",
 		"lint": "oxlint --max-warnings 0",
 		"lint:fix": "oxlint --fix --max-warnings 0",

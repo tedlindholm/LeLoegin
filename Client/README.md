@@ -12,7 +12,7 @@ The generation script resolves the OpenAPI URL in this order:
 
 1. first CLI argument
 2. `OPENAPI_URL` environment variable
-3. local default (`https://localhost:44312/umbraco/swagger/le-løgin-api-v1/swagger.json`) when not running in CI
+3. local default (`https://localhost:44312/umbraco/openapi/le-løgin-api-v1.json`) when not running in CI
 
 In CI (`CI=true`), no localhost default is used. You must provide `OPENAPI_URL` or pass the URL explicitly.
 
@@ -25,7 +25,7 @@ It does not disable TLS verification for non-local hosts.
 
 When no URL is provided locally, generation targets:
 
-- `https://localhost:44312/umbraco/swagger/le-løgin-api-v1/swagger.json`
+- `https://localhost:44312/umbraco/openapi/le-løgin-api-v1.json`
 
 ### Generate client
 
@@ -36,13 +36,13 @@ Optional commands:
 pnpm generate-client
 
 # Override with environment variable
-OPENAPI_URL=https://localhost:44322/umbraco/swagger/le-løgin-api-v1/swagger.json pnpm generate-client
+OPENAPI_URL=https://localhost:44322/umbraco/openapi/le-løgin-api-v1.json pnpm generate-client
 
 # Override with explicit argument
-node scripts/generate-openapi.js https://localhost:44322/umbraco/swagger/le-løgin-api-v1/swagger.json
+node scripts/generate-openapi.js https://localhost:44322/umbraco/openapi/le-løgin-api-v1.json
 
 # CI-style invocation
-OPENAPI_URL=https://example.test/umbraco/swagger/le-løgin-api-v1/swagger.json CI=true pnpm generate-client
+OPENAPI_URL=https://example.test/umbraco/openapi/le-løgin-api-v1.json CI=true pnpm generate-client
 ```
 
 ### Post-generation safeguards

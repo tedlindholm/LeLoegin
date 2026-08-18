@@ -5,15 +5,15 @@ import path from 'node:path';
 
 console.log(chalk.green('Generating OpenAPI client...'));
 
-const DEFAULT_SWAGGER_URL = 'https://localhost:44312/umbraco/swagger/le-løgin-api-v1/swagger.json';
+const DEFAULT_OPENAPI_URL = 'https://localhost:44312/umbraco/openapi/le-løgin-api-v1.json';
 const isCi = process.env.CI === 'true';
-const swaggerUrl =
-	process.argv[2] ?? process.env.OPENAPI_URL ?? (isCi ? undefined : DEFAULT_SWAGGER_URL);
-if (swaggerUrl === undefined) {
+const openApiUrl =
+	process.argv[2] ?? process.env.OPENAPI_URL ?? (isCi ? undefined : DEFAULT_OPENAPI_URL);
+if (openApiUrl === undefined) {
 	console.error(chalk.red('ERROR: Missing URL to OpenAPI spec.'));
 	console.error(
 		chalk.red(
-			'Provide OPENAPI_URL or pass the Swagger URL as the first CLI argument when running in CI/non-local environments.'
+			'Provide OPENAPI_URL or pass the OpenAPI document URL as the first CLI argument when running in CI/non-local environments.'
 		)
 	);
 	process.exit(1);
@@ -43,15 +43,15 @@ const applyPostGenerationTypeFixes = async () => {
 	}
 };
 
-const shouldAllowInsecureLocalTls = /^https:\/\/localhost(?::\d+)?\//.test(swaggerUrl);
+const shouldAllowInsecureLocalTls = /^https:\/\/localhost(?::\d+)?\//.test(openApiUrl);
 if (shouldAllowInsecureLocalTls) {
 	// Ignore self-signed certificates for local development only.
 	process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 }
 
-console.log(`Fetching OpenAPI definition from ${chalk.yellow(swaggerUrl)}`);
+console.log(`Fetching OpenAPI definition from ${chalk.yellow(openApiUrl)}`);
 
-fetch(swaggerUrl)
+fetch(openApiUrl)
 	.then(async (response) => {
 		if (!response.ok) {
 			console.error(chalk.red(`ERROR: ${response.status} ${response.statusText}`));
@@ -59,7 +59,7 @@ fetch(swaggerUrl)
 		}
 
 		await createClient({
-			input: swaggerUrl,
+			input: openApiUrl,
 			output: outputDirectory,
 			plugins: [
 				...defaultPlugins,
@@ -68,7 +68,7 @@ fetch(swaggerUrl)
 					bundle: true,
 					exportFromIndex: true,
 					throwOnError: true,
-					baseUrl: swaggerUrl.replace(/\/umbraco\/swagger\/.*$/, '')
+					baseUrl: openApiUrl.replace(/\/umbraco\/openapi\/.*$/, '')
 				},
 				{
 					name: '@hey-api/typescript',
