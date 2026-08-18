@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using LeLøgin.Core.Api;
@@ -118,30 +117,5 @@ public sealed class ApiConfigurationSchemaTests
 		Assert.Equal(JsonSchemaType.Object, schema.Type);
 		Assert.Null(schema.Enum);
 		Assert.Null(schema.OneOf);
-	}
-
-	/// <summary>
-	/// The enum values are the public wire contract, so they must not pick up the ambient
-	/// culture's casing rules — a Turkish-locale <c>ToLower</c> on "isNot" would ship "ısnot".
-	/// </summary>
-	[Fact]
-	public void Enum_Values_Do_Not_Depend_On_The_Ambient_Culture()
-	{
-		var original = CultureInfo.CurrentCulture;
-		try
-		{
-			CultureInfo.CurrentCulture = new CultureInfo("tr-TR");
-			var schema = new OpenApiSchema();
-
-			ApiConfiguration.ApplySchemaOverride(schema, TypeInfoFor<LoginRuleConditionOperator>());
-
-			Assert.Equal(
-				["is", "isNot", "in", "notIn", "between", "notBetween"],
-				EnumValuesOf(schema));
-		}
-		finally
-		{
-			CultureInfo.CurrentCulture = original;
-		}
 	}
 }

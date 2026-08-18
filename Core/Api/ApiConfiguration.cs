@@ -58,10 +58,11 @@ public static class ApiConfiguration
 		}
 		else if (typeInfo.ElementType == typeof(LoginRuleConditionValue))
 		{
-			// Keyed on the element type rather than LoginRuleConditionValue itself: the generator
-			// walks the collection but never descends into the element, because its converter
-			// leaves the element's JsonTypeInfo opaque. Key this on the element type and the
-			// override never fires — `values` then ships as a bare array with no items.
+			// Matched via typeInfo.ElementType — i.e. on the collection, not on the value type.
+			// The generator walks the collection but never descends into the element, because
+			// the element's converter leaves its JsonTypeInfo opaque. Match instead on
+			// type == typeof(LoginRuleConditionValue) and this override never fires: `values`
+			// then ships as a bare array with no items, and no build or startup breaks to say so.
 			schema.Items = CreateStringOrIntegerSchema();
 		}
 	}
