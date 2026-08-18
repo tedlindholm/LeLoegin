@@ -1,4 +1,6 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace LeLøgin.Core.Api;
 
@@ -58,8 +60,15 @@ public static class ApiBase
 	/// from the wrong origin-relative path and the greeting silently falls back to Umbraco's
 	/// default.
 	/// </param>
-	public static string GetGreetingModuleUrl(PathString pathBase) =>
+	/// <param name="renderToken">
+	/// Per-render token, forwarded so the greeting resolves the same asset as the background and
+	/// logo requests of the same render. See <see cref="LeLøgin.Core.Runtime.LoginRuntimeContext"/>.
+	/// </param>
+	public static string GetGreetingModuleUrl(PathString pathBase, int renderToken) =>
 		// PathString.ToString() yields the URI-escaped form, so the non-ASCII segment is emitted
 		// as "le-l%C3%B8gin" rather than relying on the browser to encode it.
-		pathBase.Add(GreetingModuleAppPath).ToString();
+		QueryHelpers.AddQueryString(
+			pathBase.Add(GreetingModuleAppPath).ToString(),
+			LeLøgin.Core.Runtime.LoginRuntimeContextFactory.RenderTokenQueryKey,
+			renderToken.ToString(CultureInfo.InvariantCulture));
 }

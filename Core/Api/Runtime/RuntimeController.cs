@@ -179,15 +179,10 @@ public class RuntimeController(
 			.Where(asset => asset.Kind == LoginImageAssetKind.Background)
 			.ToList();
 		var rules = await store.GetAllRulesAsync();
-		return runtimeResolver.ResolveAsset(backgroundAssets, rules, BuildRuntimeContext(timeProvider));
-	}
-
-	private static LoginRuntimeContext BuildRuntimeContext(TimeProvider timeProvider)
-	{
-		var now = timeProvider.GetLocalNow();
-		return new LoginRuntimeContext(
-			now.DayOfWeek.ToString().ToLowerInvariant(),
-			now.Month);
+		return runtimeResolver.ResolveAsset(
+			backgroundAssets,
+			rules,
+			LoginRuntimeContextFactory.Create(Request, timeProvider));
 	}
 }
 

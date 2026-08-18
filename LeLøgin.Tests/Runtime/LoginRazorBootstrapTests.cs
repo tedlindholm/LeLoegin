@@ -13,7 +13,7 @@ public sealed class LoginRazorBootstrapTests
 	{
 		var viewSource = ReadRepositoryFile("umbraco", "UmbracoLogin", "Index.cshtml");
 
-		Assert.Contains("ApiBase.GetGreetingModuleUrl(Context.Request.PathBase)", viewSource, StringComparison.Ordinal);
+		Assert.Contains("ApiBase.GetGreetingModuleUrl(Context.Request.PathBase, lr)", viewSource, StringComparison.Ordinal);
 		Assert.Contains("data-le-login-greeting-module", viewSource, StringComparison.Ordinal);
 		Assert.Contains("data-le-login-culture", viewSource, StringComparison.Ordinal);
 		Assert.Contains("data-umbraco-login-module", viewSource, StringComparison.Ordinal);
@@ -23,6 +23,18 @@ public sealed class LoginRazorBootstrapTests
 		// not wait for a preceding module's top-level await, so leaving Umbraco's own script tag
 		// in place would let it connect umb-auth while localisation was still loading.
 		Assert.DoesNotContain("src=\"~/umbraco/login/login.js\"", viewSource, StringComparison.Ordinal);
+	}
+
+	[Fact]
+	public void Package_Login_View_Puts_One_Render_Token_On_Every_Resolving_Url()
+	{
+		var viewSource = ReadRepositoryFile("umbraco", "UmbracoLogin", "Index.cshtml");
+
+		// Background, both logos and the greeting each resolve the active asset in their own
+		// request. They must share one token or a random rule shows mismatched image and greeting.
+		Assert.Contains("var lr = LeLøginRandom.NextRenderToken();", viewSource, StringComparison.Ordinal);
+		Assert.Equal(3, CountOccurrences(viewSource, "new {Version= \"1\", lr}"));
+		Assert.Contains("GetGreetingModuleUrl(Context.Request.PathBase, lr)", viewSource, StringComparison.Ordinal);
 	}
 
 	[Fact]
@@ -63,6 +75,18 @@ public sealed class LoginRazorBootstrapTests
 		var source = ReadRepositoryFile("Core", "LoginScreenComposer.cs");
 
 		Assert.DoesNotContain("LeLøginPackageManifestReader", source, StringComparison.Ordinal);
+	}
+
+	private static int CountOccurrences(string source, string value)
+	{
+		var count = 0;
+		for (var index = source.IndexOf(value, StringComparison.Ordinal); index >= 0;
+			index = source.IndexOf(value, index + value.Length, StringComparison.Ordinal))
+		{
+			count++;
+		}
+
+		return count;
 	}
 
 	private static string ReadRepositoryFile(params string[] relativePath) =>

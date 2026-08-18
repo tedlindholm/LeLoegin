@@ -21,6 +21,7 @@
 @inject IPackageManifestService PackageManifestService
 @inject IJsonSerializer JsonSerializer
 @inject Microsoft.AspNetCore.Mvc.ViewFeatures.IFileVersionProvider FileVersionProvider
+@inject LeLøgin.Core.Runtime.ILeLøginRandom LeLøginRandom
 @inject Umbraco.Cms.Core.Security.ICspNonceService CspNonceService
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 @addTagHelper Umbraco.Cms.Web.Common.TagHelpers.CspNonceTagHelper, Umbraco.Cms.Web.Common
@@ -29,16 +30,19 @@
    https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Cms.StaticAssets/umbraco/UmbracoLogin/Index.cshtml *@
 @{
     bool.TryParse(Context.Request.Query["umbDebug"], out var isDebug);
+    // Le Løgin: one token per render. The background, logo, and greeting requests each
+    // resolve the active asset independently, so a random rule needs this to agree.
+    var lr = LeLøginRandom.NextRenderToken();
     var backOfficePath = HostingEnvironment.GetBackOfficePath();
-    var loginLogoImage = Url.RouteUrl(BackOfficeGraphicsController.LoginLogoRouteName, new {Version= "1"});
-    var loginLogoImageAlternative = Url.RouteUrl(BackOfficeGraphicsController.LoginLogoAlternativeRouteName, new {Version= "1"});
-    var loginBackgroundImage = Url.RouteUrl(BackOfficeGraphicsController.LoginBackGroundRouteName, new {Version= "1"});
+    var loginLogoImage = Url.RouteUrl(BackOfficeGraphicsController.LoginLogoRouteName, new {Version= "1", lr});
+    var loginLogoImageAlternative = Url.RouteUrl(BackOfficeGraphicsController.LoginLogoAlternativeRouteName, new {Version= "1", lr});
+    var loginBackgroundImage = Url.RouteUrl(BackOfficeGraphicsController.LoginBackGroundRouteName, new {Version= "1", lr});
     var usernameIsEmail = SecuritySettings.Value.UsernameIsEmail;
     var allowUserInvite = EmailSender.CanSendRequiredEmail();
     var allowPasswordReset = SecuritySettings.Value.AllowPasswordReset && EmailSender.CanSendRequiredEmail();
     var disableLocalLogin = ExternalLogins.HasDenyLocalLogin();
     // Le Løgin: the login entry imports Umbraco's bundle itself, so it needs its cache-busted URL.
-    var greetingModuleUrl = ApiBase.GetGreetingModuleUrl(Context.Request.PathBase);
+    var greetingModuleUrl = ApiBase.GetGreetingModuleUrl(Context.Request.PathBase, lr);
     var umbracoLoginUrl = FileVersionProvider.AddFileVersionToPath(
         Context.Request.PathBase,
         "/umbraco/login/login.js");

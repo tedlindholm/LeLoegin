@@ -52,7 +52,7 @@ public sealed class LeLøginLogoMiddleware(RequestDelegate next)
 		var backgroundAssets = assets
 			.Where(asset => asset.Kind == LoginImageAssetKind.Background)
 			.ToList();
-		var runtimeContext = BuildRuntimeContext(timeProvider);
+		var runtimeContext = LoginRuntimeContextFactory.Create(context.Request, timeProvider);
 		var rules = await store.GetAllRulesAsync();
 		var activeAsset = runtimeResolver.ResolveAsset(
 			backgroundAssets,
@@ -105,13 +105,5 @@ public sealed class LeLøginLogoMiddleware(RequestDelegate next)
 				logoAsset.StoragePath);
 			await next(context);
 		}
-	}
-
-	private static LoginRuntimeContext BuildRuntimeContext(TimeProvider timeProvider)
-	{
-		var now = timeProvider.GetLocalNow();
-		return new LoginRuntimeContext(
-			now.DayOfWeek.ToString().ToLowerInvariant(),
-			now.Month);
 	}
 }

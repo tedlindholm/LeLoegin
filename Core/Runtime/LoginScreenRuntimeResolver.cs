@@ -33,7 +33,15 @@ public sealed class LeLøginScreenRuntimeResolver
 			if (candidates.Count == 0)
 				continue;
 
-			return assetMap[candidates[_random.NextIndex(candidates.Count)]];
+			// A render token pins the choice for one page render so the background, logo, and
+			// greeting requests all land on the same image. Plain modulo rather than a hash of
+			// the token: .NET string hashing is randomised per process, so a hash would let two
+			// instances of a load-balanced site disagree within the same render.
+			var index = context.RenderToken is int renderToken
+				? (int)((uint)renderToken % (uint)candidates.Count)
+				: _random.NextIndex(candidates.Count);
+
+			return assetMap[candidates[index]];
 		}
 
 		return null;

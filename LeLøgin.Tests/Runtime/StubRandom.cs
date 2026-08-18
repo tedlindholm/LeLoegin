@@ -16,4 +16,7 @@ public sealed class StubRandom : ILeLøginRandom
 	}
 
 	public int NextIndex(int count) => count <= 0 ? 0 : Math.Min(_index, count - 1);
+
+	/// <summary>Fixed token, so URL assertions stay stable.</summary>
+	public int NextRenderToken() => _index;
 }
