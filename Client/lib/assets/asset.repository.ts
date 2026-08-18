@@ -82,58 +82,26 @@ export class LeLøginScreenAssetRepository extends UmbRepositoryBase {
 	}
 
 	/**
-	 * Updates an asset's metadata (name and/or alt text).
+	 * Replaces an asset's metadata. The server's PUT is replace, not patch — every field is
+	 * overwritten from the request — so callers must supply the complete state, passing null
+	 * to clear a field.
 	 *
 	 * @param unique - The unique identifier of the asset
-	 * @param update - Object containing optional name and altText to update
+	 * @param update - The complete replacement metadata for the asset
 	 * @returns A promise resolving to an object with the updated asset or error
-	 *
-	 * @example
-	 * ```typescript
-	 * const { data, error } = await repository.update('asset-123', { name: 'New Name' });
-	 * ```
 	 */
 	async update(
 		unique: string,
 		update: {
-			name?: string;
-			altText?: string;
-			greetingText?: string;
-			logoAssetId?: string;
-			focalPoint?: FocalPoint | null;
-			zoom?: number | null;
+			name: string;
+			altText: string | null;
+			greetingText: string | null;
+			logoAssetId: string | null;
+			focalPoint: FocalPoint | null;
+			zoom: number | null;
 		}
 	) {
 		return this.#dataSource.updateAsset(unique, update);
-	}
-
-	/**
-	 * Renames an asset by updating its name property.
-	 * Returns a simplified object with just name and unique identifier.
-	 *
-	 * @param unique - The unique identifier of the asset
-	 * @param name - The new display name
-	 * @returns A promise resolving to an object with simplified asset data or error
-	 *
-	 * @example
-	 * ```typescript
-	 * const { data, error } = await repository.rename('asset-123', 'Updated Name');
-	 * if (data) console.log(`Renamed to: ${data.name}`);
-	 * ```
-	 */
-	async rename(unique: string, name: string) {
-		const { data, error } = await this.update(unique, { name });
-
-		return {
-			data:
-				data === undefined
-					? undefined
-					: {
-							name: data.name,
-							unique: data.id
-						},
-			error
-		};
 	}
 
 	/**

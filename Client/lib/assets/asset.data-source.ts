@@ -5,7 +5,6 @@ import { V1 } from '../api/index.js';
 import {
 	mapApiLoginAsset,
 	mapApiLoginAssets,
-	toApiLoginImageAssetKind,
 	type ApiAssetUpdateBody
 } from '../models/api-adapters.js';
 import type { FocalPoint, LoginImageAssetKind } from '../models/index.js';
@@ -33,7 +32,7 @@ export class LeLøginScreenAssetDataSource extends UmbControllerBase {
 	 * ```
 	 */
 	async getAssets() {
-		const { data, error } = await tryExecute(this, V1.getUmbracoLeLøginApiV1Assets());
+		const { data, error } = await tryExecute(this, V1.getAssets());
 		return {
 			data: data === undefined ? undefined : mapApiLoginAssets(data),
 			error
@@ -57,11 +56,11 @@ export class LeLøginScreenAssetDataSource extends UmbControllerBase {
 	async uploadAsset(file: File, name: string, kind: LoginImageAssetKind, altText?: string) {
 		const { data, error } = await tryExecute(
 			this,
-			V1.postUmbracoLeLøginApiV1Assets({
+			V1.postAssets({
 				body: {
 					file,
 					name,
-					kind: toApiLoginImageAssetKind(kind),
+					kind,
 					altText
 				}
 			})
@@ -87,7 +86,7 @@ export class LeLøginScreenAssetDataSource extends UmbControllerBase {
 	async getAsset(assetId: string) {
 		const { data, error } = await tryExecute(
 			this,
-			V1.getUmbracoLeLøginApiV1AssetsById({
+			V1.getAssetsById({
 				path: { id: assetId }
 			})
 		);
@@ -107,7 +106,7 @@ export class LeLøginScreenAssetDataSource extends UmbControllerBase {
 	async getAssetPreview(assetId: string) {
 		const { data, error } = await tryExecute(
 			this,
-			V1.getUmbracoLeLøginApiV1AssetsByIdPreview({
+			V1.getAssetsByIdPreview({
 				path: { id: assetId }
 			})
 		);
@@ -137,25 +136,21 @@ export class LeLøginScreenAssetDataSource extends UmbControllerBase {
 	async updateAsset(
 		assetId: string,
 		update: {
-			name?: string;
-			altText?: string;
-			greetingText?: string;
-			logoAssetId?: string;
-			focalPoint?: FocalPoint | null;
-			zoom?: number | null;
+			name: string;
+			altText: string | null;
+			greetingText: string | null;
+			logoAssetId: string | null;
+			focalPoint: FocalPoint | null;
+			zoom: number | null;
 		}
 	) {
-		const body: ApiAssetUpdateBody = {
-			...(update.name === undefined ? {} : { name: update.name }),
-			...(update.altText === undefined ? {} : { altText: update.altText }),
-			...(update.greetingText === undefined ? {} : { greetingText: update.greetingText }),
-			...(update.logoAssetId === undefined ? {} : { logoAssetId: update.logoAssetId }),
-			...(update.focalPoint === undefined ? {} : { focalPoint: update.focalPoint }),
-			...(update.zoom === undefined ? {} : { zoom: update.zoom })
-		};
+		// PUT is replace, not patch: the server overwrites every field from the request (an
+		// absent key deserialises to null and clears the stored value), so the contract
+		// requires every key and this signature refuses to build a partial payload.
+		const body: ApiAssetUpdateBody = update;
 		const { error } = await tryExecute(
 			this,
-			V1.putUmbracoLeLøginApiV1AssetsById({
+			V1.putAssetsById({
 				path: { id: assetId },
 				body
 			})
@@ -188,7 +183,7 @@ export class LeLøginScreenAssetDataSource extends UmbControllerBase {
 	async deleteAsset(assetId: string) {
 		const { error } = await tryExecute(
 			this,
-			V1.deleteUmbracoLeLøginApiV1AssetsById({
+			V1.deleteAssetsById({
 				path: { id: assetId }
 			})
 		);

@@ -4,6 +4,8 @@ import type {
 	FocalPoint as ApiFocalPoint,
 	LoginImageAsset as ApiLoginImageAsset,
 	LoginRuleConditionGroupModel,
+	LoginRuleConditionModel,
+	LoginRuleResponseModel,
 	SaveRuleRequest
 } from '../api/index.js';
 import type {
@@ -13,81 +15,57 @@ import type {
 	ConditionOperatorMetadata,
 	FocalPoint,
 	LoginImageAsset,
-	LoginImageAssetKind,
 	LoginRule,
 	LoginRuleCondition,
 	LoginRuleConditionGroup,
 	LoginRuleConditionOperator,
 	LoginRuleField
 } from './index.js';
-import {
-	conditionField,
-	conditionGroupOperator,
-	conditionOperator,
-	type ApiLoginRuleConditionGroupInput,
-	type ApiLoginRuleConditionInput,
-	type ApiLoginRuleResponseInput
-} from './api-rule-contract.js';
+import { ensureConditionField, ensureConditionOperator } from './api-rule-contract.js';
 
-// The C# enum was lowercase on the wire in earlier versions; the adapter accepts both
-// so existing config.json payloads still parse after the PascalCase swap.
-type LegacyApiLoginImageAsset = Omit<ApiLoginImageAsset, 'kind'> & {
-	kind: 'background' | 'logo';
-};
-type ApiLoginImageAssetInput = ApiLoginImageAsset | LegacyApiLoginImageAsset;
 export type ApiAssetUpdateBody = ApiAssetUpdateRequest;
 
 const normaliseNullable = <T>(value: T | null | undefined): T | undefined => value ?? undefined;
 const isObject = (value: unknown): value is Record<string, unknown> =>
 	typeof value === 'object' && value !== null && !Array.isArray(value);
 
-// Asset kind accepts both PascalCase and legacy lowercase on the wire.
-const mapApiLoginImageAssetKind = (kind: ApiLoginImageAssetInput['kind']): LoginImageAssetKind => {
-	switch (kind) {
-		case 'Background':
-		case 'background':
-			return 'background';
-		case 'Logo':
-		case 'logo':
-			return 'logo';
-		default:
-			throw new Error(`Le Løgin received an unsupported asset kind '${kind}'.`);
+// The server's JSON options allow reading numbers from strings, so the contract types
+// integers as ["integer", "string"]. The server always writes numbers; coerce the string
+// alternative here so the domain stays numeric, and throw on anything non-numeric so a
+// corrupted payload cannot poison the editor.
+const toDomainNumber = (value: number | string, fieldName: string): number => {
+	const parsed = typeof value === 'number' ? value : Number(value);
+	if (typeof value === 'string' && value.trim() === '') {
+		throw new Error(`Expected '${fieldName}' to be a number.`);
 	}
-};
-
-export const toApiLoginImageAssetKind = (kind: LoginImageAssetKind): ApiLoginImageAsset['kind'] => {
-	switch (kind) {
-		case 'background':
-			return 'Background';
-		case 'logo':
-			return 'Logo';
-		default:
-			throw new Error(`Le Løgin cannot serialise the asset kind '${kind}'.`);
+	if (!Number.isFinite(parsed)) {
+		throw new Error(`Expected '${fieldName}' to be a number.`);
 	}
+	return parsed;
 };
 
 const mapApiLoginRuleConditionGroup = (
-	conditionGroup: ApiLoginRuleConditionGroupInput
+	conditionGroup: LoginRuleConditionGroupModel
 ): LoginRuleConditionGroup => ({
-	operator: conditionGroupOperator.fromWire(conditionGroup.operator),
+	operator: conditionGroup.operator,
 	conditions: conditionGroup.conditions.map(mapApiLoginRuleCondition)
 });
 
-const mapApiLoginRuleCondition = (condition: ApiLoginRuleConditionInput): LoginRuleCondition => ({
+const mapApiLoginRuleCondition = (condition: LoginRuleConditionModel): LoginRuleCondition => ({
 	id: condition.id,
-	field: conditionField.fromWire(condition.field),
-	operator: conditionOperator.fromWire(condition.operator),
+	field: condition.field,
+	operator: condition.operator,
 	values: [...condition.values]
 });
 
 const toSaveRuleConditionGroup = (
 	conditionGroup: LoginRuleConditionGroup
 ): LoginRuleConditionGroupModel => ({
-	operator: conditionGroupOperator.toWire(conditionGroup.operator),
+	operator: conditionGroup.operator,
 	conditions: conditionGroup.conditions.map((condition) => ({
 		id: condition.id,
-		field: conditionField.toWire(condition.field),
-		operator: conditionOperator.toWire(condition.operator),
+		field: condition.field,
+		operator: condition.operator,
 		values: [...condition.values]
 	}))
 });
@@ -98,7 +76,7 @@ const mapApiFocalPoint = (value: ApiFocalPoint | null | undefined): FocalPoint |
 	return { left: value.left, top: value.top };
 };
 
-export const mapApiLoginAsset = (asset: ApiLoginImageAssetInput): LoginImageAsset => {
+export const mapApiLoginAsset = (asset: ApiLoginImageAsset): LoginImageAsset => {
 	const altText = normaliseNullable(asset.altText);
 	const greetingText = normaliseNullable(asset.greetingText);
 	const logoAssetId = normaliseNullable(asset.logoAssetId);
@@ -114,7 +92,7 @@ export const mapApiLoginAsset = (asset: ApiLoginImageAssetInput): LoginImageAsse
 	return {
 		id: asset.id,
 		name: asset.name,
-		kind: mapApiLoginImageAssetKind(asset.kind),
+		kind: asset.kind,
 		...(altText === undefined ? {} : { altText }),
 		...(greetingText === undefined ? {} : { greetingText }),
 		...(logoAssetId === undefined ? {} : { logoAssetId }),
@@ -122,26 +100,26 @@ export const mapApiLoginAsset = (asset: ApiLoginImageAssetInput): LoginImageAsse
 		...(zoom === undefined ? {} : { zoom }),
 		storagePath: asset.storagePath,
 		...(publicPath === undefined ? {} : { publicPath }),
-		width: asset.width,
-		height: asset.height,
+		width: toDomainNumber(asset.width, 'width'),
+		height: toDomainNumber(asset.height, 'height'),
 		createdAt: asset.createdAt,
 		updatedAt: asset.updatedAt
 	};
 };
 
-export const mapApiLoginAssets = (assets: Array<ApiLoginImageAssetInput>): Array<LoginImageAsset> =>
+export const mapApiLoginAssets = (assets: Array<ApiLoginImageAsset>): Array<LoginImageAsset> =>
 	assets.map(mapApiLoginAsset);
 
-export const mapApiLoginRule = (rule: ApiLoginRuleResponseInput): LoginRule => ({
+export const mapApiLoginRule = (rule: LoginRuleResponseModel): LoginRule => ({
 	id: rule.id,
 	name: rule.name,
-	priority: rule.priority,
+	priority: toDomainNumber(rule.priority, 'priority'),
 	enabled: rule.enabled,
 	assetIds: [...rule.assetIds],
 	condition: mapApiLoginRuleConditionGroup(rule.condition)
 });
 
-export const mapApiLoginRules = (rules: Array<ApiLoginRuleResponseInput>): Array<LoginRule> =>
+export const mapApiLoginRules = (rules: Array<LoginRuleResponseModel>): Array<LoginRule> =>
 	rules.map(mapApiLoginRule);
 
 export const toSaveRuleRequest = (rule: LoginRule): SaveRuleRequest => ({
@@ -238,7 +216,7 @@ const parseConditionFieldMetadata = (meta: unknown): ConditionFieldMetadata => {
 	);
 
 	return {
-		operators: operators.map(conditionOperator.ensureDomain),
+		operators: operators.map(ensureConditionOperator),
 		defaultValue,
 		...(allowedValues === undefined ? {} : { allowedValues: [...allowedValues] })
 	};
@@ -247,14 +225,14 @@ const parseConditionFieldMetadata = (meta: unknown): ConditionFieldMetadata => {
 export const toConditionMetadata = (api: ApiConditionMetadata): ConditionMetadata => {
 	const operators = new Map<LoginRuleConditionOperator, ConditionOperatorMetadata>(
 		Object.entries(api.operators).map(([op, meta]) => [
-			conditionOperator.ensureDomain(op),
+			ensureConditionOperator(op),
 			parseConditionOperatorMetadata(meta)
 		])
 	);
 
 	const fields = new Map<LoginRuleField, ConditionFieldMetadata>(
 		Object.entries(api.fields).map(([field, meta]) => [
-			conditionField.ensureDomain(field),
+			ensureConditionField(field),
 			parseConditionFieldMetadata(meta)
 		])
 	);

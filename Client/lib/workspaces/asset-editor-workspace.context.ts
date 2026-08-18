@@ -204,17 +204,16 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 			return false;
 		}
 
+		// PUT is replace: send the complete state. Background-only fields are nulled for
+		// logo assets, matching what the server would force them to anyway.
+		const isBackground = this.#draft.kind === 'background';
 		const { data, error } = await this.saveAsset(assetId, {
 			name: this.#draft.name,
-			altText: this.#draft.altText,
-			...(this.#draft.kind === 'background'
-				? {
-						greetingText: this.#draft.greetingText,
-						logoAssetId: this.#draft.logoAssetId,
-						focalPoint: this.#draft.focalPoint ?? null,
-						zoom: this.#draft.zoom ?? null
-					}
-				: {})
+			altText: this.#draft.altText ?? null,
+			greetingText: isBackground ? (this.#draft.greetingText ?? null) : null,
+			logoAssetId: isBackground ? (this.#draft.logoAssetId ?? null) : null,
+			focalPoint: isBackground ? (this.#draft.focalPoint ?? null) : null,
+			zoom: isBackground ? (this.#draft.zoom ?? null) : null
 		});
 
 		if (error || data === undefined) {
@@ -235,11 +234,11 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 		assetId: string,
 		update: {
 			name: string;
-			altText?: string;
-			greetingText?: string;
-			logoAssetId?: string;
-			focalPoint?: FocalPoint | null;
-			zoom?: number | null;
+			altText: string | null;
+			greetingText: string | null;
+			logoAssetId: string | null;
+			focalPoint: FocalPoint | null;
+			zoom: number | null;
 		}
 	) {
 		const { data, error } = await this.#repository.update(assetId, update);

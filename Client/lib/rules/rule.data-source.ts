@@ -11,7 +11,7 @@ export class LeLøginScreenRuleDataSource extends UmbControllerBase {
 	}
 
 	async getRules() {
-		const { data, error } = await tryExecute(this, V1.getUmbracoLeLøginApiV1Rules());
+		const { data, error } = await tryExecute(this, V1.getRules());
 		return {
 			data: data === undefined ? undefined : mapApiLoginRules(data),
 			error
@@ -21,7 +21,7 @@ export class LeLøginScreenRuleDataSource extends UmbControllerBase {
 	async getRule(ruleId: string) {
 		const { data, error } = await tryExecute(
 			this,
-			V1.getUmbracoLeLøginApiV1RulesById({ path: { id: ruleId } })
+			V1.getRulesById({ path: { id: ruleId } })
 		);
 		return {
 			data: data === undefined ? undefined : mapApiLoginRule(data),
@@ -32,7 +32,7 @@ export class LeLøginScreenRuleDataSource extends UmbControllerBase {
 	async createRule(rule: LoginRule) {
 		const { data, error } = await tryExecute(
 			this,
-			V1.postUmbracoLeLøginApiV1Rules({ body: toSaveRuleRequest(rule) })
+			V1.postRules({ body: toSaveRuleRequest(rule) })
 		);
 		return {
 			data: data === undefined ? undefined : mapApiLoginRule(data),
@@ -43,7 +43,7 @@ export class LeLøginScreenRuleDataSource extends UmbControllerBase {
 	async updateRule(ruleId: string, rule: LoginRule) {
 		const { data, error } = await tryExecute(
 			this,
-			V1.putUmbracoLeLøginApiV1RulesById({ path: { id: ruleId }, body: toSaveRuleRequest(rule) })
+			V1.putRulesById({ path: { id: ruleId }, body: toSaveRuleRequest(rule) })
 		);
 		return {
 			data: data === undefined ? undefined : mapApiLoginRule(data),
@@ -54,7 +54,7 @@ export class LeLøginScreenRuleDataSource extends UmbControllerBase {
 	async deleteRule(ruleId: string) {
 		const { error } = await tryExecute(
 			this,
-			V1.deleteUmbracoLeLøginApiV1RulesById({ path: { id: ruleId } })
+			V1.deleteRulesById({ path: { id: ruleId } })
 		);
 		return {
 			data: error ? false : true,

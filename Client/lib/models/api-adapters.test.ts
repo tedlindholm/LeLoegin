@@ -28,6 +28,49 @@ describe('mapApiLoginAsset', () => {
 
 		expect(asset.kind).toBe('background');
 	});
+
+	// The contract types integers as ["integer", "string"] because the server's JSON options
+	// allow reading numbers from strings; the adapter must coerce so the domain stays numeric.
+	it('coerces numeric strings for width and height as the contract permits', () => {
+		const asset = mapApiLoginAsset({
+			id: 'asset-2',
+			name: 'Numeric strings',
+			kind: 'logo',
+			altText: null,
+			greetingText: null,
+			logoAssetId: null,
+			storagePath: '/tmp/logo.svg',
+			publicPath: null,
+			width: '640',
+			height: '480',
+			zoom: 1,
+			createdAt: '2026-05-15T17:00:00Z',
+			updatedAt: '2026-05-15T17:00:00Z'
+		});
+
+		expect(asset.width).toBe(640);
+		expect(asset.height).toBe(480);
+	});
+
+	it('rejects a width that is not a finite integer-like value', () => {
+		expect(() =>
+			mapApiLoginAsset({
+				id: 'asset-3',
+				name: 'Corrupted',
+				kind: 'logo',
+				altText: null,
+				greetingText: null,
+				logoAssetId: null,
+				storagePath: '/tmp/logo.svg',
+				publicPath: null,
+				width: 'not-a-number',
+				height: 480,
+				zoom: 1,
+				createdAt: '2026-05-15T17:00:00Z',
+				updatedAt: '2026-05-15T17:00:00Z'
+			})
+		).toThrow(/width/);
+	});
 });
 
 describe('mapApiActiveLeLøginScreenResponse', () => {
@@ -136,6 +179,9 @@ describe('mapApiLoginRule', () => {
 });
 
 describe('toSaveRuleRequest', () => {
+	// The wire contract and the domain use the same lowercase values; serialisation must
+	// not re-case them — the PascalCase the old client sent only survived because the
+	// server's converters read case-insensitively.
 	it('serialises a rule with multiple images back to the wire contract', () => {
 		const request = toSaveRuleRequest({
 			id: 'rule-multi',
@@ -147,6 +193,6 @@ describe('toSaveRuleRequest', () => {
 		});
 
 		expect(request.assetIds).toEqual(['asset-a', 'asset-b']);
-		expect(request.condition.operator).toBe('All');
+		expect(request.condition.operator).toBe('all');
 	});
 });

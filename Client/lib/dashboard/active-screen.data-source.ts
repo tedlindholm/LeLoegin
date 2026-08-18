@@ -12,7 +12,7 @@ export class LeLøginScreenActiveScreenDataSource extends UmbControllerBase {
 	async getActive() {
 		const { data, error } = await tryExecute(
 			this,
-			V1.getUmbracoLeLøginApiV1RuntimeActive({ headers: { 'Cache-Control': 'no-cache' } })
+			V1.getRuntimeActive({ headers: { 'Cache-Control': 'no-cache' } })
 		);
 
 		if (error) {
@@ -38,7 +38,7 @@ export class LeLøginScreenActiveScreenDataSource extends UmbControllerBase {
 	async getPreviewForRule(ruleId: string) {
 		const { data, error } = await tryExecute(
 			this,
-			V1.getUmbracoLeLøginApiV1RulesByIdPreview({
+			V1.getRulesByIdPreview({
 				path: { id: ruleId },
 				headers: { 'Cache-Control': 'no-cache' }
 			})

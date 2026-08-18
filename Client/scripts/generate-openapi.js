@@ -71,10 +71,6 @@ fetch(openApiUrl)
 					baseUrl: openApiUrl.replace(/\/umbraco\/openapi\/.*$/, '')
 				},
 				{
-					name: '@hey-api/typescript',
-					enums: 'typescript'
-				},
-				{
 					name: '@hey-api/sdk',
 					asClass: true
 				}

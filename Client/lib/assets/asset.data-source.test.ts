@@ -10,7 +10,7 @@ describe('asset data source', () => {
 	it('uses the generated preview endpoint through the authenticated API client', async () => {
 		const source = await readFile(dataSourceFilePath, 'utf8');
 
-		expect(source).toContain('getUmbracoLeLøginApiV1AssetsByIdPreview');
+		expect(source).toContain('getAssetsByIdPreview');
 		expect(source).not.toContain('fetch(');
 	});
 });

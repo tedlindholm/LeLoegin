@@ -18,7 +18,7 @@ export class LeLøginScreenConditionMetadataDataSource extends UmbControllerBase
 	async getConditionMetadata(): Promise<{ data: ConditionMetadata | undefined; error: unknown }> {
 		const { data, error } = await tryExecute(
 			this,
-			V1.getUmbracoLeLøginApiV1RulesConditionMetadata()
+			V1.getRulesConditionMetadata()
 		);
 
 		return {

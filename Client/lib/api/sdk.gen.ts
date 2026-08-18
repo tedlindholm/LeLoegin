@@ -2,65 +2,67 @@
 
 import {
 	type Client,
+	type ClientMeta,
 	formDataBodySerializer,
 	type Options as Options2,
+	type RequestResult,
 	type TDataShape
 } from './client';
 import { client } from './client.gen';
 import type {
-	DeleteUmbracoLeLøginApiV1AssetsByIdData,
-	DeleteUmbracoLeLøginApiV1AssetsByIdErrors,
-	DeleteUmbracoLeLøginApiV1AssetsByIdResponses,
-	DeleteUmbracoLeLøginApiV1RulesByIdData,
-	DeleteUmbracoLeLøginApiV1RulesByIdErrors,
-	DeleteUmbracoLeLøginApiV1RulesByIdResponses,
-	GetUmbracoLeLøginApiV1AssetsByIdData,
-	GetUmbracoLeLøginApiV1AssetsByIdErrors,
-	GetUmbracoLeLøginApiV1AssetsByIdPreviewData,
-	GetUmbracoLeLøginApiV1AssetsByIdPreviewErrors,
-	GetUmbracoLeLøginApiV1AssetsByIdPreviewResponses,
-	GetUmbracoLeLøginApiV1AssetsByIdResponses,
-	GetUmbracoLeLøginApiV1AssetsByIdThumbnailData,
-	GetUmbracoLeLøginApiV1AssetsByIdThumbnailErrors,
-	GetUmbracoLeLøginApiV1AssetsByIdThumbnailResponses,
-	GetUmbracoLeLøginApiV1AssetsData,
-	GetUmbracoLeLøginApiV1AssetsErrors,
-	GetUmbracoLeLøginApiV1AssetsResponses,
-	GetUmbracoLeLøginApiV1RulesByIdData,
-	GetUmbracoLeLøginApiV1RulesByIdErrors,
-	GetUmbracoLeLøginApiV1RulesByIdPreviewData,
-	GetUmbracoLeLøginApiV1RulesByIdPreviewErrors,
-	GetUmbracoLeLøginApiV1RulesByIdPreviewResponses,
-	GetUmbracoLeLøginApiV1RulesByIdResponses,
-	GetUmbracoLeLøginApiV1RulesConditionMetadataData,
-	GetUmbracoLeLøginApiV1RulesConditionMetadataErrors,
-	GetUmbracoLeLøginApiV1RulesConditionMetadataResponses,
-	GetUmbracoLeLøginApiV1RulesData,
-	GetUmbracoLeLøginApiV1RulesErrors,
-	GetUmbracoLeLøginApiV1RulesResponses,
-	GetUmbracoLeLøginApiV1RuntimeActiveData,
-	GetUmbracoLeLøginApiV1RuntimeActiveErrors,
-	GetUmbracoLeLøginApiV1RuntimeActiveResponses,
-	GetUmbracoLeLøginApiV1SettingsData,
-	GetUmbracoLeLøginApiV1SettingsErrors,
-	GetUmbracoLeLøginApiV1SettingsResponses,
-	PostUmbracoLeLøginApiV1AssetsByIdPublishData,
-	PostUmbracoLeLøginApiV1AssetsByIdPublishErrors,
-	PostUmbracoLeLøginApiV1AssetsData,
-	PostUmbracoLeLøginApiV1AssetsErrors,
-	PostUmbracoLeLøginApiV1AssetsResponses,
-	PostUmbracoLeLøginApiV1RulesData,
-	PostUmbracoLeLøginApiV1RulesErrors,
-	PostUmbracoLeLøginApiV1RulesResponses,
-	PutUmbracoLeLøginApiV1AssetsByIdData,
-	PutUmbracoLeLøginApiV1AssetsByIdErrors,
-	PutUmbracoLeLøginApiV1AssetsByIdResponses,
-	PutUmbracoLeLøginApiV1RulesByIdData,
-	PutUmbracoLeLøginApiV1RulesByIdErrors,
-	PutUmbracoLeLøginApiV1RulesByIdResponses,
-	PutUmbracoLeLøginApiV1SettingsData,
-	PutUmbracoLeLøginApiV1SettingsErrors,
-	PutUmbracoLeLøginApiV1SettingsResponses
+	DeleteAssetsByIdData,
+	DeleteAssetsByIdErrors,
+	DeleteAssetsByIdResponses,
+	DeleteRulesByIdData,
+	DeleteRulesByIdErrors,
+	DeleteRulesByIdResponses,
+	GetAssetsByIdData,
+	GetAssetsByIdErrors,
+	GetAssetsByIdPreviewData,
+	GetAssetsByIdPreviewErrors,
+	GetAssetsByIdPreviewResponses,
+	GetAssetsByIdResponses,
+	GetAssetsByIdThumbnailData,
+	GetAssetsByIdThumbnailErrors,
+	GetAssetsByIdThumbnailResponses,
+	GetAssetsData,
+	GetAssetsErrors,
+	GetAssetsResponses,
+	GetRulesByIdData,
+	GetRulesByIdErrors,
+	GetRulesByIdPreviewData,
+	GetRulesByIdPreviewErrors,
+	GetRulesByIdPreviewResponses,
+	GetRulesByIdResponses,
+	GetRulesConditionMetadataData,
+	GetRulesConditionMetadataErrors,
+	GetRulesConditionMetadataResponses,
+	GetRulesData,
+	GetRulesErrors,
+	GetRulesResponses,
+	GetRuntimeActiveData,
+	GetRuntimeActiveErrors,
+	GetRuntimeActiveResponses,
+	GetSettingsData,
+	GetSettingsErrors,
+	GetSettingsResponses,
+	PostAssetsByIdPublishData,
+	PostAssetsByIdPublishErrors,
+	PostAssetsData,
+	PostAssetsErrors,
+	PostAssetsResponses,
+	PostRulesData,
+	PostRulesErrors,
+	PostRulesResponses,
+	PutAssetsByIdData,
+	PutAssetsByIdErrors,
+	PutAssetsByIdResponses,
+	PutRulesByIdData,
+	PutRulesByIdErrors,
+	PutRulesByIdResponses,
+	PutSettingsData,
+	PutSettingsErrors,
+	PutSettingsResponses
 } from './types.gen';
 
 export type Options<
@@ -78,49 +80,41 @@ export type Options<
 	 * You can pass arbitrary values through the `meta` object. This can be
 	 * used to access values that aren't defined as part of the SDK function.
 	 */
-	meta?: Record<string, unknown>;
+	meta?: keyof ClientMeta extends never ? Record<string, unknown> : ClientMeta;
 };
 
 export class V1 {
-	public static getUmbracoLeLøginApiV1Assets<ThrowOnError extends boolean = true>(
-		options?: Options<GetUmbracoLeLøginApiV1AssetsData, ThrowOnError>
-	) {
-		return (options?.client ?? client).get<
-			GetUmbracoLeLøginApiV1AssetsResponses,
-			GetUmbracoLeLøginApiV1AssetsErrors,
-			ThrowOnError
-		>({
+	public static getAssets<ThrowOnError extends boolean = true>(
+		options?: Options<GetAssetsData, ThrowOnError>
+	): RequestResult<GetAssetsResponses, GetAssetsErrors, ThrowOnError> {
+		return (options?.client ?? client).get<GetAssetsResponses, GetAssetsErrors, ThrowOnError>({
 			security: [{ scheme: 'bearer', type: 'http' }],
 			url: '/umbraco/le-løgin/api/v1/assets',
 			...options
 		});
 	}
 
-	public static postUmbracoLeLøginApiV1Assets<ThrowOnError extends boolean = true>(
-		options?: Options<PostUmbracoLeLøginApiV1AssetsData, ThrowOnError>
-	) {
-		return (options?.client ?? client).post<
-			PostUmbracoLeLøginApiV1AssetsResponses,
-			PostUmbracoLeLøginApiV1AssetsErrors,
-			ThrowOnError
-		>({
+	public static postAssets<ThrowOnError extends boolean = true>(
+		options: Options<PostAssetsData, ThrowOnError>
+	): RequestResult<PostAssetsResponses, PostAssetsErrors, ThrowOnError> {
+		return (options.client ?? client).post<PostAssetsResponses, PostAssetsErrors, ThrowOnError>({
 			...formDataBodySerializer,
 			security: [{ scheme: 'bearer', type: 'http' }],
 			url: '/umbraco/le-løgin/api/v1/assets',
 			...options,
 			headers: {
 				'Content-Type': null,
-				...options?.headers
+				...options.headers
 			}
 		});
 	}
 
-	public static deleteUmbracoLeLøginApiV1AssetsById<ThrowOnError extends boolean = true>(
-		options: Options<DeleteUmbracoLeLøginApiV1AssetsByIdData, ThrowOnError>
-	) {
+	public static deleteAssetsById<ThrowOnError extends boolean = true>(
+		options: Options<DeleteAssetsByIdData, ThrowOnError>
+	): RequestResult<DeleteAssetsByIdResponses, DeleteAssetsByIdErrors, ThrowOnError> {
 		return (options.client ?? client).delete<
-			DeleteUmbracoLeLøginApiV1AssetsByIdResponses,
-			DeleteUmbracoLeLøginApiV1AssetsByIdErrors,
+			DeleteAssetsByIdResponses,
+			DeleteAssetsByIdErrors,
 			ThrowOnError
 		>({
 			security: [{ scheme: 'bearer', type: 'http' }],
@@ -129,12 +123,12 @@ export class V1 {
 		});
 	}
 
-	public static getUmbracoLeLøginApiV1AssetsById<ThrowOnError extends boolean = true>(
-		options: Options<GetUmbracoLeLøginApiV1AssetsByIdData, ThrowOnError>
-	) {
+	public static getAssetsById<ThrowOnError extends boolean = true>(
+		options: Options<GetAssetsByIdData, ThrowOnError>
+	): RequestResult<GetAssetsByIdResponses, GetAssetsByIdErrors, ThrowOnError> {
 		return (options.client ?? client).get<
-			GetUmbracoLeLøginApiV1AssetsByIdResponses,
-			GetUmbracoLeLøginApiV1AssetsByIdErrors,
+			GetAssetsByIdResponses,
+			GetAssetsByIdErrors,
 			ThrowOnError
 		>({
 			security: [{ scheme: 'bearer', type: 'http' }],
@@ -143,12 +137,12 @@ export class V1 {
 		});
 	}
 
-	public static putUmbracoLeLøginApiV1AssetsById<ThrowOnError extends boolean = true>(
-		options: Options<PutUmbracoLeLøginApiV1AssetsByIdData, ThrowOnError>
-	) {
+	public static putAssetsById<ThrowOnError extends boolean = true>(
+		options: Options<PutAssetsByIdData, ThrowOnError>
+	): RequestResult<PutAssetsByIdResponses, PutAssetsByIdErrors, ThrowOnError> {
 		return (options.client ?? client).put<
-			PutUmbracoLeLøginApiV1AssetsByIdResponses,
-			PutUmbracoLeLøginApiV1AssetsByIdErrors,
+			PutAssetsByIdResponses,
+			PutAssetsByIdErrors,
 			ThrowOnError
 		>({
 			security: [{ scheme: 'bearer', type: 'http' }],
@@ -161,12 +155,12 @@ export class V1 {
 		});
 	}
 
-	public static getUmbracoLeLøginApiV1AssetsByIdPreview<ThrowOnError extends boolean = true>(
-		options: Options<GetUmbracoLeLøginApiV1AssetsByIdPreviewData, ThrowOnError>
-	) {
+	public static getAssetsByIdPreview<ThrowOnError extends boolean = true>(
+		options: Options<GetAssetsByIdPreviewData, ThrowOnError>
+	): RequestResult<GetAssetsByIdPreviewResponses, GetAssetsByIdPreviewErrors, ThrowOnError> {
 		return (options.client ?? client).get<
-			GetUmbracoLeLøginApiV1AssetsByIdPreviewResponses,
-			GetUmbracoLeLøginApiV1AssetsByIdPreviewErrors,
+			GetAssetsByIdPreviewResponses,
+			GetAssetsByIdPreviewErrors,
 			ThrowOnError
 		>({
 			security: [{ scheme: 'bearer', type: 'http' }],
@@ -175,26 +169,22 @@ export class V1 {
 		});
 	}
 
-	public static postUmbracoLeLøginApiV1AssetsByIdPublish<ThrowOnError extends boolean = true>(
-		options: Options<PostUmbracoLeLøginApiV1AssetsByIdPublishData, ThrowOnError>
-	) {
-		return (options.client ?? client).post<
-			unknown,
-			PostUmbracoLeLøginApiV1AssetsByIdPublishErrors,
-			ThrowOnError
-		>({
+	public static postAssetsByIdPublish<ThrowOnError extends boolean = true>(
+		options: Options<PostAssetsByIdPublishData, ThrowOnError>
+	): RequestResult<unknown, PostAssetsByIdPublishErrors, ThrowOnError> {
+		return (options.client ?? client).post<unknown, PostAssetsByIdPublishErrors, ThrowOnError>({
 			security: [{ scheme: 'bearer', type: 'http' }],
 			url: '/umbraco/le-løgin/api/v1/assets/{id}/publish',
 			...options
 		});
 	}
 
-	public static getUmbracoLeLøginApiV1AssetsByIdThumbnail<ThrowOnError extends boolean = true>(
-		options: Options<GetUmbracoLeLøginApiV1AssetsByIdThumbnailData, ThrowOnError>
-	) {
+	public static getAssetsByIdThumbnail<ThrowOnError extends boolean = true>(
+		options: Options<GetAssetsByIdThumbnailData, ThrowOnError>
+	): RequestResult<GetAssetsByIdThumbnailResponses, GetAssetsByIdThumbnailErrors, ThrowOnError> {
 		return (options.client ?? client).get<
-			GetUmbracoLeLøginApiV1AssetsByIdThumbnailResponses,
-			GetUmbracoLeLøginApiV1AssetsByIdThumbnailErrors,
+			GetAssetsByIdThumbnailResponses,
+			GetAssetsByIdThumbnailErrors,
 			ThrowOnError
 		>({
 			security: [{ scheme: 'bearer', type: 'http' }],
@@ -203,44 +193,36 @@ export class V1 {
 		});
 	}
 
-	public static getUmbracoLeLøginApiV1Rules<ThrowOnError extends boolean = true>(
-		options?: Options<GetUmbracoLeLøginApiV1RulesData, ThrowOnError>
-	) {
-		return (options?.client ?? client).get<
-			GetUmbracoLeLøginApiV1RulesResponses,
-			GetUmbracoLeLøginApiV1RulesErrors,
-			ThrowOnError
-		>({
+	public static getRules<ThrowOnError extends boolean = true>(
+		options?: Options<GetRulesData, ThrowOnError>
+	): RequestResult<GetRulesResponses, GetRulesErrors, ThrowOnError> {
+		return (options?.client ?? client).get<GetRulesResponses, GetRulesErrors, ThrowOnError>({
 			security: [{ scheme: 'bearer', type: 'http' }],
 			url: '/umbraco/le-løgin/api/v1/rules',
 			...options
 		});
 	}
 
-	public static postUmbracoLeLøginApiV1Rules<ThrowOnError extends boolean = true>(
-		options?: Options<PostUmbracoLeLøginApiV1RulesData, ThrowOnError>
-	) {
-		return (options?.client ?? client).post<
-			PostUmbracoLeLøginApiV1RulesResponses,
-			PostUmbracoLeLøginApiV1RulesErrors,
-			ThrowOnError
-		>({
+	public static postRules<ThrowOnError extends boolean = true>(
+		options: Options<PostRulesData, ThrowOnError>
+	): RequestResult<PostRulesResponses, PostRulesErrors, ThrowOnError> {
+		return (options.client ?? client).post<PostRulesResponses, PostRulesErrors, ThrowOnError>({
 			security: [{ scheme: 'bearer', type: 'http' }],
 			url: '/umbraco/le-løgin/api/v1/rules',
 			...options,
 			headers: {
 				'Content-Type': 'application/json',
-				...options?.headers
+				...options.headers
 			}
 		});
 	}
 
-	public static deleteUmbracoLeLøginApiV1RulesById<ThrowOnError extends boolean = true>(
-		options: Options<DeleteUmbracoLeLøginApiV1RulesByIdData, ThrowOnError>
-	) {
+	public static deleteRulesById<ThrowOnError extends boolean = true>(
+		options: Options<DeleteRulesByIdData, ThrowOnError>
+	): RequestResult<DeleteRulesByIdResponses, DeleteRulesByIdErrors, ThrowOnError> {
 		return (options.client ?? client).delete<
-			DeleteUmbracoLeLøginApiV1RulesByIdResponses,
-			DeleteUmbracoLeLøginApiV1RulesByIdErrors,
+			DeleteRulesByIdResponses,
+			DeleteRulesByIdErrors,
 			ThrowOnError
 		>({
 			security: [{ scheme: 'bearer', type: 'http' }],
@@ -249,28 +231,20 @@ export class V1 {
 		});
 	}
 
-	public static getUmbracoLeLøginApiV1RulesById<ThrowOnError extends boolean = true>(
-		options: Options<GetUmbracoLeLøginApiV1RulesByIdData, ThrowOnError>
-	) {
-		return (options.client ?? client).get<
-			GetUmbracoLeLøginApiV1RulesByIdResponses,
-			GetUmbracoLeLøginApiV1RulesByIdErrors,
-			ThrowOnError
-		>({
+	public static getRulesById<ThrowOnError extends boolean = true>(
+		options: Options<GetRulesByIdData, ThrowOnError>
+	): RequestResult<GetRulesByIdResponses, GetRulesByIdErrors, ThrowOnError> {
+		return (options.client ?? client).get<GetRulesByIdResponses, GetRulesByIdErrors, ThrowOnError>({
 			security: [{ scheme: 'bearer', type: 'http' }],
 			url: '/umbraco/le-løgin/api/v1/rules/{id}',
 			...options
 		});
 	}
 
-	public static putUmbracoLeLøginApiV1RulesById<ThrowOnError extends boolean = true>(
-		options: Options<PutUmbracoLeLøginApiV1RulesByIdData, ThrowOnError>
-	) {
-		return (options.client ?? client).put<
-			PutUmbracoLeLøginApiV1RulesByIdResponses,
-			PutUmbracoLeLøginApiV1RulesByIdErrors,
-			ThrowOnError
-		>({
+	public static putRulesById<ThrowOnError extends boolean = true>(
+		options: Options<PutRulesByIdData, ThrowOnError>
+	): RequestResult<PutRulesByIdResponses, PutRulesByIdErrors, ThrowOnError> {
+		return (options.client ?? client).put<PutRulesByIdResponses, PutRulesByIdErrors, ThrowOnError>({
 			security: [{ scheme: 'bearer', type: 'http' }],
 			url: '/umbraco/le-løgin/api/v1/rules/{id}',
 			...options,
@@ -281,12 +255,12 @@ export class V1 {
 		});
 	}
 
-	public static getUmbracoLeLøginApiV1RulesByIdPreview<ThrowOnError extends boolean = true>(
-		options: Options<GetUmbracoLeLøginApiV1RulesByIdPreviewData, ThrowOnError>
-	) {
+	public static getRulesByIdPreview<ThrowOnError extends boolean = true>(
+		options: Options<GetRulesByIdPreviewData, ThrowOnError>
+	): RequestResult<GetRulesByIdPreviewResponses, GetRulesByIdPreviewErrors, ThrowOnError> {
 		return (options.client ?? client).get<
-			GetUmbracoLeLøginApiV1RulesByIdPreviewResponses,
-			GetUmbracoLeLøginApiV1RulesByIdPreviewErrors,
+			GetRulesByIdPreviewResponses,
+			GetRulesByIdPreviewErrors,
 			ThrowOnError
 		>({
 			security: [{ scheme: 'bearer', type: 'http' }],
@@ -295,12 +269,16 @@ export class V1 {
 		});
 	}
 
-	public static getUmbracoLeLøginApiV1RulesConditionMetadata<ThrowOnError extends boolean = true>(
-		options?: Options<GetUmbracoLeLøginApiV1RulesConditionMetadataData, ThrowOnError>
-	) {
+	public static getRulesConditionMetadata<ThrowOnError extends boolean = true>(
+		options?: Options<GetRulesConditionMetadataData, ThrowOnError>
+	): RequestResult<
+		GetRulesConditionMetadataResponses,
+		GetRulesConditionMetadataErrors,
+		ThrowOnError
+	> {
 		return (options?.client ?? client).get<
-			GetUmbracoLeLøginApiV1RulesConditionMetadataResponses,
-			GetUmbracoLeLøginApiV1RulesConditionMetadataErrors,
+			GetRulesConditionMetadataResponses,
+			GetRulesConditionMetadataErrors,
 			ThrowOnError
 		>({
 			security: [{ scheme: 'bearer', type: 'http' }],
@@ -309,12 +287,12 @@ export class V1 {
 		});
 	}
 
-	public static getUmbracoLeLøginApiV1RuntimeActive<ThrowOnError extends boolean = true>(
-		options?: Options<GetUmbracoLeLøginApiV1RuntimeActiveData, ThrowOnError>
-	) {
+	public static getRuntimeActive<ThrowOnError extends boolean = true>(
+		options?: Options<GetRuntimeActiveData, ThrowOnError>
+	): RequestResult<GetRuntimeActiveResponses, GetRuntimeActiveErrors, ThrowOnError> {
 		return (options?.client ?? client).get<
-			GetUmbracoLeLøginApiV1RuntimeActiveResponses,
-			GetUmbracoLeLøginApiV1RuntimeActiveErrors,
+			GetRuntimeActiveResponses,
+			GetRuntimeActiveErrors,
 			ThrowOnError
 		>({
 			security: [{ scheme: 'bearer', type: 'http' }],
@@ -323,34 +301,26 @@ export class V1 {
 		});
 	}
 
-	public static getUmbracoLeLøginApiV1Settings<ThrowOnError extends boolean = true>(
-		options?: Options<GetUmbracoLeLøginApiV1SettingsData, ThrowOnError>
-	) {
-		return (options?.client ?? client).get<
-			GetUmbracoLeLøginApiV1SettingsResponses,
-			GetUmbracoLeLøginApiV1SettingsErrors,
-			ThrowOnError
-		>({
+	public static getSettings<ThrowOnError extends boolean = true>(
+		options?: Options<GetSettingsData, ThrowOnError>
+	): RequestResult<GetSettingsResponses, GetSettingsErrors, ThrowOnError> {
+		return (options?.client ?? client).get<GetSettingsResponses, GetSettingsErrors, ThrowOnError>({
 			security: [{ scheme: 'bearer', type: 'http' }],
 			url: '/umbraco/le-løgin/api/v1/settings',
 			...options
 		});
 	}
 
-	public static putUmbracoLeLøginApiV1Settings<ThrowOnError extends boolean = true>(
-		options?: Options<PutUmbracoLeLøginApiV1SettingsData, ThrowOnError>
-	) {
-		return (options?.client ?? client).put<
-			PutUmbracoLeLøginApiV1SettingsResponses,
-			PutUmbracoLeLøginApiV1SettingsErrors,
-			ThrowOnError
-		>({
+	public static putSettings<ThrowOnError extends boolean = true>(
+		options: Options<PutSettingsData, ThrowOnError>
+	): RequestResult<PutSettingsResponses, PutSettingsErrors, ThrowOnError> {
+		return (options.client ?? client).put<PutSettingsResponses, PutSettingsErrors, ThrowOnError>({
 			security: [{ scheme: 'bearer', type: 'http' }],
 			url: '/umbraco/le-løgin/api/v1/settings',
 			...options,
 			headers: {
 				'Content-Type': 'application/json',
-				...options?.headers
+				...options.headers
 			}
 		});
 	}
