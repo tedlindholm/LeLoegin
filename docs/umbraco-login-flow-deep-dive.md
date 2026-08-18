@@ -1,10 +1,10 @@
 # Umbraco Login Flow — Deep Dive
 
-This document is a comprehensive walkthrough of how the Umbraco 17 backoffice login works end-to-end: the two SPAs involved, the OAuth 2.0 + PKCE handshake, cookie/session management, the localisation registry's loading behaviour, and the hook points Le Løgin uses to customise the experience.
+This document is a comprehensive walkthrough of how the Umbraco 18 backoffice login works end-to-end: the two SPAs involved, the OAuth 2.0 + PKCE handshake, cookie/session management, the localisation registry's loading behaviour, and the hook points Le Løgin uses to customise the experience.
 
-All references are to Umbraco-CMS `main` branch (commit-pinned source links throughout).
+All source links are pinned to the `release-18.1.0` tag, so they stay checkable as upstream moves on. Re-pin them when this package targets a new Umbraco major.
 
-Where live traffic in this repository differs from `main`, prefer the live environment over the branch example. This package currently targets Umbraco 17.4.0, and one concrete difference during debugging is that the observed OAuth callback is `/umbraco/oauth_complete` rather than `/umbraco/backoffice/oauth_complete`.
+Where live traffic in this repository differs from the tag, prefer the live environment. The routes below are the observed ones: the backoffice SPA's router is mounted under the `/umbraco/` base, so its routes surface as `/umbraco/logout` and `/umbraco/oauth_complete` — **not** `/umbraco/backoffice/logout` and `/umbraco/backoffice/oauth_complete`. Verified by request against a running site.
 
 ---
 
@@ -14,8 +14,8 @@ Umbraco runs **two separate Lit/Web-Component SPAs** for authentication:
 
 | App | Served at | Source root | Purpose |
 | --- | --- | --- | --- |
-| **Login SPA** (a.k.a. "slim backoffice") | `/umbraco/login`, `/umbraco/logout`, password-reset, invite | [`src/Umbraco.Web.UI.Login`](https://github.com/umbraco/Umbraco-CMS/tree/main/src/Umbraco.Web.UI.Login) | Username/password form, MFA prompts, reset flows. Public — no auth required. |
-| **Backoffice SPA** | `/umbraco/backoffice/**`, `/umbraco/backoffice/oauth_complete`, `/umbraco/backoffice/logout` | [`src/Umbraco.Web.UI.Client/src/apps/app`](https://github.com/umbraco/Umbraco-CMS/tree/main/src/Umbraco.Web.UI.Client/src/apps/app) | Authenticated app. Also handles OAuth callback (`/oauth_complete`) and post-logout view via `umb-auth-view`. |
+| **Login SPA** (a.k.a. "slim backoffice") | `/umbraco/login`, password-reset, invite | [`src/Umbraco.Web.UI.Login`](https://github.com/umbraco/Umbraco-CMS/tree/release-18.1.0/src/Umbraco.Web.UI.Login) | Username/password form, MFA prompts, reset flows. Public — no auth required. |
+| **Backoffice SPA** | `/umbraco/**`, `/umbraco/oauth_complete`, `/umbraco/logout` | [`src/Umbraco.Web.UI.Client/src/apps/app`](https://github.com/umbraco/Umbraco-CMS/tree/release-18.1.0/src/Umbraco.Web.UI.Client/src/apps/app) | Authenticated app. Also handles OAuth callback (`/oauth_complete`) and post-logout view via `umb-auth-view`. |
 
 **Critical point**: navigating between the two SPAs is always a **full page reload**. Module-level state (caches, the `UmbAuthContext` instance, PKCE in `UmbAuthClient`) is reset on each load. `sessionStorage` persists across these reloads (same tab); cookies persist (subject to the server's expiry/clear semantics).
 
@@ -23,7 +23,7 @@ Umbraco runs **two separate Lit/Web-Component SPAs** for authentication:
 
 The Login SPA uses a stripped-down "slim backoffice" controller because it must run **before** authentication:
 
-[`slim-backoffice-initializer.ts`](https://github.com/umbraco/Umbraco-CMS/blob/main/src/Umbraco.Web.UI.Login/src/controllers/slim-backoffice-initializer.ts):
+[`slim-backoffice-initializer.ts`](https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Web.UI.Login/src/controllers/slim-backoffice-initializer.ts):
 
 ```typescript
 export class UmbSlimBackofficeController extends UmbControllerBase {
@@ -45,7 +45,7 @@ export class UmbSlimBackofficeController extends UmbControllerBase {
 }
 ```
 
-The Backoffice SPA's [`app.element.ts`](https://github.com/umbraco/Umbraco-CMS/blob/main/src/Umbraco.Web.UI.Client/src/apps/app/app.element.ts) does the **full** boot — it also runs `registerPublicExtensions()` + `UmbAppEntryPointExtensionInitializer`, **plus** all the authenticated-only bundles.
+The Backoffice SPA's [`app.element.ts`](https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Web.UI.Client/src/apps/app/app.element.ts) does the **full** boot — it also runs `registerPublicExtensions()` + `UmbAppEntryPointExtensionInitializer`, **plus** all the authenticated-only bundles.
 
 In Umbraco generally, a public extension can become visible to both SPAs because both call `registerPublicExtensions()`. Le Løgin used that model historically, but the current package no longer ships a public login-page `appEntryPoint`; see §7 for the current server-side-only setup.
 
@@ -65,7 +65,7 @@ What looks like "the login page" to a user can actually be one of two distinct D
 └──────────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────────────────┐
-│  /umbraco/backoffice/logout   (Backoffice SPA logout route)           │
+│  /umbraco/logout   (Backoffice SPA logout route)                      │
 │  ├── <umb-app-auth>       ← UmbAppAuthElement                         │
 │  │     └── <umb-auth-view>     ← UmbAuthViewElement                   │
 │  │           └── <umb-extension-slot type="authProvider">             │
@@ -73,10 +73,10 @@ What looks like "the login page" to a user can actually be one of two distinct D
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-- **`<umb-auth>` / `<umb-login-page>`** ([`login.page.element.ts`](https://github.com/umbraco/Umbraco-CMS/blob/main/src/Umbraco.Web.UI.Login/src/components/pages/login.page.element.ts)) — full username/password form. POSTs credentials directly.
-- **`<umb-auth-view>`** ([`umb-auth-view.element.ts`](https://github.com/umbraco/Umbraco-CMS/blob/main/src/Umbraco.Web.UI.Client/src/packages/core/auth/components/umb-auth-view.element.ts)) — provider-button view inside the backoffice. Clicking a button **starts a fresh OAuth redirect**; it does NOT submit credentials directly. The credentials form is reached only after the OAuth redirect lands on `/umbraco/login`.
+- **`<umb-auth>` / `<umb-login-page>`** ([`login.page.element.ts`](https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Web.UI.Login/src/components/pages/login.page.element.ts)) — full username/password form. POSTs credentials directly.
+- **`<umb-auth-view>`** ([`umb-auth-view.element.ts`](https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Web.UI.Client/src/packages/core/auth/components/umb-auth-view.element.ts)) — provider-button view inside the backoffice. Clicking a button **starts a fresh OAuth redirect**; it does NOT submit credentials directly. The credentials form is reached only after the OAuth redirect lands on `/umbraco/login`.
 
-Both share the `umb-auth-layout` chrome (background image, greeting, logo placement).
+The two do **not** share an implementation of the chrome. `umb-login-page` sits inside the login SPA's `umb-auth-layout`; `umb-auth-view` implements its own background, greeting, and logo markup and honours only a subset of the `--umb-login-*` variables (`umb-auth-layout` does not exist in the backoffice package at all). That is why a customisation applied through those CSS variables does not automatically cover both screens — and why Le Løgin replaces assets at the source endpoints instead.
 
 ---
 
@@ -91,7 +91,7 @@ sequenceDiagram
     participant AZ as /security/back-office/authorize
     participant LP as Login SPA<br/>(/umbraco/login)
     participant LOGIN as POST /security/back-office/login
-    participant OC as /backoffice/oauth_complete
+    participant OC as /umbraco/oauth_complete
     participant TK as POST /security/back-office/token
 
     U->>B: Open /umbraco
@@ -114,8 +114,8 @@ sequenceDiagram
     LP->>LP: location.href = returnPath (the authorize URL)
     B->>AZ: GET /authorize?code_challenge=…&state=…
     AZ->>AZ: GetUserNameFromAuthCookie() = "ted"
-    AZ-->>B: 302 → /backoffice/oauth_complete?code=…&state=…
-    B->>OC: GET /backoffice/oauth_complete?code=…&state=…
+    AZ-->>B: 302 → /umbraco/oauth_complete?code=…&state=…
+    B->>OC: GET /umbraco/oauth_complete?code=…&state=…
     OC->>OC: setInitialState() → refreshToken() may succeed or fail
     OC->>OC: completeAuthorizationRequest()
     Note over OC: Reads umb:pkce from sessionStorage,<br/>verifies state matches
@@ -132,7 +132,7 @@ sequenceDiagram
 
 ### 3.1 Generating the authorisation URL
 
-[`umb-auth-client.ts`](https://github.com/umbraco/Umbraco-CMS/blob/main/src/Umbraco.Web.UI.Client/src/packages/core/auth/umb-auth-client.ts):
+[`umb-auth-client.ts`](https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Web.UI.Client/src/packages/core/auth/umb-auth-client.ts):
 
 ```typescript
 async buildAuthorizationUrl(identityProvider: string, usernameHint?: string): Promise<string> {
@@ -142,7 +142,7 @@ async buildAuthorizationUrl(identityProvider: string, usernameHint?: string): Pr
 
     const params = new URLSearchParams({
         client_id: this.#clientId,         // 'umbraco-back-office'
-        redirect_uri: this.#redirectUri,    // e.g. /umbraco/backoffice/oauth_complete
+        redirect_uri: this.#redirectUri,    // observed: /umbraco/oauth_complete
         scope: this.#scope,                 // 'offline_access'
         response_type: 'code',
         state: this.#state,
@@ -159,7 +159,7 @@ async buildAuthorizationUrl(identityProvider: string, usernameHint?: string): Pr
 **PKCE state lives in two places:**
 
 1. **Memory** — `UmbAuthClient` private fields `#codeVerifier`, `#state`. Lost on page navigation.
-2. **`sessionStorage["umb:pkce"]`** — persisted only for **redirect flows**. Survives same-tab navigation; this is what the `oauth_complete` page reads back. Stored by [`auth.context.ts`](https://github.com/umbraco/Umbraco-CMS/blob/main/src/Umbraco.Web.UI.Client/src/packages/core/auth/auth.context.ts) `makeAuthorizationRequest()`:
+2. **`sessionStorage["umb:pkce"]`** — persisted only for **redirect flows**. Survives same-tab navigation; this is what the `oauth_complete` page reads back. Stored by [`auth.context.ts`](https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Web.UI.Client/src/packages/core/auth/auth.context.ts) `makeAuthorizationRequest()`:
 
 ```typescript
 if (redirect) {
@@ -174,7 +174,7 @@ if (redirect) {
 
 ### 3.2 The server-side authorize endpoint
 
-[`BackOfficeController.cs`](https://github.com/umbraco/Umbraco-CMS/blob/main/src/Umbraco.Cms.Api.Management/Controllers/Security/BackOfficeController.cs):
+[`BackOfficeController.cs`](https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Cms.Api.Management/Controllers/Security/BackOfficeController.cs):
 
 ```csharp
 [AllowAnonymous]
@@ -220,7 +220,7 @@ The flow:
 
 ### 3.3 The Login SPA bootstrap
 
-[`auth.element.ts`](https://github.com/umbraco/Umbraco-CMS/blob/main/src/Umbraco.Web.UI.Login/src/auth.element.ts):
+[`auth.element.ts`](https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Web.UI.Login/src/auth.element.ts):
 
 ```typescript
 async firstUpdated() {
@@ -269,7 +269,7 @@ If `#waitForLocalization()` rejects, `firstUpdated()` throws and `#initializeFor
 
 ### 3.4 The login POST
 
-[`login.page.element.ts`](https://github.com/umbraco/Umbraco-CMS/blob/main/src/Umbraco.Web.UI.Login/src/components/pages/login.page.element.ts):
+[`login.page.element.ts`](https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Web.UI.Login/src/components/pages/login.page.element.ts):
 
 ```typescript
 #handleSubmit = async (e: SubmitEvent) => {
@@ -283,7 +283,7 @@ If `#waitForLocalization()` rejects, `firstUpdated()` throws and `#initializeFor
 };
 ```
 
-[`auth.repository.ts`](https://github.com/umbraco/Umbraco-CMS/blob/main/src/Umbraco.Web.UI.Login/src/contexts/auth.repository.ts):
+[`auth.repository.ts`](https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Web.UI.Login/src/contexts/auth.repository.ts):
 
 ```typescript
 public async login(data: LoginRequestModel): Promise<LoginResponse> {
@@ -315,7 +315,7 @@ If `ReturnUrl` is empty (e.g. the user hit `/umbraco/login` directly), nothing h
 
 ### 3.5 The `oauth_complete` handler
 
-[`app.element.ts`](https://github.com/umbraco/Umbraco-CMS/blob/main/src/Umbraco.Web.UI.Client/src/apps/app/app.element.ts):
+[`app.element.ts`](https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Web.UI.Client/src/apps/app/app.element.ts):
 
 ```typescript
 {
@@ -343,7 +343,7 @@ If `ReturnUrl` is empty (e.g. the user hit `/umbraco/login` directly), nothing h
 }
 ```
 
-[`completeAuthorizationRequest`](https://github.com/umbraco/Umbraco-CMS/blob/main/src/Umbraco.Web.UI.Client/src/packages/core/auth/auth.context.ts) reads PKCE from `sessionStorage` (preferred) or `window.opener` (popup flow), then POSTs to the token endpoint:
+[`completeAuthorizationRequest`](https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Web.UI.Client/src/packages/core/auth/auth.context.ts) reads PKCE from `sessionStorage` (preferred) or `window.opener` (popup flow), then POSTs to the token endpoint:
 
 ```typescript
 async completeAuthorizationRequest(): Promise<UmbTokenEndpointResponse | null> {
@@ -380,7 +380,7 @@ async completeAuthorizationRequest(): Promise<UmbTokenEndpointResponse | null> {
 
 `exchangeCode()` POSTs to `/security/back-office/token`. The server's response carries timing only (`expires_in`, `issued_at`) — the actual access/refresh tokens are written into **httpOnly cookies** server-side. JS never sees them.
 
-When the client later wants to refresh, it POSTs `grant_type=refresh_token` with `refresh_token=[redacted]`. The server intercepts the request and substitutes the real token from the httpOnly cookie (see `HideBackOfficeTokensHandler` in [`Umbraco.Cms.Api.Common`](https://github.com/umbraco/Umbraco-CMS/blob/main/src/Umbraco.Cms.Api.Common/DependencyInjection/HideBackOfficeTokensHandler.cs)):
+When the client later wants to refresh, it POSTs `grant_type=refresh_token` with `refresh_token=[redacted]`. The server intercepts the request and substitutes the real token from the httpOnly cookie (see `HideBackOfficeTokensHandler` in [`Umbraco.Cms.Api.Common`](https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Cms.Api.Common/DependencyInjection/HideBackOfficeTokensHandler.cs)):
 
 ```typescript
 async refreshToken(): Promise<UmbTokenEndpointResponse | undefined> {
@@ -405,22 +405,22 @@ sequenceDiagram
     participant BO as Backoffice SPA
     participant REV as POST /token (revoke)
     participant SO as GET /security/back-office/signout
-    participant LO as /backoffice/logout
+    participant LO as /umbraco/logout
 
     U->>BO: Click logout
     BO->>BO: authContext.signOut()
     BO->>REV: POST grant_type=token_revoke (best-effort)
     REV-->>BO: 200 (cookies cleared server-side)
     BO->>BO: #session=undefined, isAuthorized=false<br/>BroadcastChannel.postMessage({type:"signedOut"})
-    BO->>SO: location.href = /signout?post_logout_redirect_uri=/backoffice/logout
+    BO->>SO: location.href = /signout?post_logout_redirect_uri=/umbraco/logout
     SO->>SO: HttpContext.SignOutAsync(BackOfficeAuthenticationType)
-    SO-->>BO: 302 → /backoffice/logout
-    BO->>LO: GET /backoffice/logout
+    SO-->>BO: 302 → /umbraco/logout
+    BO->>LO: GET /umbraco/logout
     LO->>LO: Router matches "logout" route<br/>setup: clearTokenStorage()
     LO-->>U: Renders <umb-app-auth> → <umb-auth-view>
 ```
 
-[`signOut` in auth.context.ts](https://github.com/umbraco/Umbraco-CMS/blob/main/src/Umbraco.Web.UI.Client/src/packages/core/auth/auth.context.ts):
+[`signOut` in auth.context.ts](https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Web.UI.Client/src/packages/core/auth/auth.context.ts):
 
 ```typescript
 async signOut(): Promise<void> {
@@ -437,7 +437,7 @@ async signOut(): Promise<void> {
 }
 ```
 
-The logout route renders the **backoffice's `umb-auth-view`**, NOT the standalone login page. The user sees a provider-selection screen ("Log in with Umbraco") still inside the backoffice SPA at `/backoffice/logout`.
+The logout route renders the **backoffice's `umb-auth-view`**, NOT the standalone login page. The user sees a provider-selection screen ("Log in with Umbraco") still inside the backoffice SPA at `/umbraco/logout`.
 
 ---
 
@@ -447,11 +447,11 @@ The logout route renders the **backoffice's `umb-auth-view`**, NOT the standalon
 sequenceDiagram
     autonumber
     participant U as User
-    participant LO as /backoffice/logout<br/>(umb-auth-view)
+    participant LO as /umbraco/logout<br/>(umb-auth-view)
     participant AZ as /authorize
     participant LP as /umbraco/login
     participant LOGIN as POST /login
-    participant OC as /backoffice/oauth_complete
+    participant OC as /umbraco/oauth_complete
 
     U->>LO: Click login provider button
     LO->>LO: umb-auth-view.#onSubmit()
@@ -466,7 +466,7 @@ sequenceDiagram
     LP->>LOGIN: POST {username, password}
     LOGIN-->>LP: 200 + sets backoffice auth cookie
     LP->>AZ: location.href = returnPath
-    AZ-->>OC: 302 → oauth_complete?code=…
+    AZ-->>OC: 302 → /umbraco/oauth_complete?code=…
     OC->>OC: exchangeCode, set tokens, redirect to backoffice
 ```
 
@@ -474,7 +474,7 @@ sequenceDiagram
 
 1. **`setStoredPath` is NOT called.** `umb-auth-view.#onSubmit` calls `authContext.makeAuthorizationRequest` directly, not via `UmbAppAuthController.makeAuthorizationRequest` (which is the only path that sets the stored redirect URL). After the OAuth round-trip, `redirectToStoredPath` reads an empty value and falls back to `basePath`.
 
-   [`umb-auth-view.element.ts`](https://github.com/umbraco/Umbraco-CMS/blob/main/src/Umbraco.Web.UI.Client/src/packages/core/auth/components/umb-auth-view.element.ts):
+   [`umb-auth-view.element.ts`](https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Web.UI.Client/src/packages/core/auth/components/umb-auth-view.element.ts):
 
    ```typescript
    #onSubmit = async (providerOrManifest, loginHint?) => {
@@ -505,7 +505,7 @@ sequenceDiagram
 
 The Umbraco localisation system is the moving piece that interacts with Le Løgin's appEntryPoint. Understanding its loading model is mandatory for any third-party extension that registers localisation.
 
-[`localization.registry.ts`](https://github.com/umbraco/Umbraco-CMS/blob/main/src/Umbraco.Web.UI.Client/src/packages/core/localization/registry/localization.registry.ts):
+[`localization.registry.ts`](https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Web.UI.Client/src/packages/core/localization/registry/localization.registry.ts):
 
 ```typescript
 this.#subscription = this.currentLanguage
@@ -598,43 +598,47 @@ The Le Løgin package registers a **single** entry point in [`Client/public/umbr
         {
             "type": "backofficeEntryPoint",
             "alias": "LeLøgin.EntryPoint.Backoffice",
-            "js": "/App_Plugins/le-løgin/main.js"
+            "js": "/App_Plugins/le-løgin/backoffice.js"
         }
     ]
 }
 ```
 
-The `backofficeEntryPoint` runs only in the authenticated backoffice and registers sections, dashboards, workspaces, and trees. **No JavaScript runs on the login page.** Every customisation visible there is delivered server-side at the moment Umbraco asks for its default.
+The `backofficeEntryPoint` runs only in the authenticated backoffice and registers sections, dashboards, workspaces, and trees. Its `js` is rewritten at build time to the hashed filename, since Umbraco imports that URL verbatim with no version query.
 
-### Server-side customisation surface
+The standalone login page has no public extension entry point. Instead the package-owned Razor override replaces Umbraco's `login.js` script tag with the package's *separate* `login.js` entry, which resolves the greeting and then imports Umbraco's bundle itself, so the first greeting render is already correct. The two entries are built independently so neither screen downloads the other's code, and `login.js` keeps a stable filename because the Razor view references it by name.
 
-All three hooks live under [`Core/Runtime/`](../Core/Runtime/) and are wired up in [`LeLøginScreenComposer`](../Core/LoginScreenComposer.cs).
+### Package login customisation surface
+
+The image and logo hooks live under [`Core/Runtime/`](../Core/Runtime/) and are wired up in [`LeLøginScreenComposer`](../Core/LoginScreenComposer.cs). The standalone greeting bootstrap is the package Razor override.
 
 | Customisation | Hook | Mechanism |
 | --- | --- | --- |
 | Background image | [`LeLøginBackgroundMiddleware`](../Core/Runtime/LoginBackgroundMiddleware.cs) | Intercepts `GET /umbraco/management/api/v1/security/back-office/graphics/login-background` (pre-routing). When a rule-matched Le Løgin background asset exists, 302-redirects to its ImageSharp-processed public URL so focal-point / zoom crops are preserved. No match → falls through to Umbraco's `BackOfficeGraphicsController`. |
 | Logo | [`LeLøginLogoMiddleware`](../Core/Runtime/LoginLogoMiddleware.cs) | Intercepts both `/login-logo` and `/login-logo-alternative`. The logo is configured per background asset — the active background's `LogoAssetId` selects which logo file to stream. Path is confined to `App_Data/LeLøgin/assets/`; `X-Content-Type-Options: nosniff` is set. Both endpoints return the same bytes; Le Løgin has a single logo concept, not a primary/alternative split. |
-| Greeting text | [`LeLøginPackageManifestReader`](../Core/Runtime/LoginPackageManifestReader.cs) + `RuntimeController.GreetingModule` | The reader synthesises a **static** `PackageManifest` containing one `localization` extension per culture Umbraco ships backoffice lang files for (25 in Umbraco 18.1.0), each pointing its `js` loader at `/umbraco/le-løgin/api/v1/runtime/greeting.js`. That endpoint resolves the active asset per request (same store-read + rule evaluation as the background middleware) and serves `export default { login: { greeting0..6 } }` with `Cache-Control: no-store`. Weight `0` (lower than Umbraco's `100`) ensures the override wins. If no greeting is configured the module exports an empty object and Umbraco's defaults render unchanged. |
+| Greeting text | [`umbraco/UmbracoLogin/Index.cshtml`](../umbraco/UmbracoLogin/Index.cshtml) + `RuntimeController.GreetingModule` | The package Razor override replaces Umbraco's own `login.js` script tag with the package's `login.js` entry, which registers a `localization` manifest for the culture on `data-le-login-culture`, resolves `/umbraco/le-løgin/api/v1/runtime/greeting.js`, then awaits the culture load before `umb-auth` connects. The endpoint resolves the active asset per request and serves `export default { login: { greeting0..6 } }` with `Cache-Control: no-store`. If no greeting is configured the module exports an empty object and Umbraco's defaults render unchanged. |
 
 ### One namespace: `login`
 
-In Umbraco 18 both `/umbraco/login` and the logout view (`umb-auth-view`) read `login_greeting0..6`; `auth_greeting*` survives only as a deprecated fallback that logs a console warning and is removed in v20 ([#20082](https://github.com/umbraco/Umbraco-CMS/issues/20082)). The greeting module therefore emits the `login` namespace only. (Pre-18, the two screens read different namespaces — that dual-override workaround is obsolete.)
+In Umbraco 18 both `/umbraco/login` and the logout view (`umb-auth-view`) read `login_greeting0..6`; `auth_greeting*` survives only as a deprecated fallback that logs a console warning and is removed in v20 ([#20082](https://github.com/umbraco/Umbraco-CMS/issues/20082)). The greeting module therefore emits the `login` namespace only. (Pre-18, the two screens read different namespaces — that dual-override workaround is obsolete.) Note that sharing a namespace does **not** mean Le Løgin customises the logout view: no package client code runs in that shell — see "Screens Le Løgin does not customise" in [umbraco-login-customisation.md](umbraco-login-customisation.md).
 
-### Manifest cache invalidation: none, by design
+### Cache invalidation: none, by design
 
-`PackageManifestService` caches the aggregated manifest in `RuntimeCache` for 30 days in production (10 seconds otherwise) — for **all** packages at once. Because Le Løgin's manifest content is static (extension declarations only, no values), that cache never goes stale for us and nothing needs clearing. Greeting freshness — asset swaps, weekday/month rule flips, random rules, multi-instance hosting — comes entirely from the greeting module endpoint resolving per request.
+Greeting freshness — asset swaps, weekday/month rule flips, and multi-instance hosting — comes entirely from the greeting module endpoint resolving per request. Which image a multi-image *random* rule lands on is pinned by the render token instead, so the background, logo, and greeting of one screen always agree. The bootstrap is package static content and never needs Umbraco's aggregate package-manifest cache. Nothing needs clearing.
 
 An earlier iteration baked the greeting values inline into the manifest and cleared Umbraco's cache entry by its internal key from every mutating endpoint. That was removed: the clear only reached the local instance, time-driven rule flips never triggered it, and it invalidated a cache shared by every installed package. Le Løgin never touches cache state it does not own (AGENTS.md Backend Key Rule 9, enforced by `ArchitectureRuleTests`).
 
 ### Greeting parity with image and logo
 
-The greeting now resolves in the per-request pipeline exactly like the background and logo middlewares — same `LoginRuntimeContext`, same rule evaluation, per request. Any rule condition that works for the image works identically for the greeting. One structural exception: under a **random** rule the image request and the greeting module request roll independently, so a random rule spanning assets with *different* greeting texts can pair one asset's image with another's greeting. Accepted for now; a short-lived coordination token is the fix if divergent per-asset greetings are ever configured on random rules.
+The greeting resolves in the per-request pipeline exactly like the background and logo middlewares — same `LoginRuntimeContext`, same rule evaluation, per request. Any rule condition that works for the image works identically for the greeting.
+
+Under a **random** rule the background, logo, and greeting are three independent requests, which used to roll independently and could pair one asset's image with another's greeting or logo. That is now prevented by `LoginRuntimeContext.RenderToken`: the Razor shell stamps one token on all four URLs of a render, and requests that cannot carry one fall back to a shared time bucket. See "Which image a multi-image rule resolves to" in [umbraco-login-customisation.md](umbraco-login-customisation.md).
 
 ### Why this replaced the previous client-side approach
 
-An earlier iteration delivered the background image and greeting from an `appEntryPoint` that ran on the login SPA: it fetched `/runtime/active`, set `--umb-login-image`, and dynamically registered a `localization` extension whose `js:` module performed a top-level `await`. That extension landed inside the localisation registry's `Promise.all` (§6) and, on warm-cache loads, blocked the registry long enough to time out the login SPA's `#waitForLocalization()` (§3.3) — leaving `#initializeForm()` un-run and the username/password inputs absent. The server-side replacement removes the race entirely: there is no late-arriving extension, no client-side fetch on the login page, and no `Promise.all` to block.
+An earlier iteration delivered the background image and greeting from an `appEntryPoint` that ran on the login SPA: it fetched `/runtime/active`, set `--umb-login-image`, and dynamically registered a `localization` extension whose `js:` module performed a top-level `await`. That extension landed inside the localisation registry's `Promise.all` (§6) and, on warm-cache loads, blocked the registry long enough to time out the login SPA's `#waitForLocalization()` (§3.3) — leaving `#initializeForm()` un-run and the username/password inputs absent. The Razor bootstrap avoids that late-arriving extension: it resolves the greeting localisation before `login.js` defines `<umb-auth>`.
 
-The greeting module does **not** reintroduce that race. It is declared up-front in the manifest (not registered late), and its body is a single static `export default` literal with no top-level `await` — it evaluates instantly once fetched, exactly like Umbraco's own lang-file chunks, which load through the identical registry path. Keep it that way: async work belongs on the server side of the endpoint, never inside the module source.
+The greeting module does **not** reintroduce that race. It is imported and resolved before `login.js`, and its body is a single static `export default` literal with no top-level `await`. Keep it that way: async work belongs on the server side of the endpoint, never inside the module source.
 
 ---
 
@@ -669,6 +673,26 @@ flowchart TD
 - `sessionStorage.removeItem('umb:pkce')` runs only when the state matches OR on `JSON.parse` failure. A mismatched state leaves the entry in storage (it gets overwritten by the next flow).
 
 ### Practical debugging markers
+
+These were recorded while investigating the post-logout second-login failure **on Umbraco 17.4.0**, before this package moved to 18. The mechanisms still hold; treat the version-specific observations as history.
+
+**Status of the `CachedStampAwareBackOfficeSignInManager` mitigation — reviewed on Umbraco 18, decision: leave in place, revisit when upgrading to v19.** What was checked against `release-18.1.0`:
+
+- The chain is unchanged: `BackOfficeUserStore.FindUserAsync` → `TryFindUserFromString` → `GetAsync(id)` →
+  `BackOfficeUserReader.GetById` → `UserRepository.Get(int)`, which still reads `IsolatedCache` first and inserts
+  with `DefaultCacheDuration`. The uncached `Get(int?, bool includeSecurityData)` overload the mitigation relies on
+  still exists separately. No upstream fix.
+- The mitigation is **host-only**: it lives in `LeLøgin.Site` and is registered only in that host's `Program.cs`.
+  The distributable package neither references it nor touches `IBackOfficeSignInManager`, and must not — replacing a
+  core security component from a package is out of the question regardless of the bug.
+- `AllowConcurrentLogins: false` is necessary but **not** sufficient: a vanilla 17.4.0 site with the same setting did
+  not reproduce, while this host did. The real trigger remains host-specific and unidentified.
+- Whether it still fires on 18 is **unknown**, because its only signal is a `LogDebug` call and this host runs
+  `Serilog:MinimumLevel:Default: Information`. Raising that one call to `Information` is what would make the question
+  answerable.
+
+Note the testing consequence: because this host is patched, its logout → second-login flow may succeed where an
+unpatched consumer site's would not. Disable the override for any run meant to be consumer-representative.
 
 - On `/umbraco/login`, redirect-flow PKCE data lives in `sessionStorage['umb:pkce']`, not in `localStorage`.
 - `document.cookie` can be empty on the login page even when the relevant auth or token cookies exist, because Umbraco writes those cookies as `HttpOnly`. Browser-side JavaScript cannot prove their presence or absence.
@@ -709,17 +733,17 @@ Multiple backoffice tabs in the same browser share session state via a `Broadcas
 
 | Concept | File |
 | --- | --- |
-| Login SPA element | [`Umbraco.Web.UI.Login/src/auth.element.ts`](https://github.com/umbraco/Umbraco-CMS/blob/main/src/Umbraco.Web.UI.Login/src/auth.element.ts) |
-| Login SPA controller | [`Umbraco.Web.UI.Login/src/controllers/slim-backoffice-initializer.ts`](https://github.com/umbraco/Umbraco-CMS/blob/main/src/Umbraco.Web.UI.Login/src/controllers/slim-backoffice-initializer.ts) |
-| Login form page | [`Umbraco.Web.UI.Login/src/components/pages/login.page.element.ts`](https://github.com/umbraco/Umbraco-CMS/blob/main/src/Umbraco.Web.UI.Login/src/components/pages/login.page.element.ts) |
-| Login API repo | [`Umbraco.Web.UI.Login/src/contexts/auth.repository.ts`](https://github.com/umbraco/Umbraco-CMS/blob/main/src/Umbraco.Web.UI.Login/src/contexts/auth.repository.ts) |
-| Backoffice SPA shell | [`Umbraco.Web.UI.Client/src/apps/app/app.element.ts`](https://github.com/umbraco/Umbraco-CMS/blob/main/src/Umbraco.Web.UI.Client/src/apps/app/app.element.ts) |
-| App auth controller | [`apps/app/app-auth.controller.ts`](https://github.com/umbraco/Umbraco-CMS/blob/main/src/Umbraco.Web.UI.Client/src/apps/app/app-auth.controller.ts) |
-| Backoffice auth context | [`packages/core/auth/auth.context.ts`](https://github.com/umbraco/Umbraco-CMS/blob/main/src/Umbraco.Web.UI.Client/src/packages/core/auth/auth.context.ts) |
-| OAuth/PKCE client | [`packages/core/auth/umb-auth-client.ts`](https://github.com/umbraco/Umbraco-CMS/blob/main/src/Umbraco.Web.UI.Client/src/packages/core/auth/umb-auth-client.ts) |
-| `umb-auth-view` (backoffice) | [`packages/core/auth/components/umb-auth-view.element.ts`](https://github.com/umbraco/Umbraco-CMS/blob/main/src/Umbraco.Web.UI.Client/src/packages/core/auth/components/umb-auth-view.element.ts) |
-| OAuth complete page | [`apps/app/app-oauth.element.ts`](https://github.com/umbraco/Umbraco-CMS/blob/main/src/Umbraco.Web.UI.Client/src/apps/app/app-oauth.element.ts) |
-| `setStoredPath` / `redirectToStoredPath` | [`packages/core/utils/path/stored-path.function.ts`](https://github.com/umbraco/Umbraco-CMS/blob/main/src/Umbraco.Web.UI.Client/src/packages/core/utils/path/stored-path.function.ts) |
-| Localisation registry | [`packages/core/localization/registry/localization.registry.ts`](https://github.com/umbraco/Umbraco-CMS/blob/main/src/Umbraco.Web.UI.Client/src/packages/core/localization/registry/localization.registry.ts) |
-| Server-side authorize/token/login/signout | [`Umbraco.Cms.Api.Management/Controllers/Security/BackOfficeController.cs`](https://github.com/umbraco/Umbraco-CMS/blob/main/src/Umbraco.Cms.Api.Management/Controllers/Security/BackOfficeController.cs) |
-| Hidden token swap (middleware) | [`Umbraco.Cms.Api.Common/DependencyInjection/HideBackOfficeTokensHandler.cs`](https://github.com/umbraco/Umbraco-CMS/blob/main/src/Umbraco.Cms.Api.Common/DependencyInjection/HideBackOfficeTokensHandler.cs) |
+| Login SPA element | [`Umbraco.Web.UI.Login/src/auth.element.ts`](https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Web.UI.Login/src/auth.element.ts) |
+| Login SPA controller | [`Umbraco.Web.UI.Login/src/controllers/slim-backoffice-initializer.ts`](https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Web.UI.Login/src/controllers/slim-backoffice-initializer.ts) |
+| Login form page | [`Umbraco.Web.UI.Login/src/components/pages/login.page.element.ts`](https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Web.UI.Login/src/components/pages/login.page.element.ts) |
+| Login API repo | [`Umbraco.Web.UI.Login/src/contexts/auth.repository.ts`](https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Web.UI.Login/src/contexts/auth.repository.ts) |
+| Backoffice SPA shell | [`Umbraco.Web.UI.Client/src/apps/app/app.element.ts`](https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Web.UI.Client/src/apps/app/app.element.ts) |
+| App auth controller | [`apps/app/app-auth.controller.ts`](https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Web.UI.Client/src/apps/app/app-auth.controller.ts) |
+| Backoffice auth context | [`packages/core/auth/auth.context.ts`](https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Web.UI.Client/src/packages/core/auth/auth.context.ts) |
+| OAuth/PKCE client | [`packages/core/auth/umb-auth-client.ts`](https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Web.UI.Client/src/packages/core/auth/umb-auth-client.ts) |
+| `umb-auth-view` (backoffice) | [`packages/core/auth/components/umb-auth-view.element.ts`](https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Web.UI.Client/src/packages/core/auth/components/umb-auth-view.element.ts) |
+| OAuth complete page | [`apps/app/app-oauth.element.ts`](https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Web.UI.Client/src/apps/app/app-oauth.element.ts) |
+| `setStoredPath` / `redirectToStoredPath` | [`packages/core/utils/path/stored-path.function.ts`](https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Web.UI.Client/src/packages/core/utils/path/stored-path.function.ts) |
+| Localisation registry | [`packages/core/localization/registry/localization.registry.ts`](https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Web.UI.Client/src/packages/core/localization/registry/localization.registry.ts) |
+| Server-side authorize/token/login/signout | [`Umbraco.Cms.Api.Management/Controllers/Security/BackOfficeController.cs`](https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Cms.Api.Management/Controllers/Security/BackOfficeController.cs) |
+| Hidden token swap (middleware) | [`Umbraco.Cms.Api.Common/DependencyInjection/HideBackOfficeTokensHandler.cs`](https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Cms.Api.Common/DependencyInjection/HideBackOfficeTokensHandler.cs) |

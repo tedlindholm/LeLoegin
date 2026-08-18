@@ -1,26 +1,28 @@
 # Umbraco Backoffice Login Customisation
 
 Reference: [Umbraco Login Docs](https://docs.umbraco.com/umbraco-cms/fundamentals/backoffice/login)
-Source: [auth-layout.element.ts](https://github.com/umbraco/Umbraco-CMS/blob/v16/dev/src/Umbraco.Web.UI.Login/src/components/layouts/auth-layout.element.ts)
+Source: [umb-auth-view.element.ts](https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Web.UI.Client/src/packages/core/auth/components/umb-auth-view.element.ts) (pinned; re-pin on each Umbraco major)
 
 ## Current Le Løgin implementation
 
-The package now delivers every login-screen customisation **server-side**. There is no `appEntryPoint` and no client-side runtime on the login page.
+The package delivers login-screen customisation without a public `appEntryPoint`. Images and
+logos are served server-side; a package-owned Razor login shell loads the package's single client
+entry before Umbraco's own login bundle so the first greeting render is already resolved.
 
-- [`Client/public/umbraco-package.json`](../Client/public/umbraco-package.json) sets `allowPublicAccess: true` and ships a **single** entry point — a `backofficeEntryPoint` for the authenticated UI. The login page itself runs no Le Løgin JavaScript.
+- [`Client/public/umbraco-package.json`](../Client/public/umbraco-package.json) sets `allowPublicAccess: true` and registers one `backofficeEntryPoint` pointing at `backoffice.js`, built from [`Client/lib/backoffice-entry.ts`](../Client/lib/backoffice-entry.ts). [`umbraco/UmbracoLogin/Index.cshtml`](../umbraco/UmbracoLogin/Index.cshtml) is a package Razor override, not an extension entry point; it loads `login.js`, built from [`Client/lib/login-bootstrap.ts`](../Client/lib/login-bootstrap.ts), in place of Umbraco's own `login.js` tag. The two entries are separate builds so neither page downloads the other's code, and neither is reachable from the other.
 - Background image: [`LeLøginBackgroundMiddleware`](../Core/Runtime/LoginBackgroundMiddleware.cs) intercepts `GET /umbraco/management/api/v1/security/back-office/graphics/login-background`. When a Le Løgin background asset matches the current request context (host, weekday, month, date rules), it 302-redirects to the ImageSharp-processed public URL so focal-point and zoom crops are preserved. No match → falls through to Umbraco's `BackOfficeGraphicsController` and the bundled default is served.
 - Logo: [`LeLøginLogoMiddleware`](../Core/Runtime/LoginLogoMiddleware.cs) intercepts both `/login-logo` and `/login-logo-alternative` and streams the configured logo from `App_Data/LeLøgin/assets/` (path-confined for safety, `X-Content-Type-Options: nosniff`). The logo is configured per background asset — the active background's `LogoAssetId` resolves the logo. Both endpoints return the same bytes; Le Løgin has a single logo concept, not a primary/alternative split.
-- Greeting text: [`LeLøginPackageManifestReader`](../Core/Runtime/LoginPackageManifestReader.cs) synthesises a **static** `PackageManifest` exposing one `localization` extension per culture Umbraco ships backoffice lang files for (25 in Umbraco 18.1.0), each pointing its `js` loader at `/umbraco/le-løgin/api/v1/runtime/greeting.js`. That module is served per request by `RuntimeController.GreetingModule` with `Cache-Control: no-store`: it resolves the active asset with the same store-read + rule evaluation the background middleware uses and emits `export default { login: { greeting0..6 } }` (Umbraco's core lang files are ES modules loaded the identical way — same registry, same loader, same `import()`). Weight `0` (lower than Umbraco's `100`) ensures the override wins the registry's merge. Only the `login` namespace is emitted: in Umbraco 18 both the login page and the logout view read `login_greeting*`, and `auth_greeting*` is deprecated for removal in v20 ([#20082](https://github.com/umbraco/Umbraco-CMS/issues/20082)). If no greeting is configured the module exports an empty object and Umbraco's defaults render.
-- Cache invalidation: **none, by design.** The manifest content never changes, so Umbraco's package-manifest cache (30 days in production) is harmless, and greeting freshness — asset swaps, weekday/month rule flips, random rules, multi-instance hosting — comes entirely from the module endpoint resolving per request. Le Løgin never clears or mirrors the keys of caches it does not own (AGENTS.md Backend Key Rule 9, enforced by `ArchitectureRuleTests`).
+- Greeting text: `RuntimeController.GreetingModule` resolves the active asset per request and serves `export default { login: { greeting0..6 } }` with `Cache-Control: no-store`. The login entry registers that module, loads the culture named by `data-le-login-culture`, and only then imports Umbraco's cache-busted `login.js`. It must do that import itself: a following module script does not wait for a preceding module's top-level await, so an ordinary script tag would let Umbraco connect `umb-auth` while localisation was still loading. The first `<umb-auth>` render therefore sees the configured greeting instead of briefly showing Umbraco's default. If the module cannot be loaded, the bootstrap logs a warning and starts the normal Umbraco login flow. Only the `login` namespace is emitted: in Umbraco 18 both the login page and the logout view read `login_greeting*`, and `auth_greeting*` is deprecated for removal in v20 ([#20082](https://github.com/umbraco/Umbraco-CMS/issues/20082)). If no greeting is configured the module exports an empty object and Umbraco's defaults render.
+- Cache invalidation: **none, by design.** Greeting freshness — asset swaps, weekday/month rule flips, and multi-instance hosting — comes entirely from the module endpoint resolving per request. Random rules are the one exception: which image a multi-image rule resolves to is pinned by the render token (see below), not re-drawn per request. Le Løgin never clears or mirrors the keys of caches it does not own (AGENTS.md Backend Key Rule 9, enforced by `ArchitectureRuleTests`).
 - DI registration lives in [`LeLøginScreenComposer`](../Core/LoginScreenComposer.cs). The two middlewares are added to `UmbracoPipelineOptions` as a `PreRouting` filter — placement before endpoint routing is what guarantees they intercept before `BackOfficeGraphicsController` is dispatched.
 - The backoffice Overview dashboard mirrors Umbraco's auth-panel image treatment (curve overlays, logo placement) so editors preview something close to the real login screen.
-- No custom login stylesheet is injected. There is no `--umb-login-image` CSS variable. Every visible asset is replaced at the source endpoint.
+- No custom login stylesheet is injected, and Le Løgin sets none of the `--umb-login-*` CSS variables. They do exist — `umb-auth-view` resolves its background as `var(--umb-login-image, var(--image))` — but the package deliberately does not use them: every visible asset is replaced at the source endpoint instead, so the customisation works whichever shell rendered the screen.
 
 ### Why server-side
 
-The earlier client-side approach (`appEntryPoint` → fetch `/runtime/active` → set CSS variable + register a localisation extension at runtime) was removed because the localisation registration raced Umbraco's localisation registry on warm-cache loads. A top-level `await` inside the dynamically-imported greeting module blocked the registry's `Promise.all`, which in turn timed out the login SPA's `#waitForLocalization()` and left the form DOM un-initialised on the second login. The server-side replacements remove the race entirely: the browser receives the extension declarations via the same manifest fetch that already loads every other public extension, and the image endpoints are answered by Le Løgin before Umbraco's defaults ever ship.
+The earlier client-side approach (`appEntryPoint` → fetch `/runtime/active` → set CSS variable + register a localisation extension at runtime) was removed because the localisation registration raced Umbraco's localisation registry on warm-cache loads. A top-level `await` inside the dynamically-imported greeting module blocked the registry's `Promise.all`, which in turn timed out the login SPA's `#waitForLocalization()` and left the form DOM un-initialised on the second login. The Razor bootstrap avoids that late registration: it completes localisation before `login.js` defines and connects `<umb-auth>`.
 
-The greeting module served by `RuntimeController.GreetingModule` does **not** reintroduce that race: it contains no top-level `await` — the server does all resolution before responding, and the module body is a single static `export default` literal that evaluates instantly once fetched, exactly like Umbraco's own lang-file chunks. Keep it that way: any future async work belongs on the server side of that endpoint, never inside the module source.
+The greeting module served by `RuntimeController.GreetingModule` contains no top-level `await` — the server does all resolution before responding, and the module body is a single static `export default` literal. Keep it that way: any future async work belongs on the server side of that endpoint, never inside the module source.
 
 A first version of the manifest-based greeting baked the values **inline** into the manifest (`meta.localizations`). That was replaced because Umbraco's package-manifest cache (30 days in production, per-instance) froze the values at cache-fill time: weekday/month rule flips never invalidated anything, random rules were resolved once instead of per view, and on multi-instance hosting a local cache clear never reached the other instances. Chasing that with invalidation meant clearing a cache entry shared by every installed package — forbidden blast radius. Values must only ever come from the per-request module.
 
@@ -31,13 +33,22 @@ A first version of the manifest-based greeting baked the values **inline** into 
 | Background image | `appsettings.json` → `Umbraco:CMS:Content:LoginBackgroundImage`               | Path relative to `/wwwroot/umbraco/`          |
 | Logo             | `LoginLogoImage` + `LoginLogoImageAlternative`                                | Same section                                  |
 | Password reset   | `Umbraco:CMS:Security:AllowPasswordReset` + SMTP config                       | `appsettings.json`                            |
-| Custom CSS       | `appEntryPoint` manifest loads a JS file that injects a `<link>` stylesheet   | `App_Plugins/` with `allowPublicAccess: true` |
-| Greeting text    | `localization` manifest overriding `auth.greeting0..6` and `auth.instruction` | JS module exporting translation keys          |
-| Timeout screen   | `login.greeting0..6` keys — `/umbraco/logout` uses `umb-auth-view` (backoffice package) which reads the `login` namespace, not `auth` | Same `localization` extension mechanism |
+| Custom CSS       | Umbraco supports an `appEntryPoint` that injects a `<link>` stylesheet — **Le Løgin does not use it**, see "Rejected approaches" | `App_Plugins/` with `allowPublicAccess: true` |
+| Greeting text    | Package Razor-loaded client entry registers `login.greeting0..6` before `login.js` | Per-request ES module exporting translation keys |
+| Timeout / logout screens | **Not customised — deliberately out of scope.** See "Screens Le Løgin does not customise" below | — |
 
 ## Available CSS custom properties
 
-From the `umb-auth-layout` element:
+The table below is the set honoured by the **login SPA's** `umb-auth-layout` (`/umbraco/login`),
+verified against the shipped `umbraco/login/login.js` in 18.1.0.
+
+`umb-auth-layout` does **not** exist in the backoffice package. The backoffice-rendered screens —
+`/umbraco/logout` and the session-timeout modal — use `umb-auth-view`, which implements its own
+chrome and honours only a subset: `--umb-login-image`, `--umb-login-image-border-radius`,
+`--umb-login-content-{background,border-radius,display,width,height}`,
+`--umb-login-curves-{color,display}`, `--umb-login-header-font-size-large`, and one the login SPA
+does not have, `--umb-login-greeting-color`. None of the `--umb-logo-*` variables apply there.
+Le Løgin sets none of these; the list is reference only.
 
 | Property                                 | Default              |
 | ---------------------------------------- | -------------------- |
@@ -65,7 +76,13 @@ From the `umb-auth-layout` element:
 | `--umb-logo-left`                        | `24px`               |
 | `--umb-logo-display`                     | `block`              |
 
-## Manifest example
+## Rejected approaches — do not use
+
+Everything in this section documents how Umbraco *can* be customised from the login page and why
+Le Løgin does not do it that way. It is kept for context, not as a pattern to copy. Reintroducing
+either snippet re-creates the localisation race described under "Why server-side" above.
+
+An `appEntryPoint` manifest — the extension type that runs on the login SPA:
 
 ```json
 {
@@ -84,7 +101,7 @@ From the `umb-auth-layout` element:
 }
 ```
 
-## CSS injection pattern
+…and the stylesheet-injection pattern such an entry point would use:
 
 ```js
 const cssPath = '/App_Plugins/le-løgin/runtime-customisation.css'
@@ -111,12 +128,12 @@ if (!existing) {
 
 ## Greeting localisation
 
-Override via a JS module registered as a `localization` extension:
+Override via a JS module registered as a `localization` extension. Only the `login` namespace is
+needed:
 
 ```js
 export default {
-	auth: {
-		instruction: 'Log in again to continue',
+	login: {
 		greeting0: 'Sunday',
 		greeting1: 'Monday',
 		greeting2: 'Tuesday',
@@ -128,11 +145,43 @@ export default {
 }
 ```
 
-The two screens use different components and different namespaces:
-- `/umbraco/login` → `umb-login-page` (login package) → keys under `auth` (`auth_greeting0–6`)
-- `/umbraco/logout` → `umb-auth-view` (backoffice package) → keys under `login` (`login_greeting0–6`)
+`umb-auth-view.headline` (Umbraco 18) checks `auth_greeting{day}` first and falls back to
+`login_greeting{day}`, and core's `en.js` ships `login.greeting0..6` but **no** `auth` greetings —
+so the canonical `login_*` keys are what actually render. `auth_greeting*` is deprecated for
+removal in v20 ([#20082](https://github.com/umbraco/Umbraco-CMS/issues/20082)); do not emit it, or
+the legacy branch wins and logs a deprecation warning.
 
-Both namespaces must be overridden to cover both screens.
+## Screens Le Løgin does not customise
+
+`/umbraco/logout` is served by the **backoffice** shell (`apps/app/app.element.js`), not by the
+package's Razor login view. Its `logout` route renders `UmbAppAuthElement` directly, and
+`backofficeEntryPoint` is only constructed for the backoffice route — so no Le Løgin client code
+runs there.
+
+- **Background and logo are correct** on that screen regardless: both are resolved server-side by
+  `LeLøginBackgroundMiddleware` and `LeLøginLogoMiddleware`, which intercept the graphics endpoints
+  whichever shell requested them.
+- **The greeting is Umbraco's default** ("Welcome"). Fixing it would need an `entryPoint` extension,
+  which the app shell awaits *before routing* — putting package code on the authenticated
+  backoffice's critical boot path to change one word on a screen shown briefly during sign-out.
+  Judged not worth the risk. Revisit only if Umbraco gives the logout route its own extension point.
+- **The session-timeout modal shows no greeting at all.** `umb-auth-view.headline` returns
+  `login_instruction` when `userLoginState === 'timedOut'`, so greeting keys are never read there.
+
+## Which image a multi-image rule resolves to
+
+A screen resolves the active asset from up to three independent requests — background, logo, and
+greeting — so all three must agree or one asset's logo lands on another's image. They agree via
+`LoginRuntimeContext.RenderToken`, built by `LoginRuntimeContextFactory`:
+
+- The Razor login shell generates one token per render and puts it on all four URLs, so that screen
+  still rotates per page load.
+- Everywhere else — the logout screen and the dashboard preview, whose URLs Umbraco hardcodes with
+  no query string — the token falls back to a `BucketSeconds` time bucket. Requests in the same
+  window agree; a multi-image random rule therefore rotates once per bucket rather than per request.
+
+Plain modulo is used rather than hashing the token: .NET string hashing is randomised per process,
+so a hash would let two instances of a load-balanced site disagree within one render.
 
 ## Two-factor authentication
 
