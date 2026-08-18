@@ -19,7 +19,6 @@ public sealed class RuleController(
 	ILeLøginScreenFileService fileService,
 	ILogger<RuleController> logger,
 	IOptions<ImageSharpMiddlewareOptions> imageSharpOptions,
-	LeLøginPackageManifestCacheInvalidator manifestCacheInvalidator,
 	RequestAuthorizationUtilities? requestAuthorizationUtilities = null) : ApiControllerBase
 {
 	[HttpGet("rules/condition-metadata")]
@@ -87,7 +86,6 @@ public sealed class RuleController(
 		if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
 		await store.UpsertRuleAsync(rule);
-		manifestCacheInvalidator.Invalidate();
 		if (!TryMapRule(rule, out var mapped))
 		{
 			logger.LogError("Failed to map newly created rule {RuleId} to response model.", rule.Id);
@@ -110,7 +108,6 @@ public sealed class RuleController(
 		if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
 		await store.UpsertRuleAsync(rule);
-		manifestCacheInvalidator.Invalidate();
 
 		if (!TryMapRule(rule, out var mapped))
 		{
@@ -130,7 +127,6 @@ public sealed class RuleController(
 		if (existing is null) return NotFound();
 
 		await store.DeleteRuleAsync(id);
-		manifestCacheInvalidator.Invalidate();
 		return NoContent();
 	}
 

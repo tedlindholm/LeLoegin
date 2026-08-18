@@ -184,17 +184,18 @@ Client/lib/
 
 7. **Follow the Le Løgin API conventions** — match the `ApiBase` / `ApiControllerBase` / `ApiConfiguration` / `Composer` pattern established in this package
 8. **Do not expose source asset management endpoints publicly** — only the runtime endpoint is public
+9. **Never touch cache state Le Løgin does not own** — do not clear, mutate, mirror the keys of, or depend on the lifetime of shared or foreign caches. In particular, Umbraco's `PackageManifestService` runtime-cache entry aggregates **every** package's manifests; clearing it to refresh Le Løgin state invalidates the whole site's manifest cache and is forbidden. Deliver freshness by resolving state per request at Le Løgin-owned endpoints instead of invalidating caches owned by Umbraco or other packages. Enforced by `ArchitectureRuleTests` in LeLøgin.Tests. (A former `LeLøginPackageManifestCacheInvalidator` violated this rule and was deleted in the greeting-endpoint redesign — do not reintroduce its pattern.)
 
 ### General
 
-9. **Use Settings as the current management surface** — do not move Le Løgin back to Media or assume it is a top-level custom section unless the user explicitly wants that change
-10. **Do not skip the PRE-BUILD-PLANNING wireframe** before building new extension types
-11. **Do not add features** that are not in the product plan without discussion
-12. **Build standards** — use pnpm, LF line endings, and follow .NET 10 best practices
-13. **British English** — use British English in all code, comments, documentation, UI strings, and generated text (e.g. colour, organisation, centralise)
-14. **Test-driven development (TDD)** — write tests first, then production code. Every feature starts with a failing test
-15. **Ask before coding** — always confirm the plan with the user and get explicit permission before writing or modifying code
-16. **Never use Git without explicit approval** — do not run any Git commands (`git commit`, `git push`, `git checkout`, `git reset`, etc.) unless the user has explicitly asked for it or given the go-ahead
+10. **Use Settings as the current management surface** — do not move Le Løgin back to Media or assume it is a top-level custom section unless the user explicitly wants that change
+11. **Do not skip the PRE-BUILD-PLANNING wireframe** before building new extension types
+12. **Do not add features** that are not in the product plan without discussion
+13. **Build standards** — use pnpm, LF line endings, and follow .NET 10 best practices
+14. **British English** — use British English in all code, comments, documentation, UI strings, and generated text (e.g. colour, organisation, centralise)
+15. **Test-driven development (TDD)** — write tests first, then production code. Every feature starts with a failing test
+16. **Ask before coding** — always confirm the plan with the user and get explicit permission before writing or modifying code
+17. **Never use Git without explicit approval** — do not run any Git commands (`git commit`, `git push`, `git checkout`, `git reset`, etc.) unless the user has explicitly asked for it or given the go-ahead
 
 ## Build and Validation
 

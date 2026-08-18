@@ -614,25 +614,27 @@ All three hooks live under [`Core/Runtime/`](../Core/Runtime/) and are wired up 
 | --- | --- | --- |
 | Background image | [`LeLøginBackgroundMiddleware`](../Core/Runtime/LoginBackgroundMiddleware.cs) | Intercepts `GET /umbraco/management/api/v1/security/back-office/graphics/login-background` (pre-routing). When a rule-matched Le Løgin background asset exists, 302-redirects to its ImageSharp-processed public URL so focal-point / zoom crops are preserved. No match → falls through to Umbraco's `BackOfficeGraphicsController`. |
 | Logo | [`LeLøginLogoMiddleware`](../Core/Runtime/LoginLogoMiddleware.cs) | Intercepts both `/login-logo` and `/login-logo-alternative`. The logo is configured per background asset — the active background's `LogoAssetId` selects which logo file to stream. Path is confined to `App_Data/LeLøgin/assets/`; `X-Content-Type-Options: nosniff` is set. Both endpoints return the same bytes; Le Løgin has a single logo concept, not a primary/alternative split. |
-| Greeting text | [`LeLøginPackageManifestReader`](../Core/Runtime/LoginPackageManifestReader.cs) | Implements `IPackageManifestReader`. Synthesises a `PackageManifest` containing one `localization` extension per supported culture (`en`, `en-us`, `da`, `sv`, `fi`, `nb`, `nb-no`), each with `meta.localizations.auth.greeting0..6` and `meta.localizations.login.greeting0..6` set to the configured greeting. Weight `0` (lower than Umbraco's `100`) ensures the override wins. If no greeting is configured the reader returns an empty list and Umbraco's defaults render unchanged. |
+| Greeting text | [`LeLøginPackageManifestReader`](../Core/Runtime/LoginPackageManifestReader.cs) + `RuntimeController.GreetingModule` | The reader synthesises a **static** `PackageManifest` containing one `localization` extension per culture Umbraco ships backoffice lang files for (25 in Umbraco 18.1.0), each pointing its `js` loader at `/umbraco/le-løgin/api/v1/runtime/greeting.js`. That endpoint resolves the active asset per request (same store-read + rule evaluation as the background middleware) and serves `export default { login: { greeting0..6 } }` with `Cache-Control: no-store`. Weight `0` (lower than Umbraco's `100`) ensures the override wins. If no greeting is configured the module exports an empty object and Umbraco's defaults render unchanged. |
 
-### Why both `auth` and `login` namespaces
+### One namespace: `login`
 
-`/umbraco/login` renders via `umb-login-page` which reads `auth.greeting*`. `/umbraco/backoffice/logout` renders via `umb-auth-view` which reads `login.greeting*`. Both must be overridden to cover both screens.
+In Umbraco 18 both `/umbraco/login` and the logout view (`umb-auth-view`) read `login_greeting0..6`; `auth_greeting*` survives only as a deprecated fallback that logs a console warning and is removed in v20 ([#20082](https://github.com/umbraco/Umbraco-CMS/issues/20082)). The greeting module therefore emits the `login` namespace only. (Pre-18, the two screens read different namespaces — that dual-override workaround is obsolete.)
 
-### Manifest cache invalidation
+### Manifest cache invalidation: none, by design
 
-`PackageManifestService` caches the aggregated manifest in `RuntimeCache` for 30 days in production (10 seconds otherwise). [`LeLøginPackageManifestCacheInvalidator`](../Core/Runtime/LoginPackageManifestCacheInvalidator.cs) clears that cache by key (`"PackageManifestService-PackageManifests"`) and is invoked from every Le Løgin controller endpoint that mutates greeting / rule / asset state.
+`PackageManifestService` caches the aggregated manifest in `RuntimeCache` for 30 days in production (10 seconds otherwise) — for **all** packages at once. Because Le Løgin's manifest content is static (extension declarations only, no values), that cache never goes stale for us and nothing needs clearing. Greeting freshness — asset swaps, weekday/month rule flips, random rules, multi-instance hosting — comes entirely from the greeting module endpoint resolving per request.
 
-The cache key is internal to Umbraco. If it changes in a future release, the invalidation silently no-ops and editor changes appear only after the cache window expires — worth checking on Umbraco upgrade.
+An earlier iteration baked the greeting values inline into the manifest and cleared Umbraco's cache entry by its internal key from every mutating endpoint. That was removed: the clear only reached the local instance, time-driven rule flips never triggered it, and it invalidated a cache shared by every installed package. Le Løgin never touches cache state it does not own (AGENTS.md Backend Key Rule 9, enforced by `ArchitectureRuleTests`).
 
-### Caveat: hostname-conditional rules and the greeting
+### Greeting parity with image and logo
 
-Manifest readers run outside the per-request pipeline (the result is application-scoped, not per-request). [`LeLøginPackageManifestReader`](../Core/Runtime/LoginPackageManifestReader.cs) therefore builds its `LoginRuntimeContext` with an empty hostname — rules that condition on host won't match for greeting resolution. Weekday, month, and date rules still apply for the duration of each cache window. The background and logo middlewares run per-request and *do* have a hostname, so host-conditional rules continue to work for those assets.
+The greeting now resolves in the per-request pipeline exactly like the background and logo middlewares — same `LoginRuntimeContext`, same rule evaluation, per request. Any rule condition that works for the image works identically for the greeting. One structural exception: under a **random** rule the image request and the greeting module request roll independently, so a random rule spanning assets with *different* greeting texts can pair one asset's image with another's greeting. Accepted for now; a short-lived coordination token is the fix if divergent per-asset greetings are ever configured on random rules.
 
 ### Why this replaced the previous client-side approach
 
 An earlier iteration delivered the background image and greeting from an `appEntryPoint` that ran on the login SPA: it fetched `/runtime/active`, set `--umb-login-image`, and dynamically registered a `localization` extension whose `js:` module performed a top-level `await`. That extension landed inside the localisation registry's `Promise.all` (§6) and, on warm-cache loads, blocked the registry long enough to time out the login SPA's `#waitForLocalization()` (§3.3) — leaving `#initializeForm()` un-run and the username/password inputs absent. The server-side replacement removes the race entirely: there is no late-arriving extension, no client-side fetch on the login page, and no `Promise.all` to block.
+
+The greeting module does **not** reintroduce that race. It is declared up-front in the manifest (not registered late), and its body is a single static `export default` literal with no top-level `await` — it evaluates instantly once fetched, exactly like Umbraco's own lang-file chunks, which load through the identical registry path. Keep it that way: async work belongs on the server side of the endpoint, never inside the module source.
 
 ---
 

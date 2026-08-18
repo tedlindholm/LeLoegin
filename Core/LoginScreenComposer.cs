@@ -77,13 +77,11 @@ public class LeLøginScreenComposer : IComposer
 		builder.Services.AddTransient<LeLøginScreenRuntimeResolver>();
 		builder.AddNotificationAsyncHandler<UmbracoApplicationStartedNotification, LeLøginUserGroupProvisioningNotificationHandler>();
 
-		// Synthesises a public package manifest contributing the greeting localisation override
-		// directly into Umbraco's manifest endpoint — replaces the old client-side appEntryPoint
-		// that fetched the runtime config and registered a localisation extension in the browser.
-		// PackageManifestService caches the aggregated manifest result; the cache invalidator
-		// service is called from every mutating controller endpoint so changes apply promptly.
+		// Synthesises a static public package manifest registering per-culture localisation
+		// extensions whose js loaders point at the greeting module endpoint. The manifest
+		// content never changes, so Umbraco's manifest cache needs no invalidation; the
+		// greeting itself is resolved per request by RuntimeController.GreetingModule.
 		builder.Services.AddTransient<IPackageManifestReader, LeLøginPackageManifestReader>();
-		builder.Services.AddSingleton<LeLøginPackageManifestCacheInvalidator>();
 
 		// Inject the image-substitution middlewares before Umbraco's endpoint routing so they
 		// can short-circuit the `/login-logo`, `/login-logo-alternative`, and `/login-background`

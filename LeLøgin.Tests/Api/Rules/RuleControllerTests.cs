@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using SixLabors.ImageSharp.Web.Middleware;
-using Umbraco.Cms.Core.Cache;
 using Xunit;
 
 namespace LeLøgin.Tests.Api.Rules;
@@ -266,7 +265,6 @@ public sealed class RuleControllerTests : IDisposable
 			store,
 			fileService,
 			new NullLogger<RuleController>(),
-			Options.Create(new ImageSharpMiddlewareOptions()),
-			new LeLøginPackageManifestCacheInvalidator(AppCaches.Disabled));
+			Options.Create(new ImageSharpMiddlewareOptions()));
 	}
 }

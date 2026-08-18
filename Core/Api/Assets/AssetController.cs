@@ -14,7 +14,7 @@ namespace LeLøgin.Core.Api.Assets;
 /// <summary>
 /// Manages login screen image assets — list, get, upload, delete.
 /// </summary>
-public class AssetController(ILeLøginScreenStore store, ILeLøginScreenFileService fileService, IFileStreamSecurityValidator fileStreamSecurityValidator, IOptionsMonitor<ContentSettings> contentSettings, LeLøginAssetFileManager assetManager, LeLøginPackageManifestCacheInvalidator manifestCacheInvalidator) : ApiControllerBase
+public class AssetController(ILeLøginScreenStore store, ILeLøginScreenFileService fileService, IFileStreamSecurityValidator fileStreamSecurityValidator, IOptionsMonitor<ContentSettings> contentSettings, LeLøginAssetFileManager assetManager) : ApiControllerBase
 {
 	private const long MaxUploadSizeBytes = 10 * 1024 * 1024; // 10 MB
 
@@ -132,7 +132,6 @@ public class AssetController(ILeLøginScreenStore store, ILeLøginScreenFileServ
 		};
 
 		await store.UpsertAssetAsync(asset);
-		manifestCacheInvalidator.Invalidate();
 		return CreatedAtAction(nameof(Get), new { id = asset.Id }, asset);
 	}
 
@@ -173,7 +172,6 @@ public class AssetController(ILeLøginScreenStore store, ILeLøginScreenFileServ
 		}
 
 		await store.UpsertAssetAsync(asset);
-		manifestCacheInvalidator.Invalidate();
 		return Ok(asset);
 	}
 
@@ -204,7 +202,6 @@ public class AssetController(ILeLøginScreenStore store, ILeLøginScreenFileServ
 
 		fileService.DeleteAsset(id);
 		await store.DeleteAssetAsync(id);
-		manifestCacheInvalidator.Invalidate();
 		return NoContent();
 	}
 

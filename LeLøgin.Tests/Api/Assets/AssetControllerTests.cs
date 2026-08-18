@@ -9,7 +9,6 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
-using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Configuration.Models;
 using Umbraco.Cms.Core.Security;
 using Xunit;
@@ -374,8 +373,7 @@ public sealed class AssetControllerTests : IDisposable
 				new NullLogger<LeLøginScreenFileService>()),
 			new AcceptAllFileStreamSecurityValidator(),
 			CreatePermissiveContentSettings(),
-			TestFileSystems.AssetFileManager(_contentRootPath),
-			new LeLøginPackageManifestCacheInvalidator(AppCaches.Disabled));
+			TestFileSystems.AssetFileManager(_contentRootPath));
 
 	private void WriteConfig(string json)
 	{
