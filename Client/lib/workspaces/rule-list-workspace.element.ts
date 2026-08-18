@@ -207,7 +207,7 @@ export class LeLøginScreenRuleListWorkspace extends UmbElementMixin(HTMLElement
 
 		const toggle = queryRequired(row, '.enabled-toggle', isToggleElement, 'enabled toggle');
 		toggle.checked = rule.enabled;
-		toggle.label = this.localize.term('webhooks_enabled');
+		toggle.setAttribute('aria-label', this.localize.term('webhooks_enabled'));
 		toggle.dataset.id = rule.id;
 
 		const deleteButton = queryRequired(row, '.delete-btn', isLabelElement, 'delete button');

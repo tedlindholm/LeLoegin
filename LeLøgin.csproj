@@ -3,8 +3,9 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <StaticWebAssetBasePath>/</StaticWebAssetBasePath>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+		<StaticWebAssetBasePath>/</StaticWebAssetBasePath>
+		<AddRazorSupportForMvc>true</AddRazorSupportForMvc>
+		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <RootNamespace>LeLøgin</RootNamespace>
     <AssemblyName>LeLøgin</AssemblyName>
   </PropertyGroup>

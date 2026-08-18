@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 const currentDirectory = dirname(fileURLToPath(import.meta.url));
 const manifestsFilePath = resolve(currentDirectory, 'manifests.ts');
-const indexFilePath = resolve(currentDirectory, '..', 'index.ts');
+const backofficeEntryPath = resolve(currentDirectory, '..', 'backoffice-entry.ts');
 const englishLanguageFilePath = resolve(currentDirectory, '..', 'assets', 'lang', 'en.ts');
 
 describe('Le Løgin user permissions', () => {
@@ -20,7 +20,7 @@ describe('Le Løgin user permissions', () => {
 	});
 
 	it('registers the permission manifests from the backoffice entry point', async () => {
-		const source = await readFile(indexFilePath, 'utf8');
+		const source = await readFile(backofficeEntryPath, 'utf8');
 
 		expect(source).toContain(
 			"import { manifests as userPermissionManifests } from './user-permissions/manifests.ts';"

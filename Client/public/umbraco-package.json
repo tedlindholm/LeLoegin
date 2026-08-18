@@ -9,7 +9,7 @@
             "name": "Le Løgin Backoffice Entrypoint",
             "alias": "LeLøgin.EntryPoint.Backoffice",
             "type": "backofficeEntryPoint",
-            "js": "/App_Plugins/le-løgin/main.js"
+            "js": "/App_Plugins/le-løgin/backoffice.js"
         }
     ]
 }

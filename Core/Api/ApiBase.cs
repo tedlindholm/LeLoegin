@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Http;
+
 namespace LeLøgin.Core.Api;
 
 /// <summary>
@@ -31,15 +33,33 @@ public static class ApiBase
 	public const string GreetingModuleActionRoute = "runtime/greeting.js";
 
 	/// <summary>
-	/// Absolute path of the greeting ES module as the browser requests it — the value the
-	/// package manifest advertises as the localisation extensions' <c>js</c> loader.
+	/// Application-relative path of the greeting ES module, without any path base.
 	///
 	/// This resolves <see cref="RuntimeRouteTemplate"/>'s version token by hand because a
-	/// package manifest is built outside the routing pipeline and cannot ask ASP.NET to
-	/// generate the URL. The substitution assumption (version <c>{Major}.0</c> renders as
+	/// Razor view is built outside the routing pipeline and cannot ask ASP.NET to generate the
+	/// URL. The substitution assumption (version <c>{Major}.0</c> renders as
 	/// <c>v{Major}</c>) is verified by request against a running site — see the greeting
 	/// section of docs/umbraco-login-customisation.md. Re-verify it when bumping
 	/// <see cref="Major"/> or <see cref="Minor"/>.
+	///
+	/// Deliberately private: every consumer is outside the routing pipeline and therefore has
+	/// to apply the path base itself, so the only way to obtain this path is through
+	/// <see cref="GetGreetingModuleUrl"/>.
 	/// </summary>
-	public const string GreetingModulePath = $"{RoutePrefix}{Major}/{GreetingModuleActionRoute}";
+	private const string GreetingModuleAppPath = $"{RoutePrefix}{Major}/{GreetingModuleActionRoute}";
+
+	/// <summary>
+	/// Absolute path of the greeting ES module for the current request, as the package-owned
+	/// login Razor view supplies it to its bootstrap module.
+	/// </summary>
+	/// <param name="pathBase">
+	/// <see cref="HttpRequest.PathBase"/> of the current request.
+	/// Sites hosted under a virtual path need it; without it the browser requests the module
+	/// from the wrong origin-relative path and the greeting silently falls back to Umbraco's
+	/// default.
+	/// </param>
+	public static string GetGreetingModuleUrl(PathString pathBase) =>
+		// PathString.ToString() yields the URI-escaped form, so the non-ASCII segment is emitted
+		// as "le-l%C3%B8gin" rather than relying on the browser to encode it.
+		pathBase.Add(GreetingModuleAppPath).ToString();
 }

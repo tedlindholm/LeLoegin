@@ -80,8 +80,8 @@ public class RuntimeController(
 	}
 
 	/// <summary>
-	/// Serves the greeting localisation as an ES module, consumed by the localisation
-	/// extensions the package manifest registers (see <c>LeLøginPackageManifestReader</c>).
+	/// Serves the greeting localisation as an ES module, consumed by the package-owned login
+	/// bootstrap before it imports Umbraco's login bundle.
 	/// Resolved per request with <c>Cache-Control: no-store</c> so asset swaps, weekday/month
 	/// rule flips, and random rules apply on the next login-page load on every instance —
 	/// the same freshness model as the background-image middleware. Only the <c>login</c>

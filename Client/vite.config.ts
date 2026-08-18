@@ -4,22 +4,23 @@ import { defineConfig, type UserConfig } from 'vite';
 
 const OUT_DIR = '../wwwroot/App_Plugins/le-løgin';
 const ENTRY_POINTS = {
-	main: 'lib/index.ts'
+	login: 'lib/login-bootstrap.ts',
+	backoffice: 'lib/backoffice-entry.ts'
 };
 const INLINE_TEST_DEPS = [/^@umbraco-ui\//, /^@umbraco-cms\/backoffice\//];
 
 /**
- * Custom vite config for Le Løgin — single backoffice entry point:
- *  - main.js → backofficeEntryPoint (section, dashboard, workspaces)
- *
- * The runtime/appEntryPoint was removed once login-screen customisation moved
- * fully server-side: image substitution is handled by LeLøginLogoMiddleware +
- * LeLøginBackgroundMiddleware, and the greeting override is contributed via
- * LeLøginPackageManifestReader. The browser only needs the backoffice bundle.
- *
- * The umbracoManifestPlugin rewrites main.js references in umbraco-package.json
- * to the hashed filename after build.
+ * Release minification. Vite's own `build.minify` only selects which minifier runs; it leaves
+ * rolldown on its `'dce-only'` default, which eliminates dead code but neither compresses nor
+ * strips whitespace. Everything else has to be asked for here.
  */
+const RELEASE_MINIFY = {
+	compress: true,
+	mangle: true,
+	codegen: { removeWhitespace: true }
+};
+
+/** Both entry filenames stay stable: `login.js` for the Razor login shell, `backoffice.js` for the package manifest. */
 export default defineConfig(({ command }) => {
 	const isWatchBuild = command === 'build' && process.argv.includes('--watch');
 	return createClientConfig(isWatchBuild);
@@ -50,7 +51,6 @@ function createBuildConfig(
 		outDir: OUT_DIR,
 		// Wiping outDir races a running Umbraco reading umbraco-package.json during rebuild.
 		emptyOutDir: !isWatchBuild,
-		minify: 'oxc',
 		cssMinify: 'lightningcss',
 		cssCodeSplit: false,
 		lib: {
@@ -60,15 +60,18 @@ function createBuildConfig(
 		rolldownOptions: {
 			external: [/^@umbraco/],
 			output: {
-				entryFileNames: entryPattern,
-				chunkFileNames: entryPattern
+				entryFileNames: '[name].js',
+				chunkFileNames: entryPattern,
+				// Watch builds stay unminified so the package can be read and breakpointed in
+				// the backoffice; release builds get the full treatment.
+				minify: isWatchBuild ? false : RELEASE_MINIFY
 			}
 		}
 	};
 }
 
 /**
- * After build, rewrites main.js and runtime.js references in
+ * After build, rewrites entry references in
  * umbraco-package.json to the hashed filenames from .vite/manifest.json.
  */
 function umbracoManifestPlugin() {
@@ -94,7 +97,7 @@ function umbracoManifestPlugin() {
 
 			let manifest = readFileSync(umbracoManifestPath, 'utf-8');
 
-			// Replace each entry's stable name with the hashed output
+			// Keep this compatible with any future hashed entry output.
 			for (const entry of Object.values(viteManifest) as Array<{
 				file: string;
 				isEntry?: boolean;

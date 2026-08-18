@@ -1,4 +1,4 @@
-import { UmbEntryPointOnInit } from '@umbraco-cms/backoffice/extension-api';
+import type { UmbEntryPointOnInit } from '@umbraco-cms/backoffice/extension-api';
 import { configureLeLøginScreenClient } from './backend-api/configure-client.js';
 import { manifests as localisationManifests } from './assets/lang/manifests.ts';
 import { manifests as userPermissionManifests } from './user-permissions/manifests.ts';
@@ -27,8 +27,8 @@ const logDebug = (...parts: Array<unknown>) => {
 };
 
 /**
- * Backoffice entry point — registers section, dashboard, and workspace manifests.
- * This runs inside the authenticated backoffice only.
+ * The authenticated backoffice entry, loaded by the package manifest's backofficeEntryPoint.
+ * Kept separate from the login entry so neither page downloads the other's code.
  */
 export const onInit: UmbEntryPointOnInit = (host, extensionRegistry) => {
 	logDebug('Le Løgin: onInit', manifests);

@@ -12,7 +12,6 @@ using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Composing;
 using Umbraco.Cms.Core.IO;
 using Umbraco.Cms.Core.Notifications;
-using Umbraco.Cms.Infrastructure.Manifest;
 using Umbraco.Cms.Web.Common.ApplicationBuilder;
 
 namespace LeLøgin.Core;
@@ -25,14 +24,12 @@ public class LeLøginScreenComposer : IComposer
 	public void Compose(IUmbracoBuilder builder)
 	{
 		builder.AddLeLøginOpenApiDocument();
-		builder.Services.AddAuthorization(options =>
-		{
-			options.AddPolicy(LeLøginAuthorisationPolicies.ManageLeLøgin, policy =>
+		builder.Services.AddAuthorizationBuilder()
+			.AddPolicy(LeLøginAuthorisationPolicies.ManageLeLøgin, policy =>
 			{
 				policy.RequireAuthenticatedUser();
 				policy.Requirements.Add(new LeLøginPermissionRequirement(LeLøginPermissionVerbs.Manage));
 			});
-		});
 		// Authorisation handlers are long-lived by design in ASP.NET Core.
 		builder.Services.AddSingleton<IAuthorizationHandler, LeLøginPermissionAuthorisationHandler>();
 		builder.Services.TryAddScoped<ILeLøginUserGroupStore, UmbracoLeLøginUserGroupStore>();
@@ -76,12 +73,6 @@ public class LeLøginScreenComposer : IComposer
 		builder.Services.AddSingleton<ILeLøginRandom, LeLøginRandom>();
 		builder.Services.AddTransient<LeLøginScreenRuntimeResolver>();
 		builder.AddNotificationAsyncHandler<UmbracoApplicationStartedNotification, LeLøginUserGroupProvisioningNotificationHandler>();
-
-		// Synthesises a static public package manifest registering per-culture localisation
-		// extensions whose js loaders point at the greeting module endpoint. The manifest
-		// content never changes, so Umbraco's manifest cache needs no invalidation; the
-		// greeting itself is resolved per request by RuntimeController.GreetingModule.
-		builder.Services.AddTransient<IPackageManifestReader, LeLøginPackageManifestReader>();
 
 		// Inject the image-substitution middlewares before Umbraco's endpoint routing so they
 		// can short-circuit the `/login-logo`, `/login-logo-alternative`, and `/login-background`
