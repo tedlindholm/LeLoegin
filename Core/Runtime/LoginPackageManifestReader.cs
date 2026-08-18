@@ -1,3 +1,4 @@
+using LeLøgin.Core.Api;
 using Umbraco.Cms.Core.Manifest;
 using Umbraco.Cms.Infrastructure.Manifest;
 
@@ -24,7 +25,7 @@ public sealed class LeLøginPackageManifestReader : IPackageManifestReader
 	/// <summary>
 	/// Route of the greeting ES module served by <c>RuntimeController.GreetingModule</c>.
 	/// </summary>
-	public const string GreetingModulePath = "/umbraco/le-løgin/api/v1/runtime/greeting.js";
+	public const string GreetingModulePath = ApiBase.GreetingModulePath;
 
 	/// <summary>
 	/// Every culture Umbraco 18.1.0 ships backoffice lang files for. Each of those files

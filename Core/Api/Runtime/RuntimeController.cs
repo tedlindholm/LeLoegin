@@ -88,7 +88,7 @@ public class RuntimeController(
 	/// namespace is emitted: in Umbraco 18 both the login page and the logout view read
 	/// <c>login_greeting0..6</c>, and <c>auth_greeting*</c> is deprecated for removal in 20.
 	/// </summary>
-	[HttpGet("runtime/greeting.js")]
+	[HttpGet(ApiBase.GreetingModuleActionRoute)]
 	// An ES module resource, not part of the JSON API contract — keep it out of the OpenAPI
 	// document so the generated client stays stable.
 	[ApiExplorerSettings(IgnoreApi = true)]

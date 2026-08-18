@@ -11,6 +11,6 @@ namespace LeLøgin.Core.Api.Runtime;
 [ApiController]
 [ApiVersion(ApiBase.LeLøginScreenApiVersion)]
 [MapToApi(ApiBase.LeLøginScreenApiName)]
-[Route("/umbraco/le-løgin/api/v{version:apiVersion}/")]
+[Route(ApiBase.RuntimeRouteTemplate)]
 [Produces("application/json")]
 public abstract class RuntimeControllerBase : ControllerBase;
