@@ -3,16 +3,11 @@ using System.Diagnostics.CodeAnalysis;
 namespace LeLøgin.Core.Runtime;
 
 /// <summary>
-/// Source of randomness used when a rule resolves to more than one image and one must be
-/// picked at random. Abstracted so the resolver stays deterministic under unit test.
+/// Source of the per-render token the login shell puts on every URL that resolves the active
+/// image. Abstracted so the shell's output stays deterministic under test.
 /// </summary>
 public interface ILeLøginRandom
 {
-	/// <summary>
-	/// Returns a random index in the range <c>[0, count)</c>, used to pick one image from a set.
-	/// </summary>
-	int NextIndex(int count);
-
 	/// <summary>
 	/// Returns a token identifying one login page render. The login shell puts the same value on
 	/// its background, logo, and greeting URLs so all three resolve to the same image.
@@ -25,12 +20,6 @@ public interface ILeLøginRandom
 /// </summary>
 public sealed class LeLøginRandom : ILeLøginRandom
 {
-	[SuppressMessage(
-		"Security",
-		"CA5394:Do not use insecure randomness",
-		Justification = "Cosmetic login-image rotation — not a security-sensitive value.")]
-	public int NextIndex(int count) => Random.Shared.Next(count);
-
 	[SuppressMessage(
 		"Security",
 		"CA5394:Do not use insecure randomness",

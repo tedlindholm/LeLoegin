@@ -15,8 +15,8 @@ public sealed class LeLøginScreenRuntimeResolverTests
 			CreateAsset("asset-monday")
 		};
 		var rules = Array.Empty<LoginRule>();
-		var context = new LoginRuntimeContext("monday", 5);
-		var resolver = new LeLøginScreenRuntimeResolver(new StubRandom());
+		var context = new LoginRuntimeContext("monday", 5, 0);
+		var resolver = new LeLøginScreenRuntimeResolver();
 
 		var resolved = resolver.ResolveAsset(assets, rules, context);
 
@@ -53,8 +53,8 @@ public sealed class LeLøginScreenRuntimeResolverTests
 				Condition = "{\"and\":[{\"==\":[{\"var\":\"weekday\"},\"monday\"]}]}"
 			}
 		};
-		var context = new LoginRuntimeContext("monday", 5);
-		var resolver = new LeLøginScreenRuntimeResolver(new StubRandom());
+		var context = new LoginRuntimeContext("monday", 5, 0);
+		var resolver = new LeLøginScreenRuntimeResolver();
 
 		var resolved = resolver.ResolveAsset(assets, rules, context);
 
@@ -90,8 +90,8 @@ public sealed class LeLøginScreenRuntimeResolverTests
 				Condition = "{\"and\":[]}"
 			}
 		};
-		var context = new LoginRuntimeContext("tuesday", 5);
-		var resolver = new LeLøginScreenRuntimeResolver(new StubRandom());
+		var context = new LoginRuntimeContext("tuesday", 5, 0);
+		var resolver = new LeLøginScreenRuntimeResolver();
 
 		var resolved = resolver.ResolveAsset(assets, rules, context);
 
@@ -117,8 +117,8 @@ public sealed class LeLøginScreenRuntimeResolverTests
 				Condition = "{\"and\":[{\"==\":[{\"var\":\"weekday\"},\"monday\"]}]}"
 			}
 		};
-		var context = new LoginRuntimeContext("tuesday", 5);
-		var resolver = new LeLøginScreenRuntimeResolver(new StubRandom());
+		var context = new LoginRuntimeContext("tuesday", 5, 0);
+		var resolver = new LeLøginScreenRuntimeResolver();
 
 		var resolved = resolver.ResolveAsset(assets, rules, context);
 
@@ -154,8 +154,8 @@ public sealed class LeLøginScreenRuntimeResolverTests
 				Condition = "{\"and\":[{\"==\":[{\"var\":\"weekday\"},\"monday\"]}]}"
 			}
 		};
-		var context = new LoginRuntimeContext("monday", 5);
-		var resolver = new LeLøginScreenRuntimeResolver(new StubRandom());
+		var context = new LoginRuntimeContext("monday", 5, 0);
+		var resolver = new LeLøginScreenRuntimeResolver();
 
 		var resolved = resolver.ResolveAsset(assets, rules, context);
 
@@ -184,11 +184,11 @@ public sealed class LeLøginScreenRuntimeResolverTests
 				Condition = "{\"and\":[]}"
 			}
 		};
-		var context = new LoginRuntimeContext("monday", 5);
+		var context = new LoginRuntimeContext("monday", 5, 0);
 
-		Assert.Equal("asset-a", Resolve(assets, rules, context, index: 0));
-		Assert.Equal("asset-b", Resolve(assets, rules, context, index: 1));
-		Assert.Equal("asset-c", Resolve(assets, rules, context, index: 2));
+		Assert.Equal("asset-a", Resolve(assets, rules, context with { RenderToken = 0 }));
+		Assert.Equal("asset-b", Resolve(assets, rules, context with { RenderToken = 1 }));
+		Assert.Equal("asset-c", Resolve(assets, rules, context with { RenderToken = 2 }));
 	}
 
 	[Fact]
@@ -208,10 +208,10 @@ public sealed class LeLøginScreenRuntimeResolverTests
 				Condition = "true"
 			}
 		};
-		var context = new LoginRuntimeContext("monday", 5);
+		var context = new LoginRuntimeContext("monday", 5, 0);
 
-		Assert.Equal("asset-b", Resolve(assets, rules, context, index: 0));
-		Assert.Equal("asset-b", Resolve(assets, rules, context, index: 2));
+		Assert.Equal("asset-b", Resolve(assets, rules, context with { RenderToken = 0 }));
+		Assert.Equal("asset-b", Resolve(assets, rules, context with { RenderToken = 2 }));
 	}
 
 	[Fact]
@@ -239,9 +239,9 @@ public sealed class LeLøginScreenRuntimeResolverTests
 				Condition = "{\"and\":[]}"
 			}
 		};
-		var context = new LoginRuntimeContext("monday", 5);
+		var context = new LoginRuntimeContext("monday", 5, 0);
 
-		Assert.Equal("asset-fallback", Resolve(assets, rules, context, index: 0));
+		Assert.Equal("asset-fallback", Resolve(assets, rules, context with { RenderToken = 0 }));
 	}
 
 	[Fact]
@@ -267,22 +267,18 @@ public sealed class LeLøginScreenRuntimeResolverTests
 			}
 		};
 
-		// On Wednesday the rule matches and a random one of its images is shown.
-		Assert.Equal("asset-b", Resolve(assets, rules, new LoginRuntimeContext("wednesday", 5), index: 1));
-		Assert.Equal("asset-c", Resolve(assets, rules, new LoginRuntimeContext("wednesday", 5), index: 2));
+		// On Wednesday the rule matches and the render token decides which of its images is shown.
+		Assert.Equal("asset-b", Resolve(assets, rules, new LoginRuntimeContext("wednesday", 5, 1)));
+		Assert.Equal("asset-c", Resolve(assets, rules, new LoginRuntimeContext("wednesday", 5, 2)));
 		// On any other day the rule does not match, so nothing is shown.
-		Assert.Null(Resolve(assets, rules, new LoginRuntimeContext("tuesday", 5), index: 0));
+		Assert.Null(Resolve(assets, rules, new LoginRuntimeContext("tuesday", 5, 0)));
 	}
 
 	private static string? Resolve(
 		IEnumerable<LoginImageAsset> assets,
 		IEnumerable<LoginRule> rules,
-		LoginRuntimeContext context,
-		int index)
-	{
-		var resolver = new LeLøginScreenRuntimeResolver(new StubRandom(index));
-		return resolver.ResolveAsset(assets, rules, context)?.Id;
-	}
+		LoginRuntimeContext context) =>
+		new LeLøginScreenRuntimeResolver().ResolveAsset(assets, rules, context)?.Id;
 
 	private static LoginImageAsset CreateAsset(string id) => new()
 	{

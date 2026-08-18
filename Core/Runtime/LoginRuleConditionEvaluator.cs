@@ -10,7 +10,9 @@ public static class LoginRuleConditionEvaluator
 {
 	public static bool IsSupportedCondition(JsonElement condition)
 	{
-		var validationContext = new LoginRuntimeContext("monday", 1);
+		// Shape-checking only — the values never affect whether the condition is *supported*,
+		// so the render token is irrelevant here.
+		var validationContext = new LoginRuntimeContext("monday", 1, RenderToken: 0);
 		return TryEvaluate(condition, validationContext, out _);
 	}
 

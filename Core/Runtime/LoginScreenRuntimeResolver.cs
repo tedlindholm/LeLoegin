@@ -8,12 +8,6 @@ namespace LeLøgin.Core.Runtime;
 public sealed class LeLøginScreenRuntimeResolver
 {
 	private readonly StringComparer _assetIdComparer = StringComparer.OrdinalIgnoreCase;
-	private readonly ILeLøginRandom _random;
-
-	public LeLøginScreenRuntimeResolver(ILeLøginRandom random)
-	{
-		_random = random;
-	}
 
 	public LoginImageAsset? ResolveAsset(
 		IEnumerable<LoginImageAsset> assets,
@@ -33,15 +27,11 @@ public sealed class LeLøginScreenRuntimeResolver
 			if (candidates.Count == 0)
 				continue;
 
-			// A render token pins the choice for one page render so the background, logo, and
-			// greeting requests all land on the same image. Plain modulo rather than a hash of
-			// the token: .NET string hashing is randomised per process, so a hash would let two
-			// instances of a load-balanced site disagree within the same render.
-			var index = context.RenderToken is int renderToken
-				? (int)((uint)renderToken % (uint)candidates.Count)
-				: _random.NextIndex(candidates.Count);
-
-			return assetMap[candidates[index]];
+			// The token pins the choice so the background, logo, and greeting requests of one
+			// screen all land on the same image. Plain modulo rather than a hash of the token:
+			// .NET string hashing is randomised per process, so a hash would let two instances of
+			// a load-balanced site disagree within the same render.
+			return assetMap[candidates[(int)((uint)context.RenderToken % (uint)candidates.Count)]];
 		}
 
 		return null;
