@@ -23,7 +23,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="Api\ApiConfigurationSwashbuckleTests.cs" Condition="'$(UmbracoMajor)' != '17'" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\LeLøgin.csproj" />
-    <ProjectReference Include="..\..\LeLøgin.Site\LeLøgin.Site.csproj" />
+    <ProjectReference Include="..\..\LeLøgin.Site\LeLøgin.Site.v18\LeLøgin.Site.v18.csproj" Condition="'$(UmbracoMajor)' == '18'" />
+    <ProjectReference Include="..\..\LeLøgin.Site\LeLøgin.Site.v17\LeLøgin.Site.v17.csproj" Condition="'$(UmbracoMajor)' == '17'" />
   </ItemGroup>
 </Project>

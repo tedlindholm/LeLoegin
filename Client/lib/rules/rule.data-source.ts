@@ -19,10 +19,7 @@ export class LeLøginScreenRuleDataSource extends UmbControllerBase {
 	}
 
 	async getRule(ruleId: string) {
-		const { data, error } = await tryExecute(
-			this,
-			V1.getRulesById({ path: { id: ruleId } })
-		);
+		const { data, error } = await tryExecute(this, V1.getRulesById({ path: { id: ruleId } }));
 		return {
 			data: data === undefined ? undefined : mapApiLoginRule(data),
 			error
@@ -30,10 +27,7 @@ export class LeLøginScreenRuleDataSource extends UmbControllerBase {
 	}
 
 	async createRule(rule: LoginRule) {
-		const { data, error } = await tryExecute(
-			this,
-			V1.postRules({ body: toSaveRuleRequest(rule) })
-		);
+		const { data, error } = await tryExecute(this, V1.postRules({ body: toSaveRuleRequest(rule) }));
 		return {
 			data: data === undefined ? undefined : mapApiLoginRule(data),
 			error
@@ -52,10 +46,7 @@ export class LeLøginScreenRuleDataSource extends UmbControllerBase {
 	}
 
 	async deleteRule(ruleId: string) {
-		const { error } = await tryExecute(
-			this,
-			V1.deleteRulesById({ path: { id: ruleId } })
-		);
+		const { error } = await tryExecute(this, V1.deleteRulesById({ path: { id: ruleId } }));
 		return {
 			data: error ? false : true,
 			error

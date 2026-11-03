@@ -1,9 +1,8 @@
 <Project>
   <!--
     UmbracoMajor selects which host this build is compiled against.
-    18 is the default. 17 is reserved for the Swashbuckle bridge; the current
-    sources still call Umbraco 18's OpenAPI registration, so -p:UmbracoMajor=17
-    restores the 17 floor and then fails to compile until that bridge lands.
+    18 is the default. 17 compiles the Swashbuckle registration instead of
+    Umbraco 18's OpenAPI registration.
   -->
   <PropertyGroup>
     <UmbracoMajor Condition="'$(UmbracoMajor)' == ''">18</UmbracoMajor>
@@ -13,8 +12,8 @@
     <UmbracoPackageVersion>18.3.0</UmbracoPackageVersion>
     <UmbracoBlobPackageVersion>18.0.0</UmbracoBlobPackageVersion>
     <OpenApiPackageVersion>2.12.2</OpenApiPackageVersion>
-    <CryptographyXmlPackageVersion>10.0.13</CryptographyXmlPackageVersion>
-    <MessagePackPackageVersion>3.1.11</MessagePackPackageVersion>
+    <CryptographyXmlPackageVersion>10.0.14</CryptographyXmlPackageVersion>
+    <MessagePackPackageVersion>3.1.12</MessagePackPackageVersion>
     <LeLoginPackageVersion>18.0.0-rc.1</LeLoginPackageVersion>
     <DefineConstants>UMBRACO_18</DefineConstants>
   </PropertyGroup>
@@ -23,10 +22,13 @@
     <UmbracoPackageVersion>17.7.2</UmbracoPackageVersion>
     <UmbracoBlobPackageVersion>17.1.0</UmbracoBlobPackageVersion>
     <OpenApiPackageVersion>2.9.0</OpenApiPackageVersion>
-    <CryptographyXmlPackageVersion>10.0.10</CryptographyXmlPackageVersion>
-    <!-- 17.7.2 still pins MessagePack 3.1.8, which is inside GHSA-qhrr-8q5h-9q3h. Compile against the patched 3.1.11 the 18.3 floor uses. -->
-    <MessagePackPackageVersion>3.1.11</MessagePackPackageVersion>
-    <LeLoginPackageVersion>17.0.0</LeLoginPackageVersion>
+    <!-- 17.7.2 pins Cryptography.Xml 10.0.10, which is inside GHSA-7hqp-7c5m-4vq6. Compile against the patched 10.0.14 the 18.3 floor uses. PrivateAssets keeps it out of the host. -->
+    <CryptographyXmlPackageVersion>10.0.14</CryptographyXmlPackageVersion>
+    <!-- 17.7.2 still pins MessagePack 3.1.8, which is inside GHSA-qhrr-8q5h-9q3h. Compile against the patched 3.1.12 the 18.3 floor uses. -->
+    <MessagePackPackageVersion>3.1.12</MessagePackPackageVersion>
+    <SwashbucklePackageVersion>10.2.3</SwashbucklePackageVersion>
+    <!-- Product version for the 17.7 line. It is not the Umbraco patch 17.7.2. -->
+    <LeLoginPackageVersion>17.7.0-rc.1</LeLoginPackageVersion>
     <DefineConstants>UMBRACO_17</DefineConstants>
   </PropertyGroup>
 
@@ -39,6 +41,16 @@
     <PackageOutputPath>$(MSBuildThisFileDirectory)artifacts/v$(UmbracoMajor)/</PackageOutputPath>
     <DefaultItemExcludes>$(DefaultItemExcludes);bin/**;obj/**</DefaultItemExcludes>
   </PropertyGroup>
+
+  <!-- Umbraco 17.7.2 ships ImageSharp 3.1.12. A direct 3.2 reference fails Release builds without a Six Labors licence, so the audit is suppressed on this compile only. -->
+  <ItemGroup Condition="'$(UmbracoMajor)' == '17'">
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-gwg2-r3hj-4w44" />
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-j3p4-wp97-rph4" />
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-j9gm-c75j-xc9q" />
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-jjfr-hcj7-qf5w" />
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-v76p-62qx-wwq2" />
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-wmxv-xphr-5c9g" />
+  </ItemGroup>
 
   <Target Name="ValidateUmbracoMajor" BeforeTargets="Restore;Build;Pack">
     <Error

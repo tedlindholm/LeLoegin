@@ -2,36 +2,17 @@ using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
 using LeLøgin.Core.Api.Rules;
 using LeLøgin.Core.Models;
-using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
-using Umbraco.Cms.Api.Common.OpenApi;
-using Umbraco.Cms.Api.Management.OpenApi;
-using Umbraco.Cms.Core.DependencyInjection;
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("LeLøgin.Tests")]
 
 namespace LeLøgin.Core.Api;
 
 /// <summary>
-/// Registers the Login Screen OpenAPI document and its schema overrides.
+/// Schema overrides shared by the Umbraco 18 OpenAPI registration and the Umbraco 17 Swashbuckle registration.
 /// </summary>
-public static class ApiConfiguration
+public static partial class ApiConfiguration
 {
-	public static IUmbracoBuilder AddLeLøginOpenApiDocument(this IUmbracoBuilder builder) =>
-		builder.AddBackOfficeOpenApiDocument(
-			ApiBase.LeLøginScreenApiName,
-			document => document
-				.WithTitle($"Løgin API v{ApiBase.Major}")
-				.WithBackOfficeAuthentication()
-				.ConfigureOpenApiOptions(ConfigureSchemas));
-
-	private static void ConfigureSchemas(OpenApiOptions options) =>
-		options.AddSchemaTransformer((schema, context, _) =>
-		{
-			ApplySchemaOverride(schema, context.JsonTypeInfo);
-			return Task.CompletedTask;
-		});
-
 	/// <summary>
 	/// Describes the models whose custom <see cref="System.Text.Json.Serialization.JsonConverter"/>s
 	/// hide their wire shape from the generator. Anything else is left untouched.

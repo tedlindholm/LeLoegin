@@ -5,6 +5,9 @@
 /wwwroot/App_Plugins/le-løgin
 /artifacts/
 
+# Local secrets, including Umbraco imaging keys
+**/appsettings.Local.json
+
 # Ignore build artefacts in nested projects (for example test projects)
 **/bin/
 **/obj/
@@ -27,5 +30,8 @@ AzuriteConfig
 __azurite_db_*.json
 /__blobstorage__/
 /__queuestorage__/
+
+# Package manager caches
+.pnpm-store/
 
 /docs/plans

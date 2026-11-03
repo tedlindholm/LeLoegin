@@ -1,0 +1,156 @@
+{
+  "paths": [
+    "/umbraco/le-løgin/api/v1/assets",
+    "/umbraco/le-løgin/api/v1/assets/{id}",
+    "/umbraco/le-løgin/api/v1/assets/{id}/preview",
+    "/umbraco/le-løgin/api/v1/assets/{id}/publish",
+    "/umbraco/le-løgin/api/v1/assets/{id}/thumbnail",
+    "/umbraco/le-løgin/api/v1/rules",
+    "/umbraco/le-løgin/api/v1/rules/condition-metadata",
+    "/umbraco/le-løgin/api/v1/rules/{id}",
+    "/umbraco/le-løgin/api/v1/rules/{id}/preview",
+    "/umbraco/le-løgin/api/v1/runtime/active",
+    "/umbraco/le-løgin/api/v1/settings"
+  ],
+  "conditionValueOneOf": [
+    {
+      "type": "integer",
+      "format": "int32"
+    },
+    {
+      "type": "string"
+    }
+  ],
+  "schemas": {
+    "ActiveLeLøginScreenResponse": {
+      "properties": [
+        "altText",
+        "assetId",
+        "focalPoint",
+        "greetingText",
+        "imageUrl",
+        "logoAssetId",
+        "zoom"
+      ]
+    },
+    "AssetUpdateRequest": {
+      "properties": [
+        "altText",
+        "focalPoint",
+        "greetingText",
+        "logoAssetId",
+        "name",
+        "zoom"
+      ]
+    },
+    "ConditionFieldMetadata": {
+      "properties": [
+        "allowedValues",
+        "defaultValue",
+        "operators"
+      ]
+    },
+    "ConditionMetadataResponse": {
+      "properties": [
+        "fields",
+        "operators"
+      ]
+    },
+    "ConditionOperatorMetadata": {
+      "properties": [
+        "arity"
+      ]
+    },
+    "FocalPoint": {
+      "properties": [
+        "left",
+        "top"
+      ]
+    },
+    "LoginImageAsset": {
+      "properties": [
+        "altText",
+        "createdAt",
+        "focalPoint",
+        "greetingText",
+        "height",
+        "id",
+        "kind",
+        "logoAssetId",
+        "name",
+        "publicPath",
+        "storagePath",
+        "updatedAt",
+        "width",
+        "zoom"
+      ]
+    },
+    "LoginImageAssetKind": {
+      "enum": [
+        "background",
+        "logo"
+      ]
+    },
+    "LoginRuleConditionGroupModel": {
+      "properties": [
+        "conditions",
+        "operator"
+      ]
+    },
+    "LoginRuleConditionGroupOperator": {
+      "enum": [
+        "all",
+        "any"
+      ]
+    },
+    "LoginRuleConditionModel": {
+      "properties": [
+        "field",
+        "id",
+        "operator",
+        "values"
+      ]
+    },
+    "LoginRuleConditionOperator": {
+      "enum": [
+        "is",
+        "isNot",
+        "in",
+        "notIn",
+        "between",
+        "notBetween"
+      ]
+    },
+    "LoginRuleField": {
+      "enum": [
+        "weekday",
+        "month"
+      ]
+    },
+    "LoginRuleResponseModel": {
+      "properties": [
+        "assetIds",
+        "condition",
+        "enabled",
+        "id",
+        "name",
+        "priority"
+      ]
+    },
+    "LoginSettings": {
+      "properties": [
+        "publicEndpointCacheSeconds"
+      ]
+    },
+    "SaveRuleRequest": {
+      "properties": [
+        "assetIds",
+        "condition",
+        "enabled",
+        "id",
+        "name",
+        "priority"
+      ]
+    }
+  }
+}

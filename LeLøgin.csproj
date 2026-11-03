@@ -43,6 +43,9 @@
     <!-- Match the selected floor's patched transitive versions. These pins do not flow to the host. -->
     <PackageReference Include="Microsoft.OpenApi" Version="$(OpenApiPackageVersion)" PrivateAssets="all" />
     <PackageReference Include="System.Security.Cryptography.Xml" Version="$(CryptographyXmlPackageVersion)" PrivateAssets="all" />
+    <!-- Umbraco 17.7.2 still resolves MessagePack 3.1.8 (GHSA-qhrr-8q5h-9q3h). The pin stays inside this build. -->
+    <PackageReference Include="MessagePack" Version="$(MessagePackPackageVersion)" PrivateAssets="all" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="$(SwashbucklePackageVersion)" PrivateAssets="all" Condition="'$(UmbracoMajor)' == '17'" />
     <!-- Build-time only. The host supplies the runtime assemblies and owns their versions.
          - Api.Management: transitively covers Core, Infrastructure, Web.Common, Api.Common
          - Imaging.ImageSharp: provides middleware options and HMAC signing utilities for LoginScreenImageUrlBuilder -->
@@ -62,6 +65,9 @@
     <Compile Remove="artifacts\**" />
     <Content Remove="artifacts\**" />
     <None Remove="artifacts\**" />
+
+    <Compile Remove="Core\Api\ApiConfiguration.OpenApi.cs" Condition="'$(UmbracoMajor)' != '18'" />
+    <Compile Remove="Core\Api\ApiConfiguration.Swashbuckle.cs" Condition="'$(UmbracoMajor)' != '17'" />
 
     <!-- Exclude test projects — their own .csproj files handle compilation -->
     <Compile Remove="*.Tests\**" />

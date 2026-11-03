@@ -52,7 +52,7 @@ export class LeLøginScreenToggleRuleEnabledElement extends UmbElementMixin(HTML
 		this.consumeContext(UMB_LOGIN_SCREEN_RULE_EDITOR_WORKSPACE_CONTEXT, (ctx) => {
 			if (!ctx) return;
 			this.observe(ctx.currentRule, (rule) => {
-				if (rule != null) {
+				if (rule !== null) {
 					this.#enabled = rule.enabled;
 					this.#update();
 				}

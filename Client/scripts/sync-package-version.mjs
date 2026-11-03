@@ -17,5 +17,4 @@ const updateJsonFile = (relativePath, indentation) => {
 	console.log(`Updated ${relativePath} to version ${version}.`);
 };
 
-updateJsonFile('package.json', '\t');
 updateJsonFile('public/umbraco-package.json', 4);

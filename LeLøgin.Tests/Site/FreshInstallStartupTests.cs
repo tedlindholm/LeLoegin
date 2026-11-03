@@ -1,7 +1,11 @@
 using System.Collections.Concurrent;
 using System.Net;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using LeLøgin.Core.Api;
 using LeLøgin.Core.Api.Authorisation;
 using LeLøgin.Core.Storage;
+using LeLøgin.Tests.Api;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
@@ -107,6 +111,84 @@ public sealed class FreshInstallStartupTests
 		Assert.True(backgroundResponse.IsSuccessStatusCode);
 	}
 
+	[Fact]
+	public async Task Installed_Site_Serves_The_Le_Løgin_OpenApi_Document()
+	{
+		await using var site = new FreshInstallSite(
+			configureEmptySqlite: true,
+			installUnattended: true,
+			environmentName: Environments.Development);
+		using var client = site.CreateClient();
+		using var bootResponse = await client.GetAsync("/umbraco/");
+		Assert.Equal(HttpStatusCode.OK, bootResponse.StatusCode);
+		Assert.Equal(RuntimeLevel.Run, site.Services.GetRequiredService<IRuntimeState>().Level);
+
+		using var response = await client.GetAsync(OpenApiDocumentPath);
+		var body = await response.Content.ReadAsStringAsync();
+		Assert.True(
+			response.IsSuccessStatusCode,
+			$"Expected the Le Løgin OpenAPI document at {OpenApiDocumentPath}, but received {(int)response.StatusCode}. {body}");
+
+		var document = JsonNode.Parse(body) ?? throw new InvalidOperationException("The OpenAPI document was empty.");
+		var outputDirectory = Path.Combine(RepositoryRoot(), "artifacts", "openapi");
+		Directory.CreateDirectory(outputDirectory);
+		var pretty = document.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+		await File.WriteAllTextAsync(Path.Combine(outputDirectory, OpenApiDocumentFileName), pretty + "\n");
+
+		Assert.Equal("Løgin API v1", document["info"]?["title"]?.GetValue<string>());
+		OpenApiSharedContract.AssertMatchesFixture(
+			document,
+			Path.Combine(RepositoryRoot(), "LeLøgin.Tests", "Api", "openapi-shared-contract.json"));
+
+		var paths = document["paths"]?.AsObject()
+			?? throw new InvalidOperationException("The OpenAPI document has no paths.");
+		Assert.Contains(
+			paths.Select(path => path.Key),
+			path => path.Contains("/le-l", StringComparison.Ordinal) && path.Contains("/settings", StringComparison.Ordinal));
+
+	}
+
+	private static string OpenApiDocumentPath
+	{
+		get
+		{
+			var documentName = Uri.EscapeDataString(ApiBase.LeLøginScreenApiName);
+#if UMBRACO_17
+			return $"/umbraco/swagger/{documentName}/swagger.json";
+#else
+			return $"/umbraco/openapi/{documentName}.json";
+#endif
+		}
+	}
+
+	private static string OpenApiDocumentFileName
+	{
+		get
+		{
+#if UMBRACO_17
+			return "v17.json";
+#else
+			return "v18.json";
+#endif
+		}
+	}
+
+	private static string RepositoryRoot()
+	{
+		var directory = new DirectoryInfo(AppContext.BaseDirectory);
+		while (directory is not null)
+		{
+			if (File.Exists(Path.Combine(directory.FullName, "LeLøgin.csproj")))
+			{
+				return directory.FullName;
+			}
+
+			directory = directory.Parent;
+		}
+
+		throw new InvalidOperationException("Could not find the Le Løgin repository root.");
+	}
+
 	private static async Task<bool> WaitForUserGroupProvisioningAsync(IServiceProvider services)
 	{
 		for (var attempt = 0; attempt < 100; attempt++)
@@ -133,17 +215,20 @@ public sealed class FreshInstallStartupTests
 		private readonly bool _installUnattended;
 		private readonly bool _deleteContentRootOnDispose;
 		private readonly string _contentRootPath;
+		private readonly string _environmentName;
 		private readonly CapturingLoggerProvider _loggerProvider = new();
 
 		public FreshInstallSite(
 			bool configureEmptySqlite,
 			bool installUnattended = false,
 			string? contentRootPath = null,
-			bool deleteContentRootOnDispose = true)
+			bool deleteContentRootOnDispose = true,
+			string? environmentName = null)
 		{
 			_configureEmptySqlite = configureEmptySqlite;
 			_installUnattended = installUnattended;
 			_deleteContentRootOnDispose = deleteContentRootOnDispose;
+			_environmentName = environmentName ?? Environments.Production;
 			_contentRootPath = contentRootPath ?? Path.Combine(
 				Path.GetTempPath(),
 				"LeLøgin.Tests",
@@ -161,7 +246,7 @@ public sealed class FreshInstallStartupTests
 		protected override void ConfigureWebHost(IWebHostBuilder builder)
 		{
 			builder.UseContentRoot(_contentRootPath);
-			builder.UseEnvironment(Environments.Production);
+			builder.UseEnvironment(_environmentName);
 			builder.ConfigureAppConfiguration((_, configuration) =>
 			{
 				configuration.AddInMemoryCollection(BuildConfiguration());

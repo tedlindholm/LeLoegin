@@ -25,9 +25,9 @@
 @inject Umbraco.Cms.Core.Security.ICspNonceService CspNonceService
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 @addTagHelper Umbraco.Cms.Web.Common.TagHelpers.CspNonceTagHelper, Umbraco.Cms.Web.Common
-@* Overrides Umbraco 18.1.0's view of the same path, kept byte-identical to it apart from the
+@* Overrides Umbraco 17.7.2 / 18.3.0's view of the same path, kept byte-identical to upstream apart from the
    deviations marked "Le Løgin" below. Re-diff against upstream on every Umbraco upgrade:
-   https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Cms.StaticAssets/umbraco/UmbracoLogin/Index.cshtml *@
+   https://github.com/umbraco/Umbraco-CMS/blob/release-18.3.0/src/Umbraco.Cms.StaticAssets/umbraco/UmbracoLogin/Index.cshtml *@
 @{
     bool.TryParse(Context.Request.Query["umbDebug"], out var isDebug);
     // Le Løgin: one token per render. The background, logo, and greeting requests each

@@ -16,10 +16,7 @@ export class LeLøginScreenConditionMetadataDataSource extends UmbControllerBase
 	}
 
 	async getConditionMetadata(): Promise<{ data: ConditionMetadata | undefined; error: unknown }> {
-		const { data, error } = await tryExecute(
-			this,
-			V1.getRulesConditionMetadata()
-		);
+		const { data, error } = await tryExecute(this, V1.getRulesConditionMetadata());
 
 		return {
 			data: data === undefined ? undefined : toConditionMetadata(data),
