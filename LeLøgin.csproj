@@ -90,11 +90,18 @@
     <Exec Command="node scripts/sync-package-version.mjs &quot;$(Version)&quot;" WorkingDirectory="$(MSBuildProjectDirectory)/Client" />
     <Exec Command="pnpm build" WorkingDirectory="$(MSBuildProjectDirectory)/Client" />
 
+    <!-- Match on the ASCII prefix. A full path, or ø stored in a different Unicode form, does not
+         start with the project-relative folder and would leave the deleted Vite manifest in @(Content). -->
     <ItemGroup>
-      <_LeLoginGeneratedContent Include="@(Content)" Condition="$([System.String]::Copy('%(Identity)').Replace('\', '/').StartsWith('wwwroot/App_Plugins/le-løgin/'))" />
+      <_LeLoginGeneratedContent Include="@(Content)" Condition="$([System.String]::Copy('%(Identity)').Replace('\', '/').Contains('App_Plugins/le-'))" />
       <Content Remove="@(_LeLoginGeneratedContent)" />
-      <Content Include="wwwroot\App_Plugins\le-løgin\**" />
+      <Content Include="wwwroot\App_Plugins\le-løgin\**" Exclude="wwwroot\App_Plugins\le-løgin\.vite\**" />
     </ItemGroup>
+
+    <!-- The client output is replaced on every build. Keep the previous compression cache from
+         pointing at a file the Vite plugin has already deleted. -->
+    <Delete Files="$(IntermediateOutputPath)rpswa.dswa.cache.json;$(IntermediateOutputPath)rbcswa.dswa.cache.json" />
+    <RemoveDir Directories="$(IntermediateOutputPath)compressed" />
 
     <PropertyGroup>
       <_LeLoginClientAssetsBuilt>true</_LeLoginClientAssetsBuilt>

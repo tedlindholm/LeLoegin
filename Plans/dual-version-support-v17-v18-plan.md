@@ -2,7 +2,7 @@
 
 ## Status
 
-Revised 3 November 2026, after checking this repository, `LeLøgin.Site`, NuGet, and the Umbraco tags `release-17.7.2`, `release-17.8.0`, `release-18.1.0`, `release-18.2.1`, and `release-18.3.0`. The v17 track compiles against and is proved on Umbraco **17.7.2**.
+Revised 3 November 2026, after checking this repository, `LeLøgin.Sites`, NuGet, and the Umbraco tags `release-17.7.2`, `release-17.8.0`, `release-18.1.0`, `release-18.2.1`, and `release-18.3.0`. The v17 track compiles against and is proved on Umbraco **17.7.2**.
 
 Proposed. One branch builds a Le Løgin package for Umbraco 17 and one for Umbraco 18. The two packages share the product code. They do not share a compile-time Umbraco reference.
 
@@ -13,7 +13,7 @@ Proposed. One branch builds a Le Løgin package for Umbraco 17 and one for Umbra
 | Branch | `v18` at `8147b11`, package version `18.0.0-rc.1`. `main` (`0e10239`) is a direct ancestor and is already an Umbraco 18 tree (package `18.0.0`, `Umbraco.Cms.Api.Management` `18.0.0`). `origin/main` is 7 commits behind local `main`. |
 | v17 line | There is no v17 branch. The last v17 package reference is the parent of `6129a91` (`feat: upgrade to Umbraco 18`). That commit is older than the login-shell, render-token, and database-readiness work. |
 | Compile references | `LeLøgin.csproj` references Umbraco `18.0.0`, `Microsoft.OpenApi` `2.11.0`, `SixLabors.ImageSharp` `3.1.12`, and `System.Security.Cryptography.Xml` `10.0.11`, all with `PrivateAssets="all"`. |
-| Test host | `LeLøgin.Site` holds two hosts. `LeLøgin.Site.v18` is the existing site, retargeted to Umbraco `18.3.0`, on `https://localhost:5001`, with its original SQLite database. `LeLøgin.Site.v17` is a new host on Umbraco `17.7.2` and `https://localhost:5011`, with its own database. Central package management stays at the site root; each project sets `VersionOverride` from `$(UmbracoPackageVersion)`. `LeLøgin.Tests` references only the site selected by `$(UmbracoMajor)`. |
+| Test host | `LeLøgin.Sites` holds two hosts. `LeLøgin.Site.v18` is the existing site, retargeted to Umbraco `18.3.0`, on `https://localhost:5001`, with its original SQLite database. `LeLøgin.Site.v17` is a new host on Umbraco `17.7.2` and `https://localhost:5011`, with its own database. Central package management stays at the site root; each project sets `VersionOverride` from `$(UmbracoPackageVersion)`. `LeLøgin.Tests` references only the site selected by `$(UmbracoMajor)`. |
 | Azure Blob | `LeLøgin.AzureBlob.csproj` and `LeLøgin.AzureBlob.Tests.csproj` pin `Umbraco.StorageProviders.AzureBlob` `18.0.0`. |
 | Login shell | `umbraco/UmbracoLogin/Index.cshtml` matches `release-17.7.2` and `release-18.3.0` apart from the Le Løgin insertions (render token, greeting module, `login.js` replacement). Those two upstream files are byte-identical. |
 | Client | `@umbraco-cms/backoffice` is a devDependency at `18.3.0` and is external at runtime. `tsc` and the unit tests also pass against `17.7.2`. `Client/scripts/sync-package-version.mjs` writes only `Client/public/umbraco-package.json`. Codegen is aimed at `/umbraco/openapi/le-løgin-api-v1.json`. |
@@ -28,7 +28,7 @@ Checked against NuGet and [Umbraco releases](https://releases.umbraco.com/?repo=
 | 18 | `18.3.0` | 29 October 2026 | Current stable 18. Supersedes `18.2.1`. |
 | 17 | `17.7.2` | 27 October 2026 | Oldest 17 host this package claims. The proof site runs this version. |
 
-`17.8.0` is a newer LTS patch, and `17.9.0-rc`, `17.10.0-rc`, `18.4.0-rc`, and `19.0.0-beta1` exist. None of them is the compile target. Compiling the v17 track against `17.8.0` would allow ImageSharp 3.2 APIs that a 17.7.2 host does not have. Newer 17 patches are expected to load the 17.7.2 build, because the host supplies the assemblies, but a green 17.8 site does not prove 17.7.2.
+`17.8.0` is a newer LTS patch, and `17.9.0-rc`, `17.10.0-rc`, `18.4.0-rc`, and `19.0.0-beta1` exist. None of them is the compile target. Compiling the v17 track against `17.8.0` would allow ImageSharp 3.2 APIs that a 17.7.2 host does not have. Newer 17 patches are expected to load the 17.7.2 build, because the host supplies the assemblies, but a green 17.8 site does not prove 17.7.2. Umbraco 19 is `net11.0` and is recorded separately in [umbraco-v19-compatibility.md](umbraco-v19-compatibility.md).
 
 These floors are compile-time references. They are not the Le Løgin package version.
 
@@ -48,7 +48,7 @@ These floors are compile-time references. They are not the Le Løgin package ver
 1. **Build the dual track on `v18`.** Do not snapshot `main` as `backup/v17-pre-dual-track`. That commit is already Umbraco 18, and it lacks the `v18` stabilisations. Promoting `v18` onto `main` is a separate publish step and needs an explicit git go-ahead. `origin/main` is behind local `main`, so a fast-forward is not a one-remote-update.
 2. **One branch, one MSBuild switch.** `UmbracoMajor` is `18` or `17`, default `18`. It selects references, compile constants, output directories, and the Le Løgin package version. It does not select the target framework.
 3. **Le Løgin keeps its own versions.** `UmbracoMajor=18` packs `18.0.0-rc.1` (then `18.0.0` when that release is cut). `UmbracoMajor=17` packs `17.7.0-rc.1`. The `17.7` minor marks the Umbraco 17.7 line this build is for. The Umbraco patch `17.7.2` is not copied onto the package. Later product releases increment Le Løgin's own patch or minor on each line. Both packages keep the id `LeLøgin`. The major tells a consumer which Umbraco line the build was compiled for, which matters because Umbraco stays `PrivateAssets="all"` and is not a NuGet dependency of the package.
-4. **Two site directories, one site repository.** `LeLøgin.Site` already uses `Directory.Packages.props` with `ManagePackageVersionsCentrally`. A second site in that repo cannot take a different `Umbraco.Cms` version from a second props file. Each site sets `VersionOverride` on `Umbraco.Cms` and `Umbraco.Cms.DevelopmentMode.Backoffice`. Give the v17 site its own directory, port, and SQLite file. Suggested ports: v18 stays `https://localhost:5001`; v17 uses `https://localhost:5011`.
+4. **Two site directories, one site repository.** `LeLøgin.Sites` already uses `Directory.Packages.props` with `ManagePackageVersionsCentrally`. A second site in that repo cannot take a different `Umbraco.Cms` version from a second props file. Each site sets `VersionOverride` on `Umbraco.Cms` and `Umbraco.Cms.DevelopmentMode.Backoffice`. Give the v17 site its own directory, port, and SQLite file. Suggested ports: v18 stays `https://localhost:5001`; v17 uses `https://localhost:5011`.
 5. **One login shell.** No Razor conditional. See §5.
 6. **Split OpenAPI registration, not the schema writer, until a compile forces it.** See §6.
 
@@ -68,7 +68,7 @@ flowchart TD
         Core -->|UMBRACO_17| V17["ApiConfiguration.Swashbuckle.cs<br/>SwaggerGenOptions<br/>Microsoft.OpenApi 2.9.0"]
     end
 
-    subgraph Sites["LeLøgin.Site, central versions plus VersionOverride"]
+    subgraph Sites["LeLøgin.Sites, central versions plus VersionOverride"]
         Tests -->|UmbracoMajor=18| Site18["LeLøgin.Site.v18<br/>Umbraco 18.3.0 :5001"]
         Tests -->|UmbracoMajor=17| Site17["LeLøgin.Site.v17<br/>Umbraco 17.7.2 :5011"]
     end
@@ -192,7 +192,7 @@ Backoffice modules are Vite externals, so the browser loads the host's copy. Typ
 
 ### Phase 3: Sites
 
-1. In `LeLøgin.Site`, add `LeLøgin.Site.v18` at Umbraco `18.3.0` (the existing site, retargeted) and `LeLøgin.Site.v17` at `17.7.2`.
+1. In `LeLøgin.Sites`, add `LeLøgin.Site.v18` at Umbraco `18.3.0` (the existing site, retargeted) and `LeLøgin.Site.v17` at `17.7.2`.
 2. Use `VersionOverride` so central package management can hold one default while the two projects disagree.
 3. Separate SQLite databases, ports `5001` and `5011`, and `umbraco/Data` directories.
 4. Point `LeLøgin.Tests.csproj` at the site selected by `$(UmbracoMajor)`.

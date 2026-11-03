@@ -28,7 +28,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LeLøgin.csproj" />
-    <ProjectReference Include="..\..\LeLøgin.Site\LeLøgin.Site.v18\LeLøgin.Site.v18.csproj" Condition="'$(UmbracoMajor)' == '18'" />
-    <ProjectReference Include="..\..\LeLøgin.Site\LeLøgin.Site.v17\LeLøgin.Site.v17.csproj" Condition="'$(UmbracoMajor)' == '17'" />
+    <ProjectReference Include="..\..\LeLøgin.Sites\LeLøgin.Site.v18\LeLøgin.Site.v18.csproj" Condition="'$(UmbracoMajor)' == '18'" />
+    <ProjectReference Include="..\..\LeLøgin.Sites\LeLøgin.Site.v17\LeLøgin.Site.v17.csproj" Condition="'$(UmbracoMajor)' == '17'" />
   </ItemGroup>
 </Project>
