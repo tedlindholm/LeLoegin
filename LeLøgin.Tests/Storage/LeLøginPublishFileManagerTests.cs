@@ -11,11 +11,11 @@ public sealed class LeLøginPublishFileManagerTests
 	public void GetPublicUrl_Throws_When_Underlying_FileSystem_Returns_Null()
 	{
 		var fileSystem = new Mock<IFileSystem>();
-		fileSystem.Setup(x => x.GetUrl(It.IsAny<string>())).Returns((string?)null);
+		fileSystem.Setup(x => x.GetUrl(It.IsAny<string>())).Returns(() => null!);
 		var manager = new LeLøginPublishFileManager(fileSystem.Object);
 
 		var ex = Assert.Throws<InvalidOperationException>(() => manager.GetPublicUrl("abc.jpg"));
-		Assert.Contains("abc.jpg", ex.Message);
+		Assert.Contains("abc.jpg", ex.Message, StringComparison.Ordinal);
 	}
 
 	[Fact]

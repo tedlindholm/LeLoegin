@@ -1,0 +1,48 @@
+<Project>
+  <!--
+    UmbracoMajor selects which host this build is compiled against.
+    18 is the default. 17 is reserved for the Swashbuckle bridge; the current
+    sources still call Umbraco 18's OpenAPI registration, so -p:UmbracoMajor=17
+    restores the 17 floor and then fails to compile until that bridge lands.
+  -->
+  <PropertyGroup>
+    <UmbracoMajor Condition="'$(UmbracoMajor)' == ''">18</UmbracoMajor>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(UmbracoMajor)' == '18'">
+    <UmbracoPackageVersion>18.3.0</UmbracoPackageVersion>
+    <UmbracoBlobPackageVersion>18.0.0</UmbracoBlobPackageVersion>
+    <OpenApiPackageVersion>2.12.2</OpenApiPackageVersion>
+    <CryptographyXmlPackageVersion>10.0.13</CryptographyXmlPackageVersion>
+    <MessagePackPackageVersion>3.1.11</MessagePackPackageVersion>
+    <LeLoginPackageVersion>18.0.0-rc.1</LeLoginPackageVersion>
+    <DefineConstants>UMBRACO_18</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(UmbracoMajor)' == '17'">
+    <UmbracoPackageVersion>17.7.2</UmbracoPackageVersion>
+    <UmbracoBlobPackageVersion>17.1.0</UmbracoBlobPackageVersion>
+    <OpenApiPackageVersion>2.9.0</OpenApiPackageVersion>
+    <CryptographyXmlPackageVersion>10.0.10</CryptographyXmlPackageVersion>
+    <!-- 17.7.2 still pins MessagePack 3.1.8, which is inside GHSA-qhrr-8q5h-9q3h. Compile against the patched 3.1.11 the 18.3 floor uses. -->
+    <MessagePackPackageVersion>3.1.11</MessagePackPackageVersion>
+    <LeLoginPackageVersion>17.0.0</LeLoginPackageVersion>
+    <DefineConstants>UMBRACO_17</DefineConstants>
+  </PropertyGroup>
+
+  <!-- Per-track outputs so a major switch does not reuse the other track's assemblies.
+       The SDK only excludes $(BaseIntermediateOutputPath), so the previous obj/ and bin/ trees
+       would otherwise be compiled as source. -->
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>obj/v$(UmbracoMajor)/</BaseIntermediateOutputPath>
+    <BaseOutputPath>bin/v$(UmbracoMajor)/</BaseOutputPath>
+    <PackageOutputPath>$(MSBuildThisFileDirectory)artifacts/v$(UmbracoMajor)/</PackageOutputPath>
+    <DefaultItemExcludes>$(DefaultItemExcludes);bin/**;obj/**</DefaultItemExcludes>
+  </PropertyGroup>
+
+  <Target Name="ValidateUmbracoMajor" BeforeTargets="Restore;Build;Pack">
+    <Error
+      Condition="'$(UmbracoMajor)' != '17' and '$(UmbracoMajor)' != '18'"
+      Text="UmbracoMajor must be 17 or 18 (got '$(UmbracoMajor)')." />
+  </Target>
+</Project>

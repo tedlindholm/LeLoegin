@@ -479,7 +479,7 @@ public sealed class RuntimeControllerTests : IDisposable
 	{
 		var unsafePath = Path.Combine(_contentRootPath, "..", "../../etc/passwd");
 		Directory.CreateDirectory(Path.GetDirectoryName(unsafePath)!);
-		File.WriteAllText(unsafePath, "unsafe");
+		await File.WriteAllTextAsync(unsafePath, "unsafe");
 
 		WriteConfig($$"""
 		{
@@ -595,8 +595,8 @@ public sealed class RuntimeControllerTests : IDisposable
 		// cc = "0.05,0.35,0.45,0.15" (insets from each edge, "0.####" format with dropped trailing zeros)
 		// Comma encoding varies (Uri.EscapeDataString in some hosts emits raw "," here).
 		var decoded = Uri.UnescapeDataString(response.ImageUrl);
-		Assert.Contains("cc=0.05,0.35,0.45,0.15", decoded);
-		Assert.DoesNotContain("rxy=", decoded);
+		Assert.Contains("cc=0.05,0.35,0.45,0.15", decoded, StringComparison.Ordinal);
+		Assert.DoesNotContain("rxy=", decoded, StringComparison.Ordinal);
 	}
 
 	[Fact]
@@ -660,9 +660,9 @@ public sealed class RuntimeControllerTests : IDisposable
 		var response = Assert.IsType<ActiveLeLøginScreenResponse>(result.Value);
 
 		var decoded = Uri.UnescapeDataString(response.ImageUrl);
-		Assert.Contains("rmode=crop", decoded);
-		Assert.Contains("rxy=0.25,0.75", decoded);
-		Assert.DoesNotContain("cc=", decoded);
+		Assert.Contains("rmode=crop", decoded, StringComparison.Ordinal);
+		Assert.Contains("rxy=0.25,0.75", decoded, StringComparison.Ordinal);
+		Assert.DoesNotContain("cc=", decoded, StringComparison.Ordinal);
 		Assert.NotNull(response.FocalPoint);
 		Assert.Equal(0.25, response.FocalPoint!.Left);
 		Assert.Equal(0.75, response.FocalPoint.Top);
@@ -725,7 +725,7 @@ public sealed class RuntimeControllerTests : IDisposable
 		var result = Assert.IsType<OkObjectResult>(await controller.GetActive());
 		var response = Assert.IsType<ActiveLeLøginScreenResponse>(result.Value);
 
-		Assert.DoesNotContain("?", response.ImageUrl);
+		Assert.DoesNotContain("?", response.ImageUrl, StringComparison.Ordinal);
 	}
 
 	[Fact]

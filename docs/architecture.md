@@ -3,16 +3,18 @@
 ## Host-Owned Dependencies
 
 Every production `PackageReference` in Le Løgin is marked `PrivateAssets="all"`. The package is
-**compiled against** specific versions — Umbraco 18.0, SixLabors.ImageSharp 3.1 — but **declares
-none of them as dependencies** in the nupkg.
+**compiled against** the versions in `Directory.Build.props` — on the 18 track, Umbraco 18.3.0 —
+but **declares none of them as dependencies** in the nupkg. ImageSharp 3.2.0 arrives with
+`Umbraco.Cms.Imaging.ImageSharp` and is not referenced directly: ImageSharp 3.2 checks a Six Labors
+license key for direct references, including Release builds.
 
 Instead, the **consuming Umbraco site (the host) owns and supplies these assemblies at runtime**.
 
 ### Why?
 
-1. **Multiple Umbraco major versions.** Le Løgin compiles against Umbraco 18.0 as its lowest
-   supported API surface and runs on Umbraco 18.x and 19.x. Declaring `Umbraco.Cms (>= 18.0.0)`
-   would drag a second Umbraco version into the graph of a site that has already moved on.
+1. **Multiple Umbraco major versions.** The 18 track compiles against Umbraco 18.3.0 as its
+   API surface. Declaring `Umbraco.Cms (>= 18.3.0)` would drag a second Umbraco version into
+   the graph of a site that has already moved on.
 
 2. **The host controls its own version strategy.** Sites have their own patch cadence and upgrade
    timelines. Host ownership keeps an extension package from arbitrating them.
@@ -25,8 +27,8 @@ Instead, the **consuming Umbraco site (the host) owns and supplies these assembl
 |---------|--------|
 | `Umbraco.Cms.Api.Management` | Host owns its Umbraco version. Transitively covers Core, Infrastructure, Web.Common and Api.Common. |
 | `Umbraco.Cms.Imaging.ImageSharp` | Host owns its Umbraco version. Supplies the middleware options and HMAC signing used by `LoginScreenImageUrlBuilder`. |
-| `SixLabors.ImageSharp` | **Umbraco ships it** — it arrives transitively with `Umbraco.Cms.Imaging.ImageSharp`, so the host already has it. |
-| `Microsoft.OpenApi`, `System.Security.Cryptography.Xml` | Security pins that keep vulnerable transitive versions from the 18.0 floor out of Le Løgin's own build graph. |
+| `SixLabors.ImageSharp` | **Umbraco ships it** — it arrives transitively with `Umbraco.Cms.Imaging.ImageSharp`, so the host already has it. Le Løgin does not take a direct reference, because ImageSharp 3.2 enforces a license key on direct references. |
+| `Microsoft.OpenApi`, `System.Security.Cryptography.Xml`, `MessagePack` | Security pins that match the selected track's Umbraco floor and stay inside Le Løgin's own build graph. MessagePack is pinned because `Umbraco.StorageProviders.AzureBlob` 18.0.0 still resolves 3.1.7. |
 | `Umbraco.StorageProviders.AzureBlob` (in `LeLøgin.AzureBlob`) | Host owns its storage-provider version; it must match the host's Umbraco major. |
 
 ### What this does and does not guarantee
@@ -34,7 +36,7 @@ Instead, the **consuming Umbraco site (the host) owns and supplies these assembl
 `PrivateAssets="all"` makes compatibility a **host/runtime contract, not a NuGet constraint**. NuGet
 enforces nothing here, so:
 
-- An Umbraco 18-or-later host may pick its own compatible minor and patch versions.
+- The 18 package is compiled against 18.3.0. A later 18 patch can supply the assemblies; an earlier 18.x host is outside that surface.
 - There is no upper bound stopping installation into Umbraco 19. Whether it *works* depends on
   Umbraco 19 retaining the APIs Le Løgin uses.
 - Restore also succeeds in an Umbraco 17 site or an ordinary .NET 10 application, because the nupkg

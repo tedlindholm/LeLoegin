@@ -16,17 +16,14 @@ internal static class TestFileSystems
     internal static LeLøginAssetFileManager AssetFileManager(string contentRootPath) =>
         new(BuildPhysicalFileSystem(
             rootPath: Path.Combine(contentRootPath, "App_Data", "LeLøgin"),
-            rootUrl: "/App_Data/LeLøgin",
-            contentRootPath));
+            rootUrl: "/App_Data/LeLøgin"));
 
     internal static LeLøginPublishFileManager PublishFileManager(string contentRootPath) =>
         new(BuildPhysicalFileSystem(
             rootPath: Path.Combine(contentRootPath, "wwwroot", "login-screen"),
-            rootUrl: "/login-screen",
-            contentRootPath));
+            rootUrl: "/login-screen"));
 
-    private static PhysicalFileSystem BuildPhysicalFileSystem(
-        string rootPath, string rootUrl, string contentRootPath)
+    private static PhysicalFileSystem BuildPhysicalFileSystem(string rootPath, string rootUrl)
     {
         var ioHelper = new Mock<IIOHelper>();
         ioHelper
@@ -42,14 +39,9 @@ internal static class TestFileSystems
                 return path[root.Length] == sep;
             });
 
-        var hostingEnv = new Mock<IHostingEnvironment>();
-        hostingEnv
-            .Setup(x => x.MapPathContentRoot(It.IsAny<string>()))
-            .Returns(contentRootPath);
-
         return new PhysicalFileSystem(
             ioHelper.Object,
-            hostingEnv.Object,
+            new Mock<IHostingEnvironment>().Object,
             NullLogger<PhysicalFileSystem>.Instance,
             rootPath,
             rootUrl);

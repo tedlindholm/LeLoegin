@@ -184,9 +184,9 @@ public sealed class AssetControllerTests : IDisposable
 		var safeAssetPath = Path.Combine(_contentRootPath, "App_Data", "LeLøgin", "assets", "valid.png");
 		var unsafePath = Path.Combine(_contentRootPath, "..", "../../etc/passwd");
 		Directory.CreateDirectory(Path.GetDirectoryName(safeAssetPath)!);
-		File.WriteAllText(safeAssetPath, "safe");
+		await File.WriteAllTextAsync(safeAssetPath, "safe");
 		Directory.CreateDirectory(Path.GetDirectoryName(unsafePath)!);
-		File.WriteAllText(unsafePath, "unsafe");
+		await File.WriteAllTextAsync(unsafePath, "unsafe");
 
 		WriteConfig($$"""
 		{
@@ -228,7 +228,7 @@ public sealed class AssetControllerTests : IDisposable
 		Directory.CreateDirectory(Path.GetDirectoryName(assetPath)!);
 		using (var image = new Image<Rgba32>(1, 1))
 		{
-			image.SaveAsPng(assetPath);
+			await image.SaveAsPngAsync(assetPath);
 		}
 
 		WriteConfig($$"""
@@ -390,7 +390,7 @@ public sealed class AssetControllerTests : IDisposable
 		await image.SaveAsPngAsync(path);
 	}
 
-	private static IOptionsMonitor<ContentSettings> CreatePermissiveContentSettings()
+	private static OptionsMonitorStub<ContentSettings> CreatePermissiveContentSettings()
 	{
 		return new OptionsMonitorStub<ContentSettings>(new ContentSettings());
 	}

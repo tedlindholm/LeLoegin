@@ -5,6 +5,8 @@ namespace LeLøgin.Tests.Storage;
 
 public sealed class RuleAssetIdsSerialiserTests
 {
+	private static readonly string[] JsonPair = ["a", "b"];
+	private static readonly string[] LegacyId = ["asset-1"];
 	[Fact]
 	public void Serialise_Writes_A_Json_Array()
 	{
@@ -21,7 +23,7 @@ public sealed class RuleAssetIdsSerialiserTests
 	[Fact]
 	public void Deserialise_Round_Trips_A_Json_Array()
 	{
-		Assert.Equal(new[] { "a", "b" }, RuleAssetIdsSerialiser.Deserialise("""["a","b"]"""));
+		Assert.Equal(JsonPair, RuleAssetIdsSerialiser.Deserialise("""["a","b"]"""));
 	}
 
 	[Fact]
@@ -34,7 +36,7 @@ public sealed class RuleAssetIdsSerialiserTests
 	[Fact]
 	public void Deserialise_Treats_A_Legacy_Bare_Id_As_A_Single_Element_List()
 	{
-		Assert.Equal(new[] { "asset-1" }, RuleAssetIdsSerialiser.Deserialise("asset-1"));
+		Assert.Equal(LegacyId, RuleAssetIdsSerialiser.Deserialise("asset-1"));
 	}
 
 	[Fact]

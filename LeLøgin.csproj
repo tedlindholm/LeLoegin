@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <Version>18.0.0-rc.1</Version>
+    <Version>$(LeLoginPackageVersion)</Version>
     <PackageId>LeLøgin</PackageId>
     <Authors>Le Løgin contributors</Authors>
     <Description>Le Løgin is a distributable Umbraco package for managing the backoffice login-screen image from a Settings-integrated product area.</Description>
@@ -34,20 +34,20 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- PrivateAssets="all" pattern: This package is compiled against Umbraco 18.0 but does NOT
-         declare Umbraco as a transitive dependency. The installed host (consumer's Umbraco site) owns
-         and supplies its own Umbraco version at runtime (18.x or 19.x). This allows LeLøgin to
-         work with multiple Umbraco majors without the consumer being locked to a specific version.
-         See: docs/architecture.md#host-owned-dependencies -->
-    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" PrivateAssets="all" />
-    <!-- Keep vulnerable transitive versions from the 18.0 floor out of this package's consumers. -->
-    <PackageReference Include="Microsoft.OpenApi" Version="2.11.0" PrivateAssets="all" />
-    <PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.11" PrivateAssets="all" />
+    <!-- PrivateAssets="all": compiled against the Umbraco major selected by $(UmbracoMajor)
+         in Directory.Build.props. The host supplies these assemblies at runtime and the package
+         does not carry them as dependencies. See docs/architecture.md#host-owned-dependencies.
+         ImageSharp is not referenced directly. Umbraco.Cms.Imaging.ImageSharp brings it, and a
+         direct SixLabors.ImageSharp 3.2 reference would require a Six Labors license key for
+         Release builds. Enforcement applies to direct references only. -->
+    <!-- Match the selected floor's patched transitive versions. These pins do not flow to the host. -->
+    <PackageReference Include="Microsoft.OpenApi" Version="$(OpenApiPackageVersion)" PrivateAssets="all" />
+    <PackageReference Include="System.Security.Cryptography.Xml" Version="$(CryptographyXmlPackageVersion)" PrivateAssets="all" />
     <!-- Build-time only. The host supplies the runtime assemblies and owns their versions.
          - Api.Management: transitively covers Core, Infrastructure, Web.Common, Api.Common
          - Imaging.ImageSharp: provides middleware options and HMAC signing utilities for LoginScreenImageUrlBuilder -->
-    <PackageReference Include="Umbraco.Cms.Api.Management" Version="18.0.0" PrivateAssets="all" />
-    <PackageReference Include="Umbraco.Cms.Imaging.ImageSharp" Version="18.0.0" PrivateAssets="all" />
+    <PackageReference Include="Umbraco.Cms.Api.Management" Version="$(UmbracoPackageVersion)" PrivateAssets="all" />
+    <PackageReference Include="Umbraco.Cms.Imaging.ImageSharp" Version="$(UmbracoPackageVersion)" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

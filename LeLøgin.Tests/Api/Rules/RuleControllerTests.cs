@@ -12,6 +12,7 @@ namespace LeLøgin.Tests.Api.Rules;
 
 public sealed class RuleControllerTests : IDisposable
 {
+	private static readonly string[] WeekdayAssetIds = ["asset-a", "asset-b"];
 	private readonly string _contentRootPath = Path.Combine(
 		Path.GetTempPath(),
 		"LeLøgin.Tests",
@@ -192,11 +193,11 @@ public sealed class RuleControllerTests : IDisposable
 
 		Assert.Equal(LoginRuleConditionGroupOperator.All, model.Condition.Operator);
 		Assert.Equal(LoginRuleField.Weekday, Assert.Single(model.Condition.Conditions).Field);
-		Assert.Equal(new[] { "asset-a", "asset-b" }, model.AssetIds);
+		Assert.Equal(WeekdayAssetIds, model.AssetIds);
 
 		var stored = await store.GetRuleAsync(model.Id);
 		Assert.NotNull(stored);
-		Assert.Equal(new[] { "asset-a", "asset-b" }, stored!.AssetIds);
+		Assert.Equal(WeekdayAssetIds, stored!.AssetIds);
 	}
 
 	[Fact]

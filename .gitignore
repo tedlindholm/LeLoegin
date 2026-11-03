@@ -3,6 +3,7 @@
 /obj
 /bin
 /wwwroot/App_Plugins/le-løgin
+/artifacts/
 
 # Ignore build artefacts in nested projects (for example test projects)
 **/bin/
