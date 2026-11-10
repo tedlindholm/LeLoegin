@@ -31,6 +31,8 @@
 
   <PropertyGroup>
     <StaticWebAssetsGetBuildAssetsTargets>GenerateStaticWebAssetsManifest;GetCurrentProjectBuildStaticWebAssetItems</StaticWebAssetsGetBuildAssetsTargets>
+    <StaticWebAssetsAdditionalBuildProperties>$(StaticWebAssetsAdditionalBuildProperties);UmbracoMajor=$(UmbracoMajor)</StaticWebAssetsAdditionalBuildProperties>
+    <StaticWebAssetsAdditionalPublishProperties>$(StaticWebAssetsAdditionalPublishProperties);UmbracoMajor=$(UmbracoMajor)</StaticWebAssetsAdditionalPublishProperties>
   </PropertyGroup>
 
   <ItemGroup>
@@ -56,6 +58,7 @@
   <ItemGroup>
     <!-- Don't include the client folder as part of the NuGet package build. -->
     <Content Remove="Client\**" />
+    <Content Remove="wwwroot\App_Plugins\le-løgin\**" />
 
     <!-- Exclude repository tooling, editor schemas and local emulator state from the package. -->
     <Content Remove="AzuriteConfig;AzuriteConfig\**;__azurite_db_*.json;__blobstorage__\**;__queuestorage__\**;appsettings-schema.json;appsettings-schema.*.json;umbraco-package-schema.json;skills-lock.json" />
@@ -84,28 +87,42 @@
     <None Include="readme.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
-  <Target Name="PrepareLeLøginClientStaticAssets" BeforeTargets="ResolveProjectStaticWebAssets" Condition="'$(_LeLoginClientAssetsBuilt)' != 'true'">
-    <Message Importance="high" Text="Synchronising Le Løgin package versions and building client assets." />
-    <RemoveDir Directories="$(MSBuildProjectDirectory)/wwwroot/App_Plugins/le-løgin" />
-    <Exec Command="node scripts/sync-package-version.mjs &quot;$(Version)&quot;" WorkingDirectory="$(MSBuildProjectDirectory)/Client" />
-    <Exec Command="pnpm build" WorkingDirectory="$(MSBuildProjectDirectory)/Client" />
-
-    <!-- Match on the ASCII prefix. A full path, or ø stored in a different Unicode form, does not
-         start with the project-relative folder and would leave the deleted Vite manifest in @(Content). -->
-    <ItemGroup>
-      <_LeLoginGeneratedContent Include="@(Content)" Condition="$([System.String]::Copy('%(Identity)').Replace('\', '/').Contains('App_Plugins/le-'))" />
-      <Content Remove="@(_LeLoginGeneratedContent)" />
-      <Content Include="wwwroot\App_Plugins\le-løgin\**" Exclude="wwwroot\App_Plugins\le-løgin\.vite\**" />
-    </ItemGroup>
-
-    <!-- The client output is replaced on every build. Keep the previous compression cache from
-         pointing at a file the Vite plugin has already deleted. -->
-    <Delete Files="$(IntermediateOutputPath)rpswa.dswa.cache.json;$(IntermediateOutputPath)rbcswa.dswa.cache.json" />
-    <RemoveDir Directories="$(IntermediateOutputPath)compressed" />
-
+  <Target Name="PrepareLeLøginClientStaticAssets" BeforeTargets="ResolveProjectStaticWebAssets" Condition="'$(NoBuild)' != 'true' And '$(DesignTimeBuild)' != 'true'">
     <PropertyGroup>
-      <_LeLoginClientAssetsBuilt>true</_LeLoginClientAssetsBuilt>
+      <_LeLoginClientRoot>$([System.IO.Path]::GetFullPath('$(IntermediateOutputPath)client/wwwroot', '$(MSBuildProjectDirectory)'))/</_LeLoginClientRoot>
     </PropertyGroup>
+    <Message Importance="high" Text="Building Le Løgin $(Version) client assets into $(_LeLoginClientRoot)." />
+    <Exec Command="pnpm build &quot;$(Version)&quot; &quot;$(_LeLoginClientRoot)App_Plugins/le-løgin&quot;" WorkingDirectory="$(MSBuildProjectDirectory)/Client" />
+    <ItemGroup>
+      <_LeLoginClientFiles Include="$(_LeLoginClientRoot)App_Plugins/le-løgin/**" />
+      <_LeLoginClientFiles>
+        <RelativePath>$([System.IO.Path]::GetRelativePath('$(_LeLoginClientRoot)', '%(_LeLoginClientFiles.Identity)'))</RelativePath>
+      </_LeLoginClientFiles>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="RegisterLeLøginClientStaticAssets" AfterTargets="ResolveProjectStaticWebAssets" Condition="'$(NoBuild)' != 'true' And '$(DesignTimeBuild)' != 'true'">
+    <DefineStaticWebAssets CandidateAssets="@(_LeLoginClientFiles)"
+      SourceType="Discovered" SourceId="$(PackageId)"
+      ContentRoot="$(_LeLoginClientRoot)" BasePath="$(StaticWebAssetBasePath)"
+      AssetKind="All" AssetMode="All" AssetRole="Primary"
+      CopyToOutputDirectory="Never" CopyToPublishDirectory="PreserveNewest">
+      <Output TaskParameter="Assets" ItemName="StaticWebAsset" />
+      <Output TaskParameter="Assets" ItemName="_LeLoginStaticWebAssets" />
+    </DefineStaticWebAssets>
+    <DefineStaticWebAssetEndpoints CandidateAssets="@(_LeLoginStaticWebAssets)"
+      ExistingEndpoints="@(StaticWebAssetEndpoint)" ContentTypeMappings="@(StaticWebAssetContentTypeMapping)">
+      <Output TaskParameter="Endpoints" ItemName="StaticWebAssetEndpoint" />
+    </DefineStaticWebAssetEndpoints>
+    <ItemGroup>
+      <StaticWebAssetDiscoveryPattern Remove="@(StaticWebAssetDiscoveryPattern)" Condition="'%(StaticWebAssetDiscoveryPattern.Source)' == '$(PackageId)'" />
+      <StaticWebAssetDiscoveryPattern Include="$(PackageId)\client">
+        <Source>$(PackageId)</Source>
+        <BasePath>$(StaticWebAssetBasePath)</BasePath>
+        <ContentRoot>$(_LeLoginClientRoot)</ContentRoot>
+        <Pattern>**</Pattern>
+      </StaticWebAssetDiscoveryPattern>
+    </ItemGroup>
   </Target>
 
 </Project>

@@ -8,12 +8,10 @@
 		"node": ">=24.13"
 	},
 	"scripts": {
-		"dev": "tsc && vite build --watch",
-		"build": "tsc && vite build",
+		"build": "tsc && node scripts/build-client.ts",
 		"fmt": "oxfmt lib scripts types vite.config.ts oxlint.config.ts",
 		"fmt:check": "oxfmt --check lib scripts types vite.config.ts oxlint.config.ts",
 		"generate-client": "node scripts/generate-openapi.js https://localhost:5001/umbraco/openapi/le-løgin-api-v1.json",
-		"sync-version": "node scripts/sync-package-version.mjs",
 		"lint": "oxlint --max-warnings 0",
 		"lint:fix": "oxlint --fix --max-warnings 0",
 		"test": "vitest run",

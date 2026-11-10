@@ -26,5 +26,5 @@
 		"forceConsistentCasingInFileNames": true,
 		"types": ["node"]
 	},
-	"include": ["lib", "types", "vite.config.ts"]
+	"include": ["lib", "scripts", "types", "vite.config.ts"]
 }

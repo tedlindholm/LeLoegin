@@ -19,15 +19,33 @@ Le Løgin is a distributable Umbraco package for managing the backoffice login-s
 
 When packing, the project now:
 
-1. synchronises the client and Umbraco manifest versions to the package version
-2. builds the client bundle with pnpm
+1. builds the client bundle with pnpm using the selected package version
+2. generates its Umbraco manifest without changing the source template
 3. packs the NuGet package with the built static web assets
+
+Build each track explicitly:
+
+```bash
+dotnet pack LeLøgin.csproj -c Release -p:UmbracoMajor=17
+dotnet pack LeLøgin.AzureBlob/LeLøgin.AzureBlob.csproj -c Release -p:UmbracoMajor=17
+dotnet pack LeLøgin.csproj -c Release -p:UmbracoMajor=18
+dotnet pack LeLøgin.AzureBlob/LeLøgin.AzureBlob.csproj -c Release -p:UmbracoMajor=18
+```
+
+Packages are written to `artifacts/v17/` and `artifacts/v18/`.
+
+Client assets are generated under `obj/v{major}/{configuration}/net10.0/client/wwwroot/`.
+ASP.NET maps them to the same public `App_Plugins/le-løgin` URLs. The two development sites
+therefore serve separate files. Rebuilds finish in a temporary directory before replacing
+individual published files; the package manifest is replaced last. Old hashed chunks remain
+available to open development tabs until the generated output is cleaned.
 
 ## Versioning
 
-Le Løgin 18.x requires Umbraco 18 or later. Minor and patch releases follow SemVer within that
-major. The previous 1.x line targeted Umbraco 17 — 18.0.0 follows 1.2.2 because Umbraco 18 became
-the minimum supported host, not because of a sixteen-major jump in the package's own API.
+Le Løgin builds separate package tracks from the same source: `17.7.x` compiles against
+Umbraco 17.7.2, and `18.x` compiles against Umbraco 18.3.0. Both target .NET 10. Select the
+package track matching the site's Umbraco major. Minor and patch releases follow SemVer
+within each track.
 
 `LeLøgin` and `LeLøgin.AzureBlob` are released together on the same version.
 
@@ -55,7 +73,7 @@ in the deployed dependency graph.
 
 The practical consequences are:
 
-- Le Løgin is compiled against Umbraco 18.0.0 as its lowest supported API surface.
+- The default track compiles against Umbraco 18.3.0; `UmbracoMajor=17` selects Umbraco 17.7.2.
 - An Umbraco 18 or later host may choose its own compatible minor and patch versions.
 - There is no NuGet upper bound preventing installation into Umbraco 19. Runtime compatibility
   still depends on Umbraco 19 retaining the APIs used by Le Løgin.
@@ -94,5 +112,5 @@ Umbraco packages explicitly; private references do not flow through a project or
 
 ## Notes
 
-- Requires Umbraco 18+
+- Separate builds for Umbraco 17.7.2 and Umbraco 18.3.0
 - Targets .NET 10

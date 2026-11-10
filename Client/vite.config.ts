@@ -2,7 +2,6 @@ import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { defineConfig, type UserConfig } from 'vite';
 
-const OUT_DIR = '../wwwroot/App_Plugins/le-løgin';
 /** Referenced by name from the Razor login shell, so this entry's filename cannot be hashed. */
 const RAZOR_ENTRY_NAME = 'login';
 const ENTRY_POINTS = {
@@ -22,37 +21,31 @@ const RELEASE_MINIFY = {
 	codegen: { removeWhitespace: true }
 };
 
-/** Both entry filenames stay stable: `login.js` for the Razor login shell, `backoffice.js` for the package manifest. */
-export default defineConfig(({ command }) => {
-	const isWatchBuild = command === 'build' && process.argv.includes('--watch');
-	return createClientConfig(isWatchBuild);
-});
+export default defineConfig(() => createClientConfig());
 
-function createClientConfig(isWatchBuild: boolean) {
-	const entryPattern = isWatchBuild ? '[name].js' : '[name]-[hash].js';
-
+export function createClientConfig(packageVersion?: string) {
+	const config: UserConfig = {
+		publicDir: false,
+		build: createBuildConfig(),
+		plugins: [umbracoManifestPlugin(packageVersion)]
+	};
 	return {
+		...config,
 		test: {
 			server: {
 				deps: {
 					inline: INLINE_TEST_DEPS
 				}
 			}
-		},
-		build: createBuildConfig(isWatchBuild, entryPattern),
-		plugins: [umbracoManifestPlugin()]
+		}
 	};
 }
 
-function createBuildConfig(
-	isWatchBuild: boolean,
-	entryPattern: string
-): NonNullable<UserConfig['build']> {
+function createBuildConfig(): NonNullable<UserConfig['build']> {
+	const entryPattern = '[name]-[hash].js';
 	return {
 		manifest: true,
-		outDir: OUT_DIR,
-		// Wiping outDir races a running Umbraco reading umbraco-package.json during rebuild.
-		emptyOutDir: !isWatchBuild,
+		emptyOutDir: true,
 		cssMinify: 'lightningcss',
 		cssCodeSplit: false,
 		lib: {
@@ -69,9 +62,7 @@ function createBuildConfig(
 				entryFileNames: (chunk: { name: string }) =>
 					chunk.name === RAZOR_ENTRY_NAME ? `${RAZOR_ENTRY_NAME}.js` : entryPattern,
 				chunkFileNames: entryPattern,
-				// Watch builds stay unminified so the package can be read and breakpointed in
-				// the backoffice; release builds get the full treatment.
-				minify: isWatchBuild ? false : RELEASE_MINIFY
+				minify: RELEASE_MINIFY
 			}
 		}
 	};
@@ -81,7 +72,7 @@ function createBuildConfig(
  * After build, rewrites entry references in
  * umbraco-package.json to the hashed filenames from .vite/manifest.json.
  */
-function umbracoManifestPlugin() {
+function umbracoManifestPlugin(packageVersion?: string) {
 	let resolvedOutDir: string;
 
 	return {
@@ -90,34 +81,44 @@ function umbracoManifestPlugin() {
 			resolvedOutDir = config.build.outDir;
 		},
 		closeBundle() {
-			const viteManifestPath = join(resolvedOutDir, '.vite', 'manifest.json');
-			if (!existsSync(viteManifestPath)) {
-				return;
-			}
-
-			const viteManifest = JSON.parse(readFileSync(viteManifestPath, 'utf-8'));
-
-			const umbracoManifestPath = join(resolvedOutDir, 'umbraco-package.json');
-			if (!existsSync(umbracoManifestPath)) {
-				return;
-			}
-
-			let manifest = readFileSync(umbracoManifestPath, 'utf-8');
-
-			// Keep this compatible with any future hashed entry output.
-			for (const entry of Object.values(viteManifest) as Array<{
-				file: string;
-				isEntry?: boolean;
-				name?: string;
-			}>) {
-				if (!entry.isEntry || !entry.name) {
-					continue;
-				}
-				manifest = manifest.replaceAll(`${entry.name}.js`, entry.file);
-			}
-
-			writeFileSync(umbracoManifestPath, manifest, 'utf-8');
-			rmSync(join(resolvedOutDir, '.vite'), { recursive: true });
+			writePackageManifest(resolvedOutDir, packageVersion);
 		}
 	};
+}
+
+function writePackageManifest(directory: string, packageVersion?: string) {
+	const viteManifestPath = join(directory, '.vite', 'manifest.json');
+	if (!existsSync(viteManifestPath)) return;
+	const viteManifest = readObject(viteManifestPath);
+	const manifest = readObject(new URL('./public/umbraco-package.json', import.meta.url));
+	manifest.version = packageVersion ?? manifest.version;
+	let content = JSON.stringify(manifest, null, 4);
+	for (const entry of Object.values(viteManifest)) {
+		if (isEntry(entry)) content = content.replaceAll(`${entry.name}.js`, entry.file);
+	}
+	writeFileSync(join(directory, 'umbraco-package.json'), `${content}\n`, 'utf-8');
+	rmSync(join(directory, '.vite'), { recursive: true });
+}
+
+function readObject(path: string | URL): Record<string, unknown> {
+	const value: unknown = JSON.parse(readFileSync(path, 'utf-8'));
+	if (!isRecord(value)) throw new Error(`Expected a JSON object in ${path}.`);
+	return value;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isEntry(value: unknown): value is { isEntry: true; name: string; file: string } {
+	return (
+		typeof value === 'object' &&
+		value !== null &&
+		'isEntry' in value &&
+		value.isEntry === true &&
+		'name' in value &&
+		typeof value.name === 'string' &&
+		'file' in value &&
+		typeof value.file === 'string'
+	);
 }
