@@ -36,4 +36,27 @@ public sealed class LeLøginScreenRuntimeResolver
 
 		return null;
 	}
+
+	/// <summary>
+	/// Returns every asset that <see cref="ResolveAsset"/> could return for some request: the
+	/// existing assets that any enabled rule references, whether or not the rule matches now.
+	/// These are the images whose public copies must stay published.
+	/// </summary>
+	/// <param name="assets">The candidate assets, normally the background assets.</param>
+	/// <param name="rules">All stored rules.</param>
+	/// <returns>Each resolvable asset once.</returns>
+	public IReadOnlyCollection<LoginImageAsset> GetResolvableAssets(
+		IEnumerable<LoginImageAsset> assets,
+		IEnumerable<LoginRule> rules)
+	{
+		var assetMap = assets.ToDictionary(asset => asset.Id, _assetIdComparer);
+
+		return rules
+			.Where(rule => rule.Enabled)
+			.SelectMany(rule => rule.AssetIds)
+			.Distinct(_assetIdComparer)
+			.Where(assetMap.ContainsKey)
+			.Select(assetId => assetMap[assetId])
+			.ToList();
+	}
 }

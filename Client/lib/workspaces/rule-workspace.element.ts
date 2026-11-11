@@ -15,6 +15,7 @@ import {
 	type LeLøginScreenRuleEditorWorkspaceContext
 } from './rule-editor-workspace.context.js';
 import { cloneTemplate } from '../utils/template.js';
+import { LeLøginAssetThumbnailController } from '../assets/asset-thumbnail.controller.js';
 
 interface ConditionEditorElement extends HTMLElement {
 	conditionMetadata: ConditionMetadata | null;
@@ -128,6 +129,7 @@ export class LeLøginScreenRuleWorkspace extends UmbElementMixin(HTMLElement) {
 	#isLoading = true;
 	#layout: HTMLElement;
 	#assetModalRouteBuilder: UmbModalRouteBuilder | null = null;
+	#thumbnails = new LeLøginAssetThumbnailController(this, () => this.#syncThumbnails());
 
 	constructor() {
 		super();
@@ -310,9 +312,23 @@ export class LeLøginScreenRuleWorkspace extends UmbElementMixin(HTMLElement) {
 		}
 
 		const image = queryRequired(card, 'img', isHtmlImageElement, 'asset thumbnail image');
-		image.src = `/umbraco/le-løgin/api/v1/assets/${encodeURIComponent(asset.id)}/thumbnail`;
+		const thumbnailUrl = this.#thumbnails.peek(asset.id);
+		if (thumbnailUrl !== undefined) image.src = thumbnailUrl;
 		image.alt = asset.altText ?? asset.name;
 		return card;
+	}
+
+	/** Fills in thumbnails that finished loading after their cards were built. */
+	#syncThumbnails() {
+		for (const card of this.#layout.querySelectorAll<HTMLElement>(
+			'uui-card-media[data-asset-id]'
+		)) {
+			const assetId = card.dataset['assetId'];
+			const image = card.querySelector('img');
+			if (assetId === undefined || image === null) continue;
+			const url = this.#thumbnails.peek(assetId);
+			if (url !== undefined && image.src !== url) image.src = url;
+		}
 	}
 
 	#buildAssetModalHref(assetId: string): string | undefined {

@@ -70,6 +70,84 @@ public sealed class LeLøginBackgroundMiddlewareTests
 		Assert.Equal("/login-screen/runtime-image-guid.jpg", context.Response.Headers.Location);
 	}
 
+	[Fact]
+	public async Task Keeps_Every_Image_An_Enabled_Rule_Can_Show_Published()
+	{
+		var middleware = new LeLøginBackgroundMiddleware(_ =>
+			throw new InvalidOperationException("The next middleware must not run when a background is resolved."));
+		var context = new DefaultHttpContext();
+		context.Request.Path = BackgroundUrl;
+		var runtimeState = new Mock<IRuntimeState>();
+		runtimeState.SetupGet(state => state.Level).Returns(RuntimeLevel.Run);
+		var fileService = new StubFileService();
+
+		await middleware.InvokeAsync(
+			context,
+			StoreWithAnInactiveRuleImage(),
+			fileService,
+			new LeLøginScreenRuntimeResolver(),
+			new FixedMayTimeProvider(),
+			Options.Create(new ImageSharpMiddlewareOptions()),
+			new NullLogger<LeLøginBackgroundMiddleware>(),
+			runtimeState: runtimeState.Object);
+
+		Assert.Equal("asset-live", fileService.PublishedImageAssetId);
+		Assert.Equal(["asset-december", "asset-live"], fileService.KeptAssetIds);
+	}
+
+	/// <summary>
+	/// A December rule that does not match today, a catch-all that does, a logo, and a
+	/// background no rule uses. Only the two rule images may stay published.
+	/// </summary>
+	internal static FakeLeLøginScreenStore StoreWithAnInactiveRuleImage() => new FakeLeLøginScreenStore()
+		.WithAsset(Background("asset-december"))
+		.WithAsset(Background("asset-live"))
+		.WithAsset(Background("asset-unused"))
+		.WithAsset(new LoginImageAsset
+		{
+			Id = "asset-logo",
+			Name = "asset-logo",
+			Kind = LoginImageAssetKind.Logo,
+			StoragePath = "assets/asset-logo.svg",
+			Width = 120,
+			Height = 48
+		})
+		.WithRule(new LoginRule
+		{
+			Id = "rule-december",
+			Name = "December",
+			Priority = 10,
+			Enabled = true,
+			Condition = "{\"and\":[{\"==\":[{\"var\":\"month\"},12]}]}",
+			AssetIds = ["asset-december"]
+		})
+		.WithRule(new LoginRule
+		{
+			Id = "rule-catch-all",
+			Name = "Catch-all",
+			Priority = 20,
+			Enabled = true,
+			Condition = "{\"and\":[]}",
+			AssetIds = ["asset-live"]
+		});
+
+	private static LoginImageAsset Background(string id) => new()
+	{
+		Id = id,
+		Name = id,
+		Kind = LoginImageAssetKind.Background,
+		StoragePath = $"assets/{id}.png",
+		Width = 1920,
+		Height = 1080
+	};
+
+	private sealed class FixedMayTimeProvider : TimeProvider
+	{
+		public override TimeZoneInfo LocalTimeZone => TimeZoneInfo.Utc;
+
+		public override DateTimeOffset GetUtcNow() => new(2026, 5, 18, 9, 0, 0, TimeSpan.Zero);
+	}
+
 	private const string ConfigWithBackground = """
 	{
 	  "assets": [
@@ -107,10 +185,20 @@ public sealed class LeLøginBackgroundMiddlewareTests
 		public Task<(string storagePath, int width, int height)> SaveUploadAsync(string assetId, IFormFile file)
 			=> throw new NotSupportedException();
 
-		public void DeleteAsset(string assetId) => throw new NotSupportedException();
+		public void DeleteAsset(LoginImageAsset asset) => throw new NotSupportedException();
 
-		public Task<PublishedRuntimeAssetPaths> EnsureRuntimeAssetsAsync(LoginImageAsset imageAsset)
-			=> Task.FromResult(new PublishedRuntimeAssetPaths("/login-screen/runtime-image-guid.jpg"));
+		public string? PublishedImageAssetId { get; private set; }
+
+		public IReadOnlyList<string> KeptAssetIds { get; private set; } = [];
+
+		public Task<PublishedRuntimeAssetPaths> EnsureRuntimeAssetsAsync(
+			LoginImageAsset imageAsset,
+			IReadOnlyCollection<LoginImageAsset> assetsToKeepPublished)
+		{
+			PublishedImageAssetId = imageAsset.Id;
+			KeptAssetIds = [.. assetsToKeepPublished.Select(asset => asset.Id).Order(StringComparer.Ordinal)];
+			return Task.FromResult(new PublishedRuntimeAssetPaths("/login-screen/runtime-image-guid.jpg"));
+		}
 
 		public Task<EncodedThumbnail> GetThumbnailAsync(LoginImageAsset asset)
 			=> throw new NotSupportedException();

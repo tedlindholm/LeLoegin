@@ -9,6 +9,7 @@ import {
 import { LeLøginScreenActiveScreenRepository } from './active-screen.repository.js';
 import type { ActiveLeLøginScreenResponse } from '../models/index.js';
 import { cloneTemplate } from '../utils/template.js';
+import { LeLøginAssetThumbnailController } from '../assets/asset-thumbnail.controller.js';
 import { LOGIN_SCREEN_RULE_LIST_WORKSPACE_PATH } from '../rules/entity-types.js';
 
 type LeLøginScreenOverviewState = 'loading' | 'loaded' | 'empty' | 'error';
@@ -41,17 +42,13 @@ const optional = <K extends string, V>(
 const cropFocalPoint = (activeImage: ActiveLeLøginScreenResponse | undefined) =>
 	activeImage?.zoom !== undefined && activeImage.zoom > 1 ? undefined : activeImage?.focalPoint;
 
-const logoThumbnailUrl = (logoAssetId: string | undefined) =>
-	logoAssetId === undefined
-		? undefined
-		: `/umbraco/le-løgin/api/v1/assets/${encodeURIComponent(logoAssetId)}/thumbnail`;
-
 /**
  * Overview dashboard for the Login Screen section.
  * Shows the current active image preview.
  */
 export class LeLøginScreenOverviewDashboard extends UmbElementMixin(HTMLElement) {
 	#repository = new LeLøginScreenActiveScreenRepository(this);
+	#thumbnails = new LeLøginAssetThumbnailController(this, () => this.#render());
 	#state: LeLøginScreenOverviewState = 'loading';
 	#activeImage: ActiveLeLøginScreenResponse | undefined;
 	#authPreview: HTMLElement | undefined;
@@ -92,6 +89,10 @@ export class LeLøginScreenOverviewDashboard extends UmbElementMixin(HTMLElement
 	override disconnectedCallback() {
 		this.#disposeAuthPreviewObserver();
 		super.disconnectedCallback();
+	}
+
+	#logoThumbnailUrl(logoAssetId: string | undefined) {
+		return logoAssetId === undefined ? undefined : this.#thumbnails.peek(logoAssetId);
 	}
 
 	#render() {
@@ -215,7 +216,7 @@ export class LeLøginScreenOverviewDashboard extends UmbElementMixin(HTMLElement
 			...optional('imageUrl', activeImage?.imageUrl),
 			...optional('greetingText', activeImage?.greetingText),
 			...optional('focalPoint', cropFocalPoint(activeImage)),
-			...optional('logoUrl', logoThumbnailUrl(activeImage?.logoAssetId)),
+			...optional('logoUrl', this.#logoThumbnailUrl(activeImage?.logoAssetId)),
 			mode: 'preview',
 			previewHeight: '100%'
 		};

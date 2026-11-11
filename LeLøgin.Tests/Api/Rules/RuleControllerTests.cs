@@ -1,10 +1,13 @@
 using LeLøgin.Core.Api.Rules;
+using LeLøgin.Core.Api.Runtime;
 using LeLøgin.Core.Runtime;
 using LeLøgin.Core.Storage;
 using LeLøgin.Tests.Storage;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Web.Middleware;
 using Xunit;
 
@@ -131,6 +134,33 @@ public sealed class RuleControllerTests : IDisposable
 	}
 
 	[Fact]
+	public async Task Preview_Of_An_Image_No_Enabled_Rule_Uses_Keeps_The_Live_Login_Image_Published()
+	{
+		var store = CreateStore("""
+		{
+		  "assets": [
+		    { "id": "asset-live", "name": "Live", "kind": "background", "storagePath": "assets/live.png", "width": 12, "height": 12, "updatedAt": "2026-05-15T00:00:00Z" },
+		    { "id": "asset-draft", "name": "Draft", "kind": "background", "storagePath": "assets/draft.png", "width": 12, "height": 12, "updatedAt": "2026-05-16T00:00:00Z" }
+		  ],
+		  "rules": [
+		    { "id": "rule-live", "name": "Live", "priority": 100, "enabled": true, "condition": "{\"and\":[]}", "assetId": "asset-live" },
+		    { "id": "rule-draft", "name": "Draft", "priority": 200, "enabled": false, "condition": "{\"and\":[]}", "assetId": "asset-draft" }
+		  ]
+		}
+		""");
+		await CreateSourceImageAsync("live.png");
+		await CreateSourceImageAsync("draft.png");
+		var controller = CreateController(store);
+
+		var live = await PreviewAsync(controller, "rule-live");
+		var draft = await PreviewAsync(controller, "rule-draft");
+
+		Assert.NotEqual(live.ImageUrl, draft.ImageUrl);
+		Assert.True(File.Exists(ToPublicFilePath(live.ImageUrl)));
+		Assert.True(File.Exists(ToPublicFilePath(draft.ImageUrl)));
+	}
+
+	[Fact]
 	public async Task Preview_Returns_NoContent_When_Rules_Asset_Is_Missing()
 	{
 		// Rule references an asset id that doesn't exist — the preview can't render anything.
@@ -253,6 +283,26 @@ public sealed class RuleControllerTests : IDisposable
 		}
 	}
 
+	private static async Task<ActiveLeLøginScreenResponse> PreviewAsync(RuleController controller, string ruleId)
+	{
+		var result = Assert.IsType<OkObjectResult>(await controller.Preview(ruleId));
+		return Assert.IsType<ActiveLeLøginScreenResponse>(result.Value);
+	}
+
+	private async Task CreateSourceImageAsync(string fileName)
+	{
+		var assetRoot = Path.Combine(_contentRootPath, "App_Data", "LeLøgin", "assets");
+		Directory.CreateDirectory(assetRoot);
+		using var image = new Image<Rgba32>(12, 12, Color.CornflowerBlue.ToPixel<Rgba32>());
+		await image.SaveAsPngAsync(Path.Combine(assetRoot, fileName));
+	}
+
+	private string ToPublicFilePath(string imageUrl)
+	{
+		var path = imageUrl.Split('?')[0].TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+		return Path.Combine(_contentRootPath, "wwwroot", path);
+	}
+
 	private static FakeLeLøginScreenStore CreateStore(string configJson) =>
 		FakeLeLøginScreenStoreSeed.FromConfigJson(configJson);
 
@@ -265,6 +315,7 @@ public sealed class RuleControllerTests : IDisposable
 		return new RuleController(
 			store,
 			fileService,
+			new LeLøginScreenRuntimeResolver(),
 			new NullLogger<RuleController>(),
 			Options.Create(new ImageSharpMiddlewareOptions()));
 	}

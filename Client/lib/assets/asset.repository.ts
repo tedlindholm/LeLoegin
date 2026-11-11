@@ -132,6 +132,16 @@ export class LeLøginScreenAssetRepository extends UmbRepositoryBase {
 	async requestPreview(unique: string) {
 		return this.#dataSource.getAssetPreview(unique);
 	}
+
+	/**
+	 * Retrieves an authenticated thumbnail blob for an asset.
+	 *
+	 * @param unique - The unique identifier of the asset
+	 * @returns A promise resolving to an object with the thumbnail blob or error
+	 */
+	async requestThumbnail(unique: string) {
+		return this.#dataSource.getAssetThumbnail(unique);
+	}
 }
 
 export type LeLøginScreenAssetRepositoryResponse = Awaited<

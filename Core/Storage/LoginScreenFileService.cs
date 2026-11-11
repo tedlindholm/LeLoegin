@@ -7,6 +7,7 @@ using SixLabors.ImageSharp.Processing;
 using System.Security.Cryptography;
 using System.Text;
 using System.Globalization;
+using System.Xml;
 using System.Xml.Linq;
 
 namespace LeLøgin.Core.Storage;
@@ -51,29 +52,81 @@ public sealed class LeLøginScreenFileService(
         }
 
         using var stream = file.OpenReadStream();
-        assetManager.FileSystem.AddFile(relativePath, stream);
-
-        using var opened = assetManager.FileSystem.OpenFile(relativePath);
-        using var image = await Image.LoadAsync(opened);
-        return (relativePath, width: image.Width, height: image.Height);
-    }
-
-    public void DeleteAsset(string assetId)
-    {
-        foreach (var relativePath in assetManager.FileSystem.GetFiles(AssetsPrefix.TrimEnd('/'), $"{assetId}.*"))
+        Image image;
+        try
         {
-            assetManager.FileSystem.DeleteFile(relativePath);
+            image = await Image.LoadAsync(stream);
+        }
+        catch (Exception ex) when (ex is UnknownImageFormatException or InvalidImageContentException)
+        {
+            throw new InvalidDataException("The uploaded file is not a valid image.", ex);
+        }
+
+        using (image)
+        {
+            using var validatedStream = file.OpenReadStream();
+            assetManager.FileSystem.AddFile(relativePath, validatedStream);
+            return (relativePath, width: image.Width, height: image.Height);
         }
     }
 
-    public async Task<PublishedRuntimeAssetPaths> EnsureRuntimeAssetsAsync(LoginImageAsset imageAsset)
+    public void DeleteAsset(LoginImageAsset asset)
     {
+        ArgumentNullException.ThrowIfNull(asset);
+
+        DeleteFilesStartingWith(assetManager.FileSystem, AssetsPrefix, $"{asset.Id}.");
+        DeleteFilesStartingWith(assetManager.FileSystem, ThumbnailsPrefix, $"{asset.Id}-");
+
+        // Only the current version's name is known; earlier versions were removed when this
+        // one was published.
+        var publishedFileName = CreateRuntimeImageFileName(asset);
+        if (publishManager.FileSystem.FileExists(publishedFileName))
+        {
+            publishManager.FileSystem.DeleteFile(publishedFileName);
+        }
+    }
+
+    /// <summary>
+    /// Deletes the files in <paramref name="directory"/> whose name starts with
+    /// <paramref name="fileNamePrefix"/>. Matches names here instead of passing a glob to
+    /// <see cref="Umbraco.Cms.Core.IO.IFileSystem.GetFiles(string, string)"/>, because the Azure
+    /// Blob provider treats that filter as a literal substring and a glob such as <c>id.*</c>
+    /// matches nothing.
+    /// </summary>
+    private static void DeleteFilesStartingWith(
+        Umbraco.Cms.Core.IO.IFileSystem fileSystem,
+        string directory,
+        string fileNamePrefix)
+    {
+        var matches = fileSystem.GetFiles(directory.TrimEnd('/'))
+            .Where(path => Path.GetFileName(path).StartsWith(fileNamePrefix, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        foreach (var path in matches)
+        {
+            fileSystem.DeleteFile(path);
+        }
+    }
+
+    public async Task<PublishedRuntimeAssetPaths> EnsureRuntimeAssetsAsync(
+        LoginImageAsset imageAsset,
+        IReadOnlyCollection<LoginImageAsset> assetsToKeepPublished)
+    {
+        ArgumentNullException.ThrowIfNull(imageAsset);
+        ArgumentNullException.ThrowIfNull(assetsToKeepPublished);
+
         var imageFileName = CreateRuntimeImageFileName(imageAsset);
 
         try
         {
-            await PublishImageIfMissingAsync(imageAsset.StoragePath, imageFileName);
-            PruneStalePublications(imageFileName);
+            // Clean up only after writing a new file. An image that is already published
+            // costs no listing and no deletes, so a public request cannot remove a file
+            // another visitor was just redirected to.
+            if (await PublishImageIfMissingAsync(imageAsset.StoragePath, imageFileName))
+            {
+                PruneStalePublications(imageFileName, assetsToKeepPublished);
+            }
+
             return new PublishedRuntimeAssetPaths(publishManager.GetPublicUrl(imageFileName));
         }
         catch (Exception ex)
@@ -118,13 +171,20 @@ public sealed class LeLøginScreenFileService(
             assetManager.FileSystem.GetLastModified(cacheFileName).UtcDateTime);
     }
 
-    private void PruneStalePublications(string keepImageFileName)
+    private void PruneStalePublications(
+        string publishedImageFileName,
+        IReadOnlyCollection<LoginImageAsset> assetsToKeepPublished)
     {
         try
         {
+            var keepFileNames = assetsToKeepPublished
+                .Select(CreateRuntimeImageFileName)
+                .Append(publishedImageFileName)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
             foreach (var existing in publishManager.FileSystem.GetFiles(""))
             {
-                if (!string.Equals(existing, keepImageFileName, StringComparison.OrdinalIgnoreCase))
+                if (!keepFileNames.Contains(existing))
                 {
                     publishManager.FileSystem.DeleteFile(existing);
                 }
@@ -177,11 +237,12 @@ public sealed class LeLøginScreenFileService(
         return $"{exposureId}.jpg";
     }
 
-    private async Task PublishImageIfMissingAsync(string storagePath, string publishFileName)
+    /// <returns><c>true</c> when the image was written; <c>false</c> when it was already published.</returns>
+    private async Task<bool> PublishImageIfMissingAsync(string storagePath, string publishFileName)
     {
         if (publishManager.FileSystem.FileExists(publishFileName))
         {
-            return;
+            return false;
         }
 
         using var sourceStream = assetManager.FileSystem.OpenFile(storagePath);
@@ -190,6 +251,7 @@ public sealed class LeLøginScreenFileService(
         await image.SaveAsJpegAsync(encoded);
         encoded.Position = 0;
         publishManager.FileSystem.AddFile(publishFileName, encoded);
+        return true;
     }
 
     private static Guid CreateDeterministicExposureId(LoginImageAsset imageAsset)
@@ -233,23 +295,78 @@ public sealed class LeLøginScreenFileService(
         return (width > 0 ? width : viewBoxWidth, height > 0 ? height : viewBoxHeight);
     }
 
+    private static readonly XNamespace SvgNamespace = "http://www.w3.org/2000/svg";
+
+    /// <summary>
+    /// SVG elements a logo may contain: shapes, text, paint servers, clipping, filters and
+    /// embedded images. Anything else — <c>script</c>, <c>foreignObject</c>, <c>a</c>, the
+    /// animation elements and elements from other namespaces — is removed with its content.
+    /// </summary>
+    private static readonly HashSet<string> AllowedSvgElements = new(StringComparer.Ordinal)
+    {
+        "svg", "g", "defs", "symbol", "use", "switch", "title", "desc", "style",
+        "path", "rect", "circle", "ellipse", "line", "polyline", "polygon",
+        "text", "tspan", "textPath",
+        "linearGradient", "radialGradient", "stop", "pattern", "clipPath", "mask", "marker", "image",
+        "filter", "feBlend", "feColorMatrix", "feComponentTransfer", "feComposite", "feConvolveMatrix",
+        "feDiffuseLighting", "feDisplacementMap", "feDistantLight", "feDropShadow", "feFlood",
+        "feFuncA", "feFuncB", "feFuncG", "feFuncR", "feGaussianBlur", "feImage", "feMerge",
+        "feMergeNode", "feMorphology", "feOffset", "fePointLight", "feSpecularLighting",
+        "feSpotLight", "feTile", "feTurbulence",
+    };
+
+    /// <summary>Embedded raster images an <c>href</c> may carry. SVG data URLs are excluded.</summary>
+    private static readonly string[] AllowedDataImagePrefixes =
+    [
+        "data:image/png", "data:image/jpeg", "data:image/jpg", "data:image/gif", "data:image/webp",
+    ];
+
+    /// <summary>
+    /// Reduces an uploaded SVG to drawing content only, using an allowlist of elements and
+    /// link targets. The DTD is ignored and dropped, so exported files with a DOCTYPE still load
+    /// but no entity is expanded.
+    /// </summary>
+    /// <exception cref="InvalidDataException">The upload is not well-formed SVG.</exception>
     private static MemoryStream SanitiseSvg(Stream input)
     {
-        var document = XDocument.Load(input);
-
-        var scripts = document.Descendants()
-            .Where(e => e.Name.LocalName.Equals("script", StringComparison.OrdinalIgnoreCase))
-            .ToList();
-        foreach (var script in scripts)
+        XDocument document;
+        try
         {
-            script.Remove();
+            var settings = new XmlReaderSettings { DtdProcessing = DtdProcessing.Ignore, XmlResolver = null };
+            using var reader = XmlReader.Create(input, settings);
+            document = XDocument.Load(reader);
+        }
+        catch (XmlException ex)
+        {
+            throw new InvalidDataException("The SVG file is not well-formed XML.", ex);
         }
 
-        foreach (var element in document.Descendants())
+        if (document.Root is null || !IsAllowedElement(document.Root) || document.Root.Name.LocalName != "svg")
         {
-            var dangerous = element.Attributes().Where(IsUnsafeAttribute).ToList();
-            foreach (var attr in dangerous)
-                attr.Remove();
+            throw new InvalidDataException("The file is not an SVG image.");
+        }
+
+        document.DocumentType?.Remove();
+        foreach (var node in document.Nodes().OfType<XProcessingInstruction>().ToList())
+        {
+            node.Remove();
+        }
+
+        foreach (var element in document.Root.Descendants().Where(element => !IsAllowedElement(element)).ToList())
+        {
+            // An ancestor may already have been removed, taking this element with it.
+            if (element.Parent is not null)
+            {
+                element.Remove();
+            }
+        }
+
+        foreach (var element in document.Root.DescendantsAndSelf())
+        {
+            foreach (var attribute in element.Attributes().Where(IsUnsafeAttribute).ToList())
+            {
+                attribute.Remove();
+            }
         }
 
         var output = new MemoryStream();
@@ -258,14 +375,37 @@ public sealed class LeLøginScreenFileService(
         return output;
     }
 
-    private static bool IsUnsafeAttribute(XAttribute attr)
+    private static bool IsAllowedElement(XElement element) =>
+        (element.Name.Namespace == SvgNamespace || element.Name.Namespace == XNamespace.None)
+        && AllowedSvgElements.Contains(element.Name.LocalName);
+
+    private static bool IsUnsafeAttribute(XAttribute attribute)
     {
-        var name = attr.Name.LocalName;
+        if (attribute.IsNamespaceDeclaration)
+        {
+            return false;
+        }
+
+        var name = attribute.Name.LocalName;
         if (name.StartsWith("on", StringComparison.OrdinalIgnoreCase))
+        {
             return true;
-        if (name is "href" or "src" or "action" or "formaction")
-            return attr.Value.TrimStart().StartsWith("javascript:", StringComparison.OrdinalIgnoreCase);
-        return false;
+        }
+
+        // Covers both `href` and `xlink:href`.
+        return name.Equals("href", StringComparison.OrdinalIgnoreCase) && !IsSafeLinkTarget(attribute.Value);
+    }
+
+    /// <summary>
+    /// A link may point inside the document (<c>#id</c>) or embed a raster image. Whitespace
+    /// and control characters are removed first, because browsers ignore them inside a URL
+    /// scheme (<c>java&amp;#9;script:</c>).
+    /// </summary>
+    private static bool IsSafeLinkTarget(string value)
+    {
+        var compact = new string(value.Where(character => !char.IsWhiteSpace(character) && !char.IsControl(character)).ToArray());
+        return compact.StartsWith('#')
+            || AllowedDataImagePrefixes.Any(prefix => compact.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
     }
 
     private static int ParseSvgLength(string? value)

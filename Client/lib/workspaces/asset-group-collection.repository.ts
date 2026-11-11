@@ -11,7 +11,6 @@ export interface LeLøginAssetCollectionItemModel {
 	entityType: string;
 	name: string;
 	altText: string | undefined;
-	thumbnailUrl: string;
 	editHref: string;
 }
 
@@ -38,7 +37,6 @@ export class LeLøginScreenAssetGroupCollectionRepository
 			entityType: LOGIN_SCREEN_ASSET_ENTITY_TYPE,
 			name: asset.name,
 			altText: asset.altText,
-			thumbnailUrl: `/umbraco/le-løgin/api/v1/assets/${encodeURIComponent(asset.id)}/thumbnail`,
 			editHref: `/umbraco/section/settings/workspace/${LOGIN_SCREEN_ASSET_ENTITY_TYPE}/edit/${encodeURIComponent(asset.id)}`
 		}));
 

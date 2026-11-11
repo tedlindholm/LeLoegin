@@ -4,6 +4,7 @@ import styles from './logo-picker-modal.element.css?inline';
 import type { LogoPickerModalData, LogoPickerModalValue } from './logo-picker-modal.token.js';
 import { UMBRACO_LOGO_SVG } from './asset-workspace.helpers.js';
 import { cloneTemplate } from '../utils/template.js';
+import { LeLøginAssetThumbnailController } from '../assets/asset-thumbnail.controller.js';
 
 type ElementGuard<T extends Element> = (value: Element | null) => value is T;
 
@@ -58,6 +59,7 @@ export class LeLøginLogoPickerModalElement
 {
 	#modalContext: UmbModalContext<LogoPickerModalData, LogoPickerModalValue> | undefined;
 	#layout: HTMLElement;
+	#thumbnails = new LeLøginAssetThumbnailController(this, () => this.#render());
 
 	get modalContext() {
 		return this.#modalContext;
@@ -162,7 +164,8 @@ export class LeLøginLogoPickerModalElement
 		}
 
 		const image = queryRequired(card, 'img', isHtmlImageElement, 'logo thumbnail image');
-		image.src = `/umbraco/le-løgin/api/v1/assets/${encodeURIComponent(asset.id)}/thumbnail`;
+		const thumbnailUrl = this.#thumbnails.peek(asset.id);
+		if (thumbnailUrl !== undefined) image.src = thumbnailUrl;
 		image.alt = asset.altText ?? asset.name;
 
 		return card;

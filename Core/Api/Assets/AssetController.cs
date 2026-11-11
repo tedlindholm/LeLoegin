@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.ComponentModel.DataAnnotations;
 using LeLøgin.Core.Models;
@@ -14,9 +15,16 @@ namespace LeLøgin.Core.Api.Assets;
 /// <summary>
 /// Manages login screen image assets — list, get, upload, delete.
 /// </summary>
-public class AssetController(ILeLøginScreenStore store, ILeLøginScreenFileService fileService, IFileStreamSecurityValidator fileStreamSecurityValidator, IOptionsMonitor<ContentSettings> contentSettings, LeLøginAssetFileManager assetManager) : ApiControllerBase
+public class AssetController(
+	ILeLøginScreenStore store,
+	ILeLøginScreenFileService fileService,
+	IFileStreamSecurityValidator fileStreamSecurityValidator,
+	IOptionsMonitor<ContentSettings> contentSettings,
+	LeLøginAssetFileManager assetManager,
+	ILogger<AssetController> logger) : ApiControllerBase
 {
-	private const long MaxUploadSizeBytes = 10 * 1024 * 1024; // 10 MB
+	private const long MaxUploadSizeBytes = 10 * 1024 * 1024;
+	private const long MaxUploadRequestSizeBytes = MaxUploadSizeBytes + 64 * 1024; // Multipart fields and headers.
 
 	[HttpGet("assets")]
 	[ProducesResponseType<IEnumerable<LoginImageAsset>>(StatusCodes.Status200OK)]
@@ -58,7 +66,7 @@ public class AssetController(ILeLøginScreenStore store, ILeLøginScreenFileServ
 				? resolvedContentType
 				: "application/octet-stream";
 
-			Response.Headers.XContentTypeOptions = "nosniff";
+			ImageResponseHeaders.Apply(Response);
 			var stream = assetManager.FileSystem.OpenFile(asset.StoragePath);
 			return File(stream, contentType);
 		}
@@ -68,7 +76,56 @@ public class AssetController(ILeLøginScreenStore store, ILeLøginScreenFileServ
 		}
 	}
 
+	/// <summary>
+	/// Returns a downscaled WebP of the asset, or the sanitised source for SVG assets, for the
+	/// backoffice cards and editor previews.
+	/// </summary>
+	[HttpGet("assets/{id}/thumbnail")]
+	[ProducesResponseType(StatusCodes.Status200OK)]
+	[ProducesResponseType(StatusCodes.Status304NotModified)]
+	[ProducesResponseType(StatusCodes.Status404NotFound)]
+	public async Task<IActionResult> Thumbnail(string id)
+	{
+		var asset = await store.GetAssetAsync(id);
+		if (asset is null)
+		{
+			return NotFound();
+		}
+
+		EncodedThumbnail thumbnail;
+		try
+		{
+			thumbnail = await fileService.GetThumbnailAsync(asset);
+		}
+		catch (UnauthorizedAccessException)
+		{
+			return NotFound();
+		}
+		catch (Exception ex)
+		{
+			logger.LogError(ex, "Failed to encode thumbnail for asset {AssetId}", id);
+			return NotFound();
+		}
+
+		try
+		{
+			ImageResponseHeaders.Apply(Response);
+			var stream = assetManager.FileSystem.OpenFile(thumbnail.FileName);
+			// Passing the modification time lets MVC answer If-Modified-Since with 304.
+			return new FileStreamResult(stream, thumbnail.ContentType)
+			{
+				LastModified = new DateTimeOffset(thumbnail.LastModifiedUtc, TimeSpan.Zero),
+			};
+		}
+		catch (UnauthorizedAccessException)
+		{
+			return NotFound();
+		}
+	}
+
 	[HttpPost("assets")]
+	[RequestSizeLimit(MaxUploadRequestSizeBytes)]
+	[RequestFormLimits(MultipartBodyLengthLimit = MaxUploadSizeBytes)]
 	[Consumes("multipart/form-data")]
 	[ProducesResponseType<LoginImageAsset>(StatusCodes.Status201Created)]
 	[ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -116,7 +173,17 @@ public class AssetController(ILeLøginScreenStore store, ILeLøginScreenFileServ
 		}
 
 		var id = Guid.NewGuid().ToString("N");
-		var (storagePath, width, height) = await fileService.SaveUploadAsync(id, file);
+		string storagePath;
+		int width;
+		int height;
+		try
+		{
+			(storagePath, width, height) = await fileService.SaveUploadAsync(id, file);
+		}
+		catch (InvalidDataException ex)
+		{
+			return BadRequest(ex.Message);
+		}
 
 		var asset = new LoginImageAsset
 		{
@@ -200,9 +267,39 @@ public class AssetController(ILeLøginScreenStore store, ILeLøginScreenFileServ
 			}
 		}
 
-		fileService.DeleteAsset(id);
+		await RemoveFromRulesAsync(id);
+
+		fileService.DeleteAsset(asset);
 		await store.DeleteAssetAsync(id);
 		return NoContent();
+	}
+
+	/// <summary>
+	/// Removes a deleted asset from every rule that shows it. A rule left without images is
+	/// disabled rather than deleted, so its name, condition and priority survive until an
+	/// editor gives it a new image.
+	/// </summary>
+	private async Task RemoveFromRulesAsync(string assetId)
+	{
+		var rules = await store.GetAllRulesAsync();
+		foreach (var rule in rules)
+		{
+			var remainingAssetIds = rule.AssetIds
+				.Where(candidate => !string.Equals(candidate, assetId, StringComparison.OrdinalIgnoreCase))
+				.ToList();
+			if (remainingAssetIds.Count == rule.AssetIds.Count)
+			{
+				continue;
+			}
+
+			rule.AssetIds = remainingAssetIds;
+			if (remainingAssetIds.Count == 0)
+			{
+				rule.Enabled = false;
+			}
+
+			await store.UpsertRuleAsync(rule);
+		}
 	}
 
 	[HttpPost("assets/{id}/publish")]

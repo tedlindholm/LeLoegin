@@ -16,9 +16,10 @@
 A dedicated **Le Løgin** product area inside the Umbraco **Settings** section where authorised admins can:
 
 - Upload and manage login-screen images
-- Mark a selected image as the explicit Le Løgin fallback background when no rule wins
-- Preview the published image in a login-style Overview surface
-- Prepare for future rules, rule resolution, and preview flows
+- Decide which image shows when with prioritised rules; a rule can show one image or a random pick from several
+- Preview each rule's image in a login-style Overview surface
+
+When no rule matches, Le Løgin passes the request on and Umbraco's own login image and logo show (`Umbraco:CMS:Content:LoginBackgroundImage` and `LoginLogoImage`). Le Løgin has no fallback image of its own; use a catch-all rule for one.
 
 ## What This Package Is Not
 
@@ -86,20 +87,25 @@ login-screen-rule
 
 ### API Routes
 
-Current routes:
+Management routes (backoffice authentication and the Le Løgin permission):
 
 ```text
 /umbraco/le-løgin/api/v{version}/assets
+/umbraco/le-løgin/api/v{version}/assets/{id}
+/umbraco/le-løgin/api/v{version}/assets/{id}/preview
+/umbraco/le-løgin/api/v{version}/assets/{id}/thumbnail
+/umbraco/le-løgin/api/v{version}/rules
+/umbraco/le-løgin/api/v{version}/rules/{id}
+/umbraco/le-løgin/api/v{version}/rules/{id}/preview
+/umbraco/le-løgin/api/v{version}/rules/condition-metadata
 /umbraco/le-løgin/api/v{version}/settings
-/umbraco/le-løgin/api/v{version}/runtime/active   ← public, read-only
 ```
 
-Planned later:
+Public routes (pre-auth, read-only):
 
 ```text
-/umbraco/le-løgin/api/v{version}/rules
-/umbraco/le-løgin/api/v{version}/rules
-/umbraco/le-løgin/api/v{version}/preview
+/umbraco/le-løgin/api/v{version}/runtime/active
+/umbraco/le-løgin/api/v{version}/runtime/greeting.js
 ```
 
 ### C# Namespaces
@@ -159,8 +165,9 @@ Client/lib/
 
 - Package-owned storage for source assets — do not use the editorial media library
 - Source images live under `App_Data/LeLøgin/assets/`
-- The explicit publish flow records the Le Løgin fallback asset in settings, while runtime resolution publishes GUID-backed exposure files under `wwwroot/login-screen/`
-- Keep a path open for custom `IFileSystem` or Azure Blob later
+- Runtime resolution publishes GUID-named copies under `wwwroot/login-screen/` (the default publish file system): one for each image an enabled rule can show
+- All file access goes through Umbraco's `IFileSystem`, via `LeLøginAssetFileManager` and `LeLøginPublishFileManager`; hosts replace them with `SetLoginAssetFileSystem` / `SetLoginPublishFileSystem`
+- The `LeLøgin.AzureBlob` adapter is a maintained part of the package. File handling must work on both the physical file system and Azure Blob. For example, the Azure provider matches a `GetFiles` filter as a literal substring, so do not pass glob patterns such as `id.*`; list the folder and match names in code
 
 ## Technology Split
 
@@ -229,4 +236,5 @@ cd /Users/ted/Repos/Login/Client && pnpm test:unit
 - Asset management follows `data source → repository → workspace context → element`
 - Runtime logic is implemented and fetches `/umbraco/le-løgin/api/v1/runtime/active`
 - Localisations currently ship for `en`, `da`, `sv`, `fi`, and `nb-no`
-- Rules and preview authoring are still planned work; Le Løgin should not add a duplicate fallback image settings UI when Umbraco already provides one
+- Rules and rule preview are implemented
+- Le Løgin should not add a duplicate fallback image settings UI when Umbraco already provides one

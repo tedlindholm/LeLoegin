@@ -106,6 +106,29 @@ public sealed class AssetControllerTests : IDisposable
 		Assert.False(File.Exists(Path.Combine(_contentRootPath, "wwwroot", "login-screen", "active-logo.svg")));
 	}
 
+	[Theory]
+	[InlineData("<svg xmlns=\"http://www.w3.org/2000/svg\"><unclosed></svg>")]
+	[InlineData("<html xmlns=\"http://www.w3.org/1999/xhtml\"><body>not a logo</body></html>")]
+	public async Task Upload_Returns_BadRequest_For_A_Logo_That_Is_Not_Valid_Svg(string markup)
+	{
+		var store = new FakeLeLøginScreenStore();
+		var controller = CreateController(store);
+		var content = System.Text.Encoding.UTF8.GetBytes(markup);
+		var request = new UploadAssetRequest
+		{
+			File = new FormFile(new MemoryStream(content), 0, content.Length, "file", "logo.svg"),
+			Name = "Broken logo",
+			Kind = LoginImageAssetKind.Logo
+		};
+
+		var result = await controller.Upload(request);
+
+		Assert.IsType<BadRequestObjectResult>(result);
+		Assert.Empty(await store.GetAllAssetsAsync());
+		var assetDirectory = Path.Combine(_contentRootPath, "App_Data", "LeLøgin", "assets");
+		Assert.False(Directory.Exists(assetDirectory) && Directory.EnumerateFiles(assetDirectory).Any());
+	}
+
 	[Fact]
 	public async Task Upload_Returns_BadRequest_When_File_Exceeds_10Mb_Limit()
 	{
@@ -350,6 +373,207 @@ public sealed class AssetControllerTests : IDisposable
 		Assert.Equal(1.0, asset.Zoom);
 	}
 
+	[Fact]
+	public async Task Delete_Removes_The_Image_From_Rules_And_Disables_A_Rule_Left_Without_Images()
+	{
+		var store = new FakeLeLøginScreenStore()
+			.WithAsset(Background("asset-deleted"))
+			.WithAsset(Background("asset-kept"))
+			.WithRule(Rule("rule-shared", ["asset-deleted", "asset-kept"]))
+			.WithRule(Rule("rule-only-deleted", ["asset-deleted"]))
+			.WithRule(Rule("rule-unaffected", ["asset-kept"]));
+		var controller = CreateController(store);
+
+		Assert.IsType<NoContentResult>(await controller.Delete("asset-deleted"));
+
+		Assert.Null(await store.GetAssetAsync("asset-deleted"));
+		var shared = await store.GetRuleAsync("rule-shared");
+		Assert.Equal(["asset-kept"], shared!.AssetIds);
+		Assert.True(shared.Enabled);
+		var onlyDeleted = await store.GetRuleAsync("rule-only-deleted");
+		Assert.Empty(onlyDeleted!.AssetIds);
+		Assert.False(onlyDeleted.Enabled);
+		var unaffected = await store.GetRuleAsync("rule-unaffected");
+		Assert.Equal(["asset-kept"], unaffected!.AssetIds);
+		Assert.True(unaffected.Enabled);
+	}
+
+	private static LoginImageAsset Background(string id) => new()
+	{
+		Id = id,
+		Name = id,
+		Kind = LoginImageAssetKind.Background,
+		StoragePath = $"assets/{id}.png",
+		Width = 1920,
+		Height = 1080
+	};
+
+	private static LoginRule Rule(string id, IReadOnlyList<string> assetIds) => new()
+	{
+		Id = id,
+		Name = id,
+		Priority = 100,
+		Enabled = true,
+		Condition = "{\"and\":[]}",
+		AssetIds = assetIds
+	};
+
+	[Fact]
+	public async Task Thumbnail_Returns_NotFound_When_Asset_Does_Not_Exist()
+	{
+		WriteConfig("""
+		{
+		  "assets": [],
+		  "settings": {
+		    "publicEndpointCacheSeconds": 300
+		  },
+		  "rules": []
+		}
+		""");
+
+		var store = CreateStore();
+		var controller = CreateController(store);
+
+		var result = await controller.Thumbnail("nonexistent-asset");
+
+		Assert.IsType<NotFoundResult>(result);
+	}
+
+	[Fact]
+	public async Task Thumbnail_Returns_NotFound_When_Source_File_Missing()
+	{
+		WriteConfig("""
+		{
+		  "assets": [
+		    {
+		      "id": "asset-missing-file",
+		      "name": "Missing",
+		      "kind": 0,
+		      "altText": null,
+		      "greetingText": null,
+		      "logoAssetId": null,
+		      "storagePath": "assets/nonexistent-file.png",
+		      "publicPath": null,
+		      "width": 100,
+		      "height": 100,
+		      "createdAt": "2026-05-15T00:00:00Z",
+		      "updatedAt": "2026-05-15T00:00:00Z"
+		    }
+		  ],
+		  "settings": {
+		    "publicEndpointCacheSeconds": 300
+		  },
+		  "rules": []
+		}
+		""");
+
+		var store = CreateStore();
+		var controller = CreateController(store);
+
+		var result = await controller.Thumbnail("asset-missing-file");
+
+		Assert.IsType<NotFoundResult>(result);
+	}
+
+	[Fact]
+	public async Task Thumbnail_Returns_NotFound_When_Relative_StoragePath_Escapes_Asset_Root()
+	{
+		WriteConfig("""
+		{
+		  "assets": [
+		    {
+		      "id": "asset-traversal",
+		      "name": "Traversal",
+		      "kind": 0,
+		      "altText": null,
+		      "greetingText": null,
+		      "logoAssetId": null,
+		      "storagePath": "../../etc/passwd",
+		      "publicPath": null,
+		      "width": 100,
+		      "height": 100,
+		      "createdAt": "2026-05-15T00:00:00Z",
+		      "updatedAt": "2026-05-15T00:00:00Z"
+		    }
+		  ],
+		  "settings": { "publicEndpointCacheSeconds": 300 },
+		  "rules": []
+		}
+		""");
+
+		var store = CreateStore();
+		var controller = CreateController(store);
+
+		var result = await controller.Thumbnail("asset-traversal");
+
+		Assert.IsType<NotFoundResult>(result);
+	}
+
+	[Fact]
+	public async Task Thumbnail_Returns_NotFound_When_Path_Is_Outside_Allowed_Directory()
+	{
+		var unsafePath = Path.Combine(_contentRootPath, "..", "../../etc/passwd");
+		Directory.CreateDirectory(Path.GetDirectoryName(unsafePath)!);
+		await File.WriteAllTextAsync(unsafePath, "unsafe");
+
+		WriteConfig($$"""
+		{
+		  "assets": [
+		    {
+		      "id": "asset-malicious",
+		      "name": "Malicious",
+		      "kind": 0,
+		      "altText": null,
+		      "greetingText": null,
+		      "logoAssetId": null,
+		      "storagePath": "{{unsafePath.Replace("\\", "\\\\", StringComparison.Ordinal)}}",
+		      "publicPath": null,
+		      "width": 100,
+		      "height": 100,
+		      "createdAt": "2026-05-15T00:00:00Z",
+		      "updatedAt": "2026-05-15T00:00:00Z"
+		    }
+		  ],
+		  "settings": {
+		    "publicEndpointCacheSeconds": 300
+		  },
+		  "rules": []
+		}
+		""");
+
+		var store = CreateStore();
+		var controller = CreateController(store);
+
+		var result = await controller.Thumbnail("asset-malicious");
+
+		Assert.IsType<NotFoundResult>(result);
+	}
+
+
+	[Fact]
+	public async Task Thumbnail_Serves_An_Svg_Logo_With_Headers_That_Stop_It_Running_Script()
+	{
+		var store = new FakeLeLøginScreenStore();
+		var controller = CreateController(store);
+		var markup = System.Text.Encoding.UTF8.GetBytes("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"10\" height=\"10\"><rect width=\"10\" height=\"10\"/></svg>");
+		var uploaded = Assert.IsType<CreatedAtActionResult>(await controller.Upload(new UploadAssetRequest
+		{
+			File = new FormFile(new MemoryStream(markup), 0, markup.Length, "file", "logo.svg"),
+			Name = "Logo",
+			Kind = LoginImageAssetKind.Logo
+		}));
+		var asset = Assert.IsType<LoginImageAsset>(uploaded.Value);
+
+		var result = Assert.IsType<FileStreamResult>(await controller.Thumbnail(asset.Id));
+		await result.FileStream.DisposeAsync();
+
+		Assert.Equal("image/svg+xml", result.ContentType);
+		Assert.NotNull(result.LastModified);
+		var headers = controller.ControllerContext.HttpContext.Response.Headers;
+		Assert.Equal("nosniff", headers.XContentTypeOptions);
+		Assert.Equal("default-src 'none'; style-src 'unsafe-inline'; sandbox", headers.ContentSecurityPolicy);
+	}
+
 	public void Dispose()
 	{
 		if (Directory.Exists(_contentRootPath))
@@ -373,7 +597,11 @@ public sealed class AssetControllerTests : IDisposable
 				new NullLogger<LeLøginScreenFileService>()),
 			new AcceptAllFileStreamSecurityValidator(),
 			CreatePermissiveContentSettings(),
-			TestFileSystems.AssetFileManager(_contentRootPath));
+			TestFileSystems.AssetFileManager(_contentRootPath),
+			new NullLogger<AssetController>())
+		{
+			ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
+		};
 
 	private void WriteConfig(string json)
 	{

@@ -8,9 +8,27 @@ namespace LeLøgin.Core.Storage;
 /// </summary>
 public interface ILeLøginScreenFileService
 {
+	/// <summary>
+	/// Stores an uploaded image under <paramref name="assetId"/>. SVG uploads are reduced to
+	/// drawing content before they are stored.
+	/// </summary>
+	/// <exception cref="InvalidDataException">An SVG upload is not well-formed SVG.</exception>
 	Task<(string storagePath, int width, int height)> SaveUploadAsync(string assetId, IFormFile file);
-	void DeleteAsset(string assetId);
-	Task<PublishedRuntimeAssetPaths> EnsureRuntimeAssetsAsync(LoginImageAsset imageAsset);
+	void DeleteAsset(LoginImageAsset asset);
+
+	/// <summary>
+	/// Publishes <paramref name="imageAsset"/> to the public file system when it is not there
+	/// yet and returns its public URL.
+	/// </summary>
+	/// <param name="imageAsset">The background asset to publish.</param>
+	/// <param name="assetsToKeepPublished">
+	/// Every asset whose publication must survive clean-up: the images any enabled rule can
+	/// resolve to. <paramref name="imageAsset"/> is always kept, whether or not it is listed.
+	/// </param>
+	/// <returns>The public paths of the publication.</returns>
+	Task<PublishedRuntimeAssetPaths> EnsureRuntimeAssetsAsync(
+		LoginImageAsset imageAsset,
+		IReadOnlyCollection<LoginImageAsset> assetsToKeepPublished);
 
 	/// <summary>
 	/// Returns a publicly-servable path to a cached, downscaled WebP thumbnail of the

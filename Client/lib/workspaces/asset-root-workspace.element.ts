@@ -238,7 +238,6 @@ export class LeLøginScreenAssetRootWorkspace extends UmbElementMixin(HTMLElemen
 			unique: asset.id,
 			name: asset.name,
 			href: `/umbraco/section/settings/workspace/login-screen-asset/edit/${encodeURIComponent(asset.id)}`,
-			src: `/umbraco/le-løgin/api/v1/assets/${encodeURIComponent(asset.id)}/thumbnail`,
 			alt: asset.altText ?? asset.name
 		};
 	}

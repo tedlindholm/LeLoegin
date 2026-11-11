@@ -108,6 +108,8 @@ public sealed class LeLøginLogoMiddlewareTests : IDisposable
 		Assert.Equal(svgContent, served);
 		Assert.Equal("image/svg+xml", context.Response.ContentType);
 		Assert.Equal("nosniff", context.Response.Headers.XContentTypeOptions);
+		// Opened directly, the logo is a document on the backoffice origin: it must not be able to run script.
+		Assert.Equal("default-src 'none'; style-src 'unsafe-inline'; sandbox", context.Response.Headers.ContentSecurityPolicy);
 	}
 
 	[Fact]

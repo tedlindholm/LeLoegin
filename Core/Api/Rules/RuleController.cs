@@ -17,6 +17,7 @@ namespace LeLøgin.Core.Api.Rules;
 public sealed class RuleController(
 	ILeLøginScreenStore store,
 	ILeLøginScreenFileService fileService,
+	LeLøginScreenRuntimeResolver runtimeResolver,
 	ILogger<RuleController> logger,
 	IOptions<ImageSharpMiddlewareOptions> imageSharpOptions,
 	RequestAuthorizationUtilities? requestAuthorizationUtilities = null) : ApiControllerBase
@@ -156,7 +157,14 @@ public sealed class RuleController(
 
 		try
 		{
-			var runtimeAssets = await fileService.EnsureRuntimeAssetsAsync(asset);
+			// Keep every image an enabled rule can show, so previewing a draft rule's image
+			// never removes the live login image.
+			var backgroundAssets = (await store.GetAllAssetsAsync())
+				.Where(candidate => candidate.Kind == LoginImageAssetKind.Background);
+			var assetsToKeepPublished = runtimeResolver.GetResolvableAssets(
+				backgroundAssets,
+				await store.GetAllRulesAsync());
+			var runtimeAssets = await fileService.EnsureRuntimeAssetsAsync(asset, assetsToKeepPublished);
 			var imageUrl = LoginScreenImageUrlBuilder.ApplyImageProcessing(
 				runtimeAssets.ImageUrl, asset.FocalPoint, asset.Zoom,
 				imageSharpOptions.Value, requestAuthorizationUtilities, logger);

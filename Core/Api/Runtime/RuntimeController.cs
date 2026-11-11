@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Globalization;
 using SixLabors.ImageSharp.Web;
 using SixLabors.ImageSharp.Web.Middleware;
 using LeLøgin.Core.Models;
@@ -23,7 +22,6 @@ public class RuntimeController(
 	LeLøginScreenRuntimeResolver runtimeResolver,
 	TimeProvider timeProvider,
 	ILogger<RuntimeController> logger,
-	LeLøginAssetFileManager assetManager,
 	IOptions<ImageSharpMiddlewareOptions> imageSharpOptions,
 	IRuntimeState runtimeState,
 	RequestAuthorizationUtilities? requestAuthorizationUtilities = null) : RuntimeControllerBase
@@ -38,7 +36,7 @@ public class RuntimeController(
 			return NoContent();
 		}
 
-		var asset = await ResolveActiveBackgroundAssetAsync();
+		var (asset, assetsToKeepPublished) = await ResolveActiveBackgroundAsync();
 		if (asset is null)
 		{
 			logger.LogDebug("No matching rule or catch-all asset resolved for current context");
@@ -49,7 +47,7 @@ public class RuntimeController(
 		{
 			// The logo is served separately by LoginLogoMiddleware directly from
 			// the source asset, so the runtime publication is image-only.
-			var runtimeAssets = await fileService.EnsureRuntimeAssetsAsync(asset);
+			var runtimeAssets = await fileService.EnsureRuntimeAssetsAsync(asset, assetsToKeepPublished);
 			var imageUrl = LoginScreenImageUrlBuilder.ApplyImageProcessing(
 				runtimeAssets.ImageUrl, asset.FocalPoint, asset.Zoom,
 				imageSharpOptions.Value, requestAuthorizationUtilities, logger);
@@ -91,7 +89,7 @@ public class RuntimeController(
 			return Content("export default {};", "text/javascript; charset=utf-8");
 		}
 
-		var asset = await ResolveActiveBackgroundAssetAsync();
+		var (asset, _) = await ResolveActiveBackgroundAsync();
 
 		var greeting = asset?.GreetingText;
 		object payload;
@@ -119,70 +117,24 @@ public class RuntimeController(
 		return Content(module, "text/javascript; charset=utf-8");
 	}
 
-	[HttpGet("assets/{id}/thumbnail")]
-	[ProducesResponseType(StatusCodes.Status200OK)]
-	[ProducesResponseType(StatusCodes.Status404NotFound)]
-	public async Task<IActionResult> Thumbnail(string id)
-	{
-		if (runtimeState.Level != RuntimeLevel.Run)
-		{
-			return NotFound();
-		}
-
-		var asset = await store.GetAssetAsync(id);
-		if (asset is null)
-		{
-			logger.LogWarning("Thumbnail requested for non-existent asset: {AssetId}", id);
-			return NotFound();
-		}
-
-		EncodedThumbnail thumbnail;
-		try
-		{
-			thumbnail = await fileService.GetThumbnailAsync(asset);
-		}
-		catch (UnauthorizedAccessException)
-		{
-			return NotFound();
-		}
-		catch (Exception ex)
-		{
-			logger.LogError(ex, "Failed to encode thumbnail for asset {AssetId}", id);
-			return NotFound();
-		}
-
-		Response.Headers["X-Content-Type-Options"] = "nosniff";
-		// `Last-Modified` enables conditional GETs: the browser sends `If-Modified-Since`
-		// on subsequent requests and ASP.NET's `PhysicalFile` answers 304 when the cached
-		// WebP hasn't changed, avoiding a re-download of the same bytes.
-		Response.Headers.LastModified = thumbnail.LastModifiedUtc.ToString("R", CultureInfo.InvariantCulture);
-		try
-		{
-			var stream = assetManager.FileSystem.OpenFile(thumbnail.FileName);
-			return File(stream, thumbnail.ContentType);
-		}
-		catch (UnauthorizedAccessException)
-		{
-			return NotFound();
-		}
-	}
-
 	/// <summary>
-	/// Resolves the background asset that applies to the current request. Shared by the two
-	/// endpoints that must always agree on which asset is active — the runtime payload and the
-	/// greeting module — so a rule change can never apply to one and not the other.
+	/// Resolves the background asset that applies to the current request, plus every image an
+	/// enabled rule can show (the ones that must stay published). Shared by the two endpoints
+	/// that must always agree on which asset is active — the runtime payload and the greeting
+	/// module — so a rule change can never apply to one and not the other.
 	/// </summary>
-	private async Task<LoginImageAsset?> ResolveActiveBackgroundAssetAsync()
+	private async Task<(LoginImageAsset? Asset, IReadOnlyCollection<LoginImageAsset> AssetsToKeepPublished)> ResolveActiveBackgroundAsync()
 	{
 		var allAssets = await store.GetAllAssetsAsync();
 		var backgroundAssets = allAssets
 			.Where(asset => asset.Kind == LoginImageAssetKind.Background)
 			.ToList();
 		var rules = await store.GetAllRulesAsync();
-		return runtimeResolver.ResolveAsset(
+		var asset = runtimeResolver.ResolveAsset(
 			backgroundAssets,
 			rules,
 			LoginRuntimeContextFactory.Create(Request, timeProvider));
+		return (asset, runtimeResolver.GetResolvableAssets(backgroundAssets, rules));
 	}
 }
 

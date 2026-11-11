@@ -118,6 +118,27 @@ export class LeLøginScreenAssetDataSource extends UmbControllerBase {
 	}
 
 	/**
+	 * Retrieves an asset's authenticated thumbnail (a downscaled WebP, or the sanitised SVG) as a
+	 * binary blob.
+	 *
+	 * @param assetId - The unique identifier of the asset
+	 * @returns A promise resolving to an object with the thumbnail blob or error
+	 */
+	async getAssetThumbnail(assetId: string) {
+		const { data, error } = await tryExecute(
+			this,
+			V1.getAssetsByIdThumbnail({
+				path: { id: assetId }
+			})
+		);
+
+		return {
+			data: data instanceof Blob ? data : undefined,
+			error
+		};
+	}
+
+	/**
 	 * Updates an existing login screen asset's metadata (name and/or alt text).
 	 * Automatically refetches the updated asset after successful update.
 	 *

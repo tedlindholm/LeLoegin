@@ -18,6 +18,7 @@ import {
 	observeAuthViewCustomisation
 } from '../auth-view/auth-view-customiser.js';
 import type { FocalPoint, LoginImageAsset } from '../models/index.ts';
+import { LeLøginAssetThumbnailController } from '../assets/asset-thumbnail.controller.js';
 import { isBackgroundLoginImageAsset, isLogoLoginImageAsset } from '../models/index.ts';
 import {
 	UMB_LOGIN_SCREEN_ASSET_EDITOR_WORKSPACE_CONTEXT,
@@ -69,6 +70,8 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 	#layout: HTMLElement;
 	#authPreviewGraphic: HTMLElement | undefined;
 	#backgroundDragCleanup: (() => void) | undefined;
+	// Re-render when a thumbnail arrives: the preview image and the login-preview background both use it.
+	#thumbnails = new LeLøginAssetThumbnailController(this, () => this.#render());
 
 	constructor() {
 		super();
@@ -373,7 +376,7 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 		// editor previews the exact pixels ImageSharp.Web will produce at runtime. Missing
 		// dimensions (legacy assets) leave the preview in the simpler fp%+cover fallback.
 		return {
-			imageUrl: this.#thumbnailUrl(this.#assetId),
+			...optional('imageUrl', this.#thumbnailUrl(this.#assetId)),
 			...optional('greetingText', normaliseOptionalInputValue(this.#currentGreetingText())),
 			...optional('logoUrl', this.#selectedLogoPreviewUrl()),
 			...optional('focalPoint', this.#draftFocalPoint),
@@ -421,8 +424,8 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 		this.#authPreviewMutationCleanup = undefined;
 	}
 
-	#thumbnailUrl(assetId: string): string {
-		return `/umbraco/le-løgin/api/v1/assets/${encodeURIComponent(assetId)}/thumbnail`;
+	#thumbnailUrl(assetId: string): string | undefined {
+		return this.#thumbnails.peek(assetId);
 	}
 
 	#applyAssetDraft(asset: LoginImageAsset | null) {

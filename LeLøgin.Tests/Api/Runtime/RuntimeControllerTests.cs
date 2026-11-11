@@ -37,7 +37,6 @@ public sealed class RuntimeControllerTests : IDisposable
 			new LeLøginScreenRuntimeResolver(),
 			TimeProvider.System,
 			new NullLogger<RuntimeController>(),
-			TestFileSystems.AssetFileManager(_contentRootPath),
 			Options.Create(new ImageSharpMiddlewareOptions()),
 			runtimeState: runtimeState.Object)
 		{
@@ -58,7 +57,6 @@ public sealed class RuntimeControllerTests : IDisposable
 			new LeLøginScreenRuntimeResolver(),
 			TimeProvider.System,
 			new NullLogger<RuntimeController>(),
-			TestFileSystems.AssetFileManager(_contentRootPath),
 			Options.Create(new ImageSharpMiddlewareOptions()),
 			runtimeState.Object)
 		{
@@ -70,27 +68,6 @@ public sealed class RuntimeControllerTests : IDisposable
 		Assert.Equal("export default {};", result.Content);
 		Assert.Equal("text/javascript; charset=utf-8", result.ContentType);
 		Assert.Equal("no-store", controller.Response.Headers.CacheControl);
-	}
-
-	[Fact]
-	public async Task Thumbnail_Returns_NotFound_Without_Store_Access_During_Installation()
-	{
-		var runtimeState = new Mock<IRuntimeState>();
-		runtimeState.SetupGet(state => state.Level).Returns(RuntimeLevel.Install);
-		var controller = new RuntimeController(
-			new Mock<ILeLøginScreenStore>(MockBehavior.Strict).Object,
-			new Mock<ILeLøginScreenFileService>(MockBehavior.Strict).Object,
-			new LeLøginScreenRuntimeResolver(),
-			TimeProvider.System,
-			new NullLogger<RuntimeController>(),
-			TestFileSystems.AssetFileManager(_contentRootPath),
-			Options.Create(new ImageSharpMiddlewareOptions()),
-			runtimeState.Object)
-		{
-			ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
-		};
-
-		Assert.IsType<NotFoundResult>(await controller.Thumbnail("asset-id"));
 	}
 
 	[Fact]
@@ -166,7 +143,6 @@ public sealed class RuntimeControllerTests : IDisposable
 			new LeLøginScreenRuntimeResolver(),
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
 			new NullLogger<RuntimeController>(),
-			TestFileSystems.AssetFileManager(_contentRootPath),
 			Options.Create(new ImageSharpMiddlewareOptions()),
 			RunningRuntimeState)
 		{
@@ -253,7 +229,6 @@ public sealed class RuntimeControllerTests : IDisposable
 			new LeLøginScreenRuntimeResolver(),
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 20, 9, 0, 0, TimeSpan.Zero)),
 			new NullLogger<RuntimeController>(),
-			TestFileSystems.AssetFileManager(_contentRootPath),
 			Options.Create(new ImageSharpMiddlewareOptions()),
 			RunningRuntimeState)
 		{
@@ -319,7 +294,6 @@ public sealed class RuntimeControllerTests : IDisposable
 			new LeLøginScreenRuntimeResolver(),
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 20, 9, 0, 0, TimeSpan.Zero)),
 			new NullLogger<RuntimeController>(),
-			TestFileSystems.AssetFileManager(_contentRootPath),
 			Options.Create(new ImageSharpMiddlewareOptions()),
 			RunningRuntimeState)
 		{
@@ -333,202 +307,6 @@ public sealed class RuntimeControllerTests : IDisposable
 		Assert.IsType<NoContentResult>(await controller.GetActive());
 		Assert.Equal(0, fileService.RuntimePublicationCallCount);
 		Assert.Null(fileService.PublishedImageAssetId);
-	}
-
-	[Fact]
-	public async Task Thumbnail_Returns_NotFound_When_Asset_Does_Not_Exist()
-	{
-		WriteConfig("""
-		{
-		  "assets": [],
-		  "settings": {
-		    "publicEndpointCacheSeconds": 300
-		  },
-		  "rules": []
-		}
-		""");
-
-		var store = CreateStore();
-		var controller = new RuntimeController(
-			store,
-			new LeLøginScreenFileService(
-				TestFileSystems.AssetFileManager(_contentRootPath),
-				TestFileSystems.PublishFileManager(_contentRootPath),
-				new NullLogger<LeLøginScreenFileService>()),
-			new LeLøginScreenRuntimeResolver(),
-			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
-			new NullLogger<RuntimeController>(),
-			TestFileSystems.AssetFileManager(_contentRootPath),
-			Options.Create(new ImageSharpMiddlewareOptions()),
-			RunningRuntimeState)
-		{
-			ControllerContext = new ControllerContext
-			{
-				HttpContext = new DefaultHttpContext()
-			}
-		};
-
-		var result = await controller.Thumbnail("nonexistent-asset");
-
-		Assert.IsType<NotFoundResult>(result);
-	}
-
-	[Fact]
-	public async Task Thumbnail_Returns_NotFound_When_Source_File_Missing()
-	{
-		WriteConfig("""
-		{
-		  "assets": [
-		    {
-		      "id": "asset-missing-file",
-		      "name": "Missing",
-		      "kind": 0,
-		      "altText": null,
-		      "greetingText": null,
-		      "logoAssetId": null,
-		      "storagePath": "assets/nonexistent-file.png",
-		      "publicPath": null,
-		      "width": 100,
-		      "height": 100,
-		      "createdAt": "2026-05-15T00:00:00Z",
-		      "updatedAt": "2026-05-15T00:00:00Z"
-		    }
-		  ],
-		  "settings": {
-		    "publicEndpointCacheSeconds": 300
-		  },
-		  "rules": []
-		}
-		""");
-
-		var store = CreateStore();
-		var controller = new RuntimeController(
-			store,
-			new LeLøginScreenFileService(
-				TestFileSystems.AssetFileManager(_contentRootPath),
-				TestFileSystems.PublishFileManager(_contentRootPath),
-				new NullLogger<LeLøginScreenFileService>()),
-			new LeLøginScreenRuntimeResolver(),
-			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
-			new NullLogger<RuntimeController>(),
-			TestFileSystems.AssetFileManager(_contentRootPath),
-			Options.Create(new ImageSharpMiddlewareOptions()),
-			RunningRuntimeState)
-		{
-			ControllerContext = new ControllerContext
-			{
-				HttpContext = new DefaultHttpContext()
-			}
-		};
-
-		var result = await controller.Thumbnail("asset-missing-file");
-
-		Assert.IsType<NotFoundResult>(result);
-	}
-
-	[Fact]
-	public async Task Thumbnail_Returns_NotFound_When_Relative_StoragePath_Escapes_Asset_Root()
-	{
-		WriteConfig("""
-		{
-		  "assets": [
-		    {
-		      "id": "asset-traversal",
-		      "name": "Traversal",
-		      "kind": 0,
-		      "altText": null,
-		      "greetingText": null,
-		      "logoAssetId": null,
-		      "storagePath": "../../etc/passwd",
-		      "publicPath": null,
-		      "width": 100,
-		      "height": 100,
-		      "createdAt": "2026-05-15T00:00:00Z",
-		      "updatedAt": "2026-05-15T00:00:00Z"
-		    }
-		  ],
-		  "settings": { "publicEndpointCacheSeconds": 300 },
-		  "rules": []
-		}
-		""");
-
-		var store = CreateStore();
-		var controller = new RuntimeController(
-			store,
-			new LeLøginScreenFileService(
-				TestFileSystems.AssetFileManager(_contentRootPath),
-				TestFileSystems.PublishFileManager(_contentRootPath),
-				new NullLogger<LeLøginScreenFileService>()),
-			new LeLøginScreenRuntimeResolver(),
-			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
-			new NullLogger<RuntimeController>(),
-			TestFileSystems.AssetFileManager(_contentRootPath),
-			Options.Create(new ImageSharpMiddlewareOptions()),
-			RunningRuntimeState)
-		{
-			ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
-		};
-
-		var result = await controller.Thumbnail("asset-traversal");
-
-		Assert.IsType<NotFoundResult>(result);
-	}
-
-	[Fact]
-	public async Task Thumbnail_Returns_NotFound_When_Path_Is_Outside_Allowed_Directory()
-	{
-		var unsafePath = Path.Combine(_contentRootPath, "..", "../../etc/passwd");
-		Directory.CreateDirectory(Path.GetDirectoryName(unsafePath)!);
-		await File.WriteAllTextAsync(unsafePath, "unsafe");
-
-		WriteConfig($$"""
-		{
-		  "assets": [
-		    {
-		      "id": "asset-malicious",
-		      "name": "Malicious",
-		      "kind": 0,
-		      "altText": null,
-		      "greetingText": null,
-		      "logoAssetId": null,
-		      "storagePath": "{{unsafePath.Replace("\\", "\\\\", StringComparison.Ordinal)}}",
-		      "publicPath": null,
-		      "width": 100,
-		      "height": 100,
-		      "createdAt": "2026-05-15T00:00:00Z",
-		      "updatedAt": "2026-05-15T00:00:00Z"
-		    }
-		  ],
-		  "settings": {
-		    "publicEndpointCacheSeconds": 300
-		  },
-		  "rules": []
-		}
-		""");
-
-		var store = CreateStore();
-		var controller = new RuntimeController(
-			store,
-			new LeLøginScreenFileService(
-				TestFileSystems.AssetFileManager(_contentRootPath),
-				TestFileSystems.PublishFileManager(_contentRootPath),
-				new NullLogger<LeLøginScreenFileService>()),
-			new LeLøginScreenRuntimeResolver(),
-			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
-			new NullLogger<RuntimeController>(),
-			TestFileSystems.AssetFileManager(_contentRootPath),
-			Options.Create(new ImageSharpMiddlewareOptions()),
-			RunningRuntimeState)
-		{
-			ControllerContext = new ControllerContext
-			{
-				HttpContext = new DefaultHttpContext()
-			}
-		};
-
-		var result = await controller.Thumbnail("asset-malicious");
-
-		Assert.IsType<NotFoundResult>(result);
 	}
 
 	[Fact]
@@ -580,7 +358,6 @@ public sealed class RuntimeControllerTests : IDisposable
 			new LeLøginScreenRuntimeResolver(),
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
 			new NullLogger<RuntimeController>(),
-			TestFileSystems.AssetFileManager(_contentRootPath),
 			Options.Create(new ImageSharpMiddlewareOptions()),
 			RunningRuntimeState)
 		{
@@ -648,7 +425,6 @@ public sealed class RuntimeControllerTests : IDisposable
 			new LeLøginScreenRuntimeResolver(),
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
 			new NullLogger<RuntimeController>(),
-			TestFileSystems.AssetFileManager(_contentRootPath),
 			Options.Create(new ImageSharpMiddlewareOptions()),
 			RunningRuntimeState)
 		{
@@ -714,7 +490,6 @@ public sealed class RuntimeControllerTests : IDisposable
 			new LeLøginScreenRuntimeResolver(),
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
 			new NullLogger<RuntimeController>(),
-			TestFileSystems.AssetFileManager(_contentRootPath),
 			Options.Create(new ImageSharpMiddlewareOptions()),
 			RunningRuntimeState)
 		{
@@ -779,7 +554,6 @@ public sealed class RuntimeControllerTests : IDisposable
 			new LeLøginScreenRuntimeResolver(),
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
 			logger,
-			TestFileSystems.AssetFileManager(_contentRootPath),
 			options,
 			RunningRuntimeState,
 			requestAuthorizationUtilities: null)
@@ -968,7 +742,6 @@ public sealed class RuntimeControllerTests : IDisposable
 			new LeLøginScreenRuntimeResolver(),
 			new FixedTimeProvider(localNow),
 			new NullLogger<RuntimeController>(),
-			TestFileSystems.AssetFileManager(_contentRootPath),
 			Options.Create(new ImageSharpMiddlewareOptions()),
 			RunningRuntimeState)
 		{
@@ -985,6 +758,28 @@ public sealed class RuntimeControllerTests : IDisposable
 
 		var json = moduleSource["export default ".Length..^1];
 		return System.Text.Json.JsonDocument.Parse(json).RootElement;
+	}
+
+	[Fact]
+	public async Task GetActive_Keeps_Every_Image_An_Enabled_Rule_Can_Show_Published()
+	{
+		var fileService = new RecordingFileService();
+		var controller = new RuntimeController(
+			LeLøginBackgroundMiddlewareTests.StoreWithAnInactiveRuleImage(),
+			fileService,
+			new LeLøginScreenRuntimeResolver(),
+			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
+			new NullLogger<RuntimeController>(),
+			Options.Create(new ImageSharpMiddlewareOptions()),
+			RunningRuntimeState)
+		{
+			ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
+		};
+
+		Assert.IsType<OkObjectResult>(await controller.GetActive());
+
+		Assert.Equal("asset-live", fileService.PublishedImageAssetId);
+		Assert.Equal(["asset-december", "asset-live"], fileService.KeptAssetIds);
 	}
 
 	public void Dispose()
@@ -1013,16 +808,20 @@ public sealed class RuntimeControllerTests : IDisposable
 	{
 		public int RuntimePublicationCallCount { get; private set; }
 		public string? PublishedImageAssetId { get; private set; }
+		public IReadOnlyList<string> KeptAssetIds { get; private set; } = [];
 
 		public Task<(string storagePath, int width, int height)> SaveUploadAsync(string assetId, IFormFile file) =>
 			throw new NotSupportedException();
 
-		public void DeleteAsset(string assetId) => throw new NotSupportedException();
+		public void DeleteAsset(LoginImageAsset asset) => throw new NotSupportedException();
 
-		public Task<PublishedRuntimeAssetPaths> EnsureRuntimeAssetsAsync(LoginImageAsset imageAsset)
+		public Task<PublishedRuntimeAssetPaths> EnsureRuntimeAssetsAsync(
+			LoginImageAsset imageAsset,
+			IReadOnlyCollection<LoginImageAsset> assetsToKeepPublished)
 		{
 			RuntimePublicationCallCount++;
 			PublishedImageAssetId = imageAsset.Id;
+			KeptAssetIds = [.. assetsToKeepPublished.Select(asset => asset.Id).Order(StringComparer.Ordinal)];
 			return Task.FromResult(new PublishedRuntimeAssetPaths(
 				"/login-screen/runtime-image-guid.jpg"));
 		}

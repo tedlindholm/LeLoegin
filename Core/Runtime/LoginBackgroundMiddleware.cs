@@ -69,7 +69,9 @@ public sealed class LeLøginBackgroundMiddleware(RequestDelegate next)
 		string imageUrl;
 		try
 		{
-			var runtimeAssets = await fileService.EnsureRuntimeAssetsAsync(activeAsset);
+			var runtimeAssets = await fileService.EnsureRuntimeAssetsAsync(
+				activeAsset,
+				runtimeResolver.GetResolvableAssets(backgroundAssets, rules));
 			imageUrl = LoginScreenImageUrlBuilder.ApplyImageProcessing(
 				runtimeAssets.ImageUrl,
 				activeAsset.FocalPoint,

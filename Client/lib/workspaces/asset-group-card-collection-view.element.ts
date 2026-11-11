@@ -87,7 +87,6 @@ export class LeLøginScreenAssetGroupCardCollectionView extends UmbElementMixin(
 			unique: item.unique,
 			name: item.name,
 			href: item.editHref,
-			src: item.thumbnailUrl,
 			alt: item.altText ?? item.name
 		};
 		return card;

@@ -94,7 +94,7 @@ public sealed class LeLøginLogoMiddleware(RequestDelegate next)
 			}
 
 			context.Response.ContentType = contentType;
-			context.Response.Headers.XContentTypeOptions = "nosniff";
+			ImageResponseHeaders.Apply(context.Response);
 			await using var stream = assetManager.FileSystem.OpenFile(logoAsset.StoragePath);
 			await stream.CopyToAsync(context.Response.Body);
 		}

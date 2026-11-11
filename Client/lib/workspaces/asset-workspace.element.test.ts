@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, it } from 'vitest';
@@ -30,13 +30,30 @@ it('uses the auth view preview shell without the old asset list', async () => {
 	expect(workspaceElementSource).not.toContain('#renderAssetList');
 });
 
-it('uses thumbnail API URLs for asset previews', async () => {
+it('loads asset previews through the authenticated thumbnail controller', async () => {
 	const { workspaceElementSource } = await readWorkspaceSources();
 
-	expect(workspaceElementSource).toContain('#thumbnailUrl(');
-	expect(workspaceElementSource).toContain('/thumbnail`');
+	expect(workspaceElementSource).toContain('new LeLøginAssetThumbnailController(');
+	// Object URLs are created and revoked in one place, AssetThumbnailUrls.
 	expect(workspaceElementSource).not.toContain('URL.createObjectURL');
 	expect(workspaceElementSource).not.toContain('URL.revokeObjectURL');
+});
+
+it('builds no thumbnail URL by hand anywhere in the client', async () => {
+	// The thumbnail endpoint requires backoffice authentication, which an <img src> cannot send.
+	const libDirectory = resolve(currentDirectory, '..');
+	const entries = await readdir(libDirectory, { recursive: true });
+	const sources = entries.filter(
+		(entry) => entry.endsWith('.ts') && !entry.endsWith('.test.ts') && !entry.endsWith('.gen.ts')
+	);
+	const offenders: Array<string> = [];
+	for (const source of sources) {
+		const text = await readFile(resolve(libDirectory, source), 'utf8');
+		if (text.includes('/thumbnail`')) offenders.push(source);
+	}
+
+	expect(sources.length).toBeGreaterThan(20);
+	expect(offenders).toEqual([]);
 });
 
 it('keeps the editor deliberately simple', async () => {

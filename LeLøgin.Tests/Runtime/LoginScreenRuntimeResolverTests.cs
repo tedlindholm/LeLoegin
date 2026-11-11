@@ -274,6 +274,53 @@ public sealed class LeLøginScreenRuntimeResolverTests
 		Assert.Null(Resolve(assets, rules, new LoginRuntimeContext("tuesday", 5, 0)));
 	}
 
+	[Fact]
+	public void GetResolvableAssets_Returns_Each_Existing_Asset_That_An_Enabled_Rule_References_Once()
+	{
+		var assets = new[]
+		{
+			CreateAsset("asset-a"),
+			CreateAsset("asset-b"),
+			CreateAsset("asset-disabled-only"),
+			CreateAsset("asset-unreferenced")
+		};
+		var rules = new[]
+		{
+			// The condition never matches today; the image must still stay published for the day it does.
+			new LoginRule
+			{
+				Priority = 10,
+				Enabled = true,
+				Id = "rule-december",
+				Name = "December",
+				AssetIds = ["asset-a", "ASSET-B", "asset-deleted"],
+				Condition = "{\"and\":[{\"==\":[{\"var\":\"month\"},12]}]}"
+			},
+			new LoginRule
+			{
+				Priority = 20,
+				Enabled = true,
+				Id = "rule-catch-all",
+				Name = "Catch-all",
+				AssetIds = ["asset-a"],
+				Condition = "{\"and\":[]}"
+			},
+			new LoginRule
+			{
+				Priority = 30,
+				Enabled = false,
+				Id = "rule-disabled",
+				Name = "Disabled",
+				AssetIds = ["asset-disabled-only"],
+				Condition = "{\"and\":[]}"
+			}
+		};
+
+		var resolvable = new LeLøginScreenRuntimeResolver().GetResolvableAssets(assets, rules);
+
+		Assert.Equal(["asset-a", "asset-b"], resolvable.Select(asset => asset.Id).Order());
+	}
+
 	private static string? Resolve(
 		IEnumerable<LoginImageAsset> assets,
 		IEnumerable<LoginRule> rules,

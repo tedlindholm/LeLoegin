@@ -23,6 +23,55 @@ internal static class TestFileSystems
             rootPath: Path.Combine(contentRootPath, "wwwroot", "login-screen"),
             rootUrl: "/login-screen"));
 
+    /// <summary>
+    /// Asset file manager whose <c>GetFiles(path, filter)</c> behaves like
+    /// <c>Umbraco.StorageProviders.AzureBlob</c> 17.1.0 and 18.0.0: a leading <c>*</c> is trimmed
+    /// and the rest of the filter is matched as a literal substring, so glob patterns such as
+    /// <c>id.*</c> match nothing.
+    /// </summary>
+    internal static LeLøginAssetFileManager BlobLikeAssetFileManager(string contentRootPath) =>
+        new(new LiteralFilterFileSystem(AssetFileManager(contentRootPath).FileSystem));
+
+    /// <inheritdoc cref="BlobLikeAssetFileManager"/>
+    internal static LeLøginPublishFileManager BlobLikePublishFileManager(string contentRootPath) =>
+        new(new LiteralFilterFileSystem(PublishFileManager(contentRootPath).FileSystem));
+
+    private sealed class LiteralFilterFileSystem(IFileSystem inner) : IFileSystem
+    {
+        public bool CanAddPhysical => inner.CanAddPhysical;
+        public IEnumerable<string> GetDirectories(string path) => inner.GetDirectories(path);
+        public void DeleteDirectory(string path) => inner.DeleteDirectory(path);
+        public void DeleteDirectory(string path, bool recursive) => inner.DeleteDirectory(path, recursive);
+        public bool DirectoryExists(string path) => inner.DirectoryExists(path);
+        public void AddFile(string path, Stream stream) => inner.AddFile(path, stream);
+        public void AddFile(string path, Stream stream, bool overrideIfExists) => inner.AddFile(path, stream, overrideIfExists);
+        public IEnumerable<string> GetFiles(string path) => inner.GetFiles(path);
+
+        public IEnumerable<string> GetFiles(string path, string filter)
+        {
+            var files = inner.GetFiles(path);
+            if (string.IsNullOrEmpty(filter) || filter == "*.*")
+            {
+                return files;
+            }
+
+            var literal = filter.TrimStart('*');
+            return files.Where(file => file.Contains(literal, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public Stream OpenFile(string path) => inner.OpenFile(path);
+        public void DeleteFile(string path) => inner.DeleteFile(path);
+        public bool FileExists(string path) => inner.FileExists(path);
+        public string GetRelativePath(string fullPathOrUrl) => inner.GetRelativePath(fullPathOrUrl);
+        public string GetFullPath(string path) => inner.GetFullPath(path);
+        public string GetUrl(string? path) => inner.GetUrl(path);
+        public DateTimeOffset GetLastModified(string path) => inner.GetLastModified(path);
+        public DateTimeOffset GetCreated(string path) => inner.GetCreated(path);
+        public long GetSize(string path) => inner.GetSize(path);
+        public void AddFile(string path, string physicalPath, bool overrideIfExists = true, bool copy = false) =>
+            inner.AddFile(path, physicalPath, overrideIfExists, copy);
+    }
+
     private static PhysicalFileSystem BuildPhysicalFileSystem(string rootPath, string rootUrl)
     {
         var ioHelper = new Mock<IIOHelper>();
