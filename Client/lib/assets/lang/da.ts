@@ -6,6 +6,7 @@
  */
 import type { LeLøginScreenLocalisationDictionary } from './types.js';
 
+/** Danish UI strings, loaded by the `LeLøgin.Localization.Da` extension. */
 export default {
 	user: {
 		'permissionsEntityGroup_login-screen': 'Le Løgin'

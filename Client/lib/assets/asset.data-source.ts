@@ -13,6 +13,11 @@ import type { FocalPoint, LoginImageAssetKind } from '../models/index.js';
  * Data source for login screen asset management endpoints.
  */
 export class LeLøginScreenAssetDataSource extends UmbControllerBase {
+	/**
+	 * Creates the data source; API calls run through `tryExecute` against this controller.
+	 *
+	 * @param host - The controller host that owns this data source
+	 */
 	constructor(host: UmbControllerHost) {
 		super(host);
 	}
@@ -44,6 +49,7 @@ export class LeLøginScreenAssetDataSource extends UmbControllerBase {
 	 *
 	 * @param file - The image file to upload
 	 * @param name - The display name for the asset
+	 * @param kind - Whether the image is a background or a logo
 	 * @param altText - Optional alternative text for accessibility
 	 * @returns A promise resolving to an object with the created asset or error
 	 *
@@ -139,11 +145,11 @@ export class LeLøginScreenAssetDataSource extends UmbControllerBase {
 	}
 
 	/**
-	 * Updates an existing login screen asset's metadata (name and/or alt text).
-	 * Automatically refetches the updated asset after successful update.
+	 * Replaces an existing login screen asset's metadata (PUT semantics: every field is overwritten).
+	 * Refetches the asset after a successful update.
 	 *
 	 * @param assetId - The unique identifier of the asset
-	 * @param update - Object containing optional name and altText to update
+	 * @param update - The complete replacement metadata; null clears a field
 	 * @returns A promise resolving to an object with the updated asset or error
 	 *
 	 * @example

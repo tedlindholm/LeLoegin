@@ -18,6 +18,11 @@ import '@umbraco-cms/backoffice/components';
  * uncustomised custom element to its registered class, so callers can rely on the
  * real component API immediately — guards work, property writes land on the real
  * setters, and we don't depend on the upgrade-fix race.
+ *
+ * @param template - The template whose contents are cloned.
+ * @param description - Names the template in the error message if cloning fails.
+ * @returns The cloned, upgraded fragment.
+ * @throws {Error} When the clone is not a `DocumentFragment`.
  */
 export function cloneTemplate(
 	template: HTMLTemplateElement,

@@ -21,6 +21,12 @@ import { requestStructureReload } from '../../utils/request-structure-reload.js'
 export class LeLøginScreenDeleteAssetEntityAction extends UmbEntityActionBase<MetaEntityActionDefaultKind> {
 	#localize = new UmbLocalizationController(this);
 
+	/**
+	 * Loads the asset and the rules that reference it, asks for confirmation, then deletes the
+	 * asset. On success it announces the deletion, reloads the surrounding tree structure and
+	 * shows a positive notification; on failure it shows a danger notification. Cancelling the
+	 * confirmation, or a missing `unique`, does nothing.
+	 */
 	override async execute() {
 		const unique = this.args.unique;
 		if (!unique) return;
@@ -95,4 +101,5 @@ export class LeLøginScreenDeleteAssetEntityAction extends UmbEntityActionBase<M
 	}
 }
 
+/** Exported as `api` so the manifest's lazy import resolves the action. */
 export { LeLøginScreenDeleteAssetEntityAction as api };

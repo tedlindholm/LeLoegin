@@ -5,5 +5,6 @@ namespace LeLøgin.Core.Api.Authorisation;
 /// </summary>
 public static class LeLøginPermissionVerbs
 {
+	/// <summary>Grants access to every Le Løgin management endpoint.</summary>
 	public const string Manage = "LeLøgin.Manage";
 }

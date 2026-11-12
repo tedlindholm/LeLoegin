@@ -59,6 +59,10 @@ interface AssetTreeLeafServerItem {
 	assetKind: LoginImageAssetKind;
 }
 
+/**
+ * An item as the asset tree data source produces it before mapping: either one of the two fixed
+ * kind groups (background, logo) or an asset leaf. `isGroup` discriminates the union.
+ */
 export type AssetTreeServerItem = AssetTreeGroupServerItem | AssetTreeLeafServerItem;
 
 const toGroupServerItem = (kind: LoginImageAssetKind): AssetTreeGroupServerItem => ({
@@ -87,12 +91,24 @@ const GROUP_ENTITY_TYPE = {
 	logo: LOGIN_SCREEN_ASSET_GROUP_LOGO_ENTITY_TYPE
 } as const;
 
-/** The tree group that holds assets of a kind, so callers can ask Umbraco to reload it. */
+/**
+ * The tree group that holds assets of a kind, so callers can ask Umbraco to reload it.
+ *
+ * @param kind - The asset kind whose group is wanted.
+ * @returns The group's `unique` and entity type, ready for a reload event.
+ */
 export const assetGroupEntity = (kind: LoginImageAssetKind) => ({
 	unique: GROUP_ID[kind],
 	entityType: GROUP_ENTITY_TYPE[kind]
 });
 
+/**
+ * Maps a server item to the tree item model Umbraco renders. Groups become folders under the
+ * asset root; leaves become asset entities parented to their kind's group.
+ *
+ * @param item - The group or leaf to map.
+ * @returns The tree item model for that node.
+ */
 export const toTreeItemModel = (item: AssetTreeServerItem): LeLøginScreenAnyAssetTreeItemModel => {
 	if (item.isGroup) {
 		return {
@@ -154,17 +170,25 @@ const createLeafProvider = (assetSource: AssetItemsSource): AssetTreeLeafProvide
  * present the failure as an empty node, so a failed read leaves `data` unset entirely.
  */
 export interface AssetTreeItemsResult {
+	/** The page of items; absent when the read failed. Totals describe a single unpaged page. */
 	data?: {
 		items: AssetTreeServerItem[];
 		total: number;
 		totalBefore: number;
 		totalAfter: number;
 	};
+	/** The repository error when the asset list could not be read. */
 	error?: AssetItemsError;
 }
 
+/**
+ * Result of an ancestors lookup. As with {@link AssetTreeItemsResult}, `data` is left unset on
+ * failure so Umbraco reports the error rather than an empty path.
+ */
 export interface AssetTreeAncestorsResult {
+	/** The ancestor path, ending with the item itself; empty for groups and unknown items. */
 	data?: AssetTreeServerItem[];
+	/** The repository error when the asset list could not be read. */
 	error?: AssetItemsError;
 }
 
@@ -204,6 +228,13 @@ const createGetAncestorsOf =
 		return { data: [toGroupServerItem(asset.assetKind), asset] };
 	};
 
+/**
+ * Builds the configuration for Umbraco's `UmbTreeServerDataSourceBase`: root, children and
+ * ancestor handlers that share one in-flight asset request, plus the item mapper.
+ *
+ * @param assetSource - Supplies the asset list; the real repository or a test double.
+ * @returns The data-source configuration object.
+ */
 export const buildDataSourceConfig = (assetSource: AssetItemsSource) => {
 	const leafProvider = createLeafProvider(assetSource);
 	return {

@@ -6,9 +6,16 @@ namespace LeLøgin.Core.Models;
 /// </summary>
 public sealed class LoginRule
 {
+	/// <summary>Unique identifier of the rule.</summary>
 	public required string Id { get; set; }
+
+	/// <summary>Display name shown in the backoffice.</summary>
 	public required string Name { get; set; }
+
+	/// <summary>Whether the rule takes part in resolution; disabled rules are skipped and their images are not published.</summary>
 	public bool Enabled { get; set; } = true;
+
+	/// <summary>Evaluation order; lower values are evaluated first.</summary>
 	public int Priority { get; set; }
 
 	/// <summary>

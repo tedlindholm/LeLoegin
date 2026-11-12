@@ -15,21 +15,26 @@ namespace LeLøgin.Core.Storage.Migrations.Schemas;
 [SuppressMessage("Performance", "CA1812", Justification = "Used as a generic-type argument by Create.Table<T>(); NPoco reads its attributes via reflection.")]
 internal sealed class LeLoginRuleSchema
 {
+    /// <summary>Rule id (primary key), up to 64 characters.</summary>
     [PrimaryKeyColumn(AutoIncrement = false)]
     [Column("Id")]
     [Length(64)]
     public string Id { get; set; } = string.Empty;
 
+    /// <summary>Rule display name, up to 255 characters.</summary>
     [Column("Name")]
     [Length(255)]
     public string Name { get; set; } = string.Empty;
 
+    /// <summary>Whether the rule takes part in resolution.</summary>
     [Column("Enabled")]
     public bool Enabled { get; set; } = true;
 
+    /// <summary>Evaluation order; lower values are evaluated first.</summary>
     [Column("Priority")]
     public int Priority { get; set; }
 
+    /// <summary>JsonLogic condition, as unbounded JSON text.</summary>
     [Column("Condition")]
     [SpecialDbType(SpecialDbTypes.NVARCHARMAX)]
     public string Condition { get; set; } = string.Empty;

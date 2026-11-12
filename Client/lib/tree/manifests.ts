@@ -156,6 +156,11 @@ const assetUploadLogoBreadcrumbManifest: UmbExtensionManifest = {
 	]
 };
 
+/**
+ * Extension manifests for the asset tree: repository, tree, tree item, Settings menu item, the
+ * menu-structure contexts and breadcrumbs for the asset and upload workspaces, and the asset
+ * entity actions. All management entries are gated by the Le Løgin manage permission.
+ */
 export const manifests: Array<UmbExtensionManifest> = [
 	repositoryManifest,
 	treeManifest,

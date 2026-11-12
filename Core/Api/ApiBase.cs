@@ -5,13 +5,20 @@ using Microsoft.AspNetCore.WebUtilities;
 namespace LeLøgin.Core.Api;
 
 /// <summary>
-/// API identity constants for the Login Screen API.
+/// API identity constants and route helpers shared by the management and public runtime controllers.
 /// </summary>
 public static class ApiBase
 {
+	/// <summary>Major API version; rendered into URLs as <c>v{Major}</c>.</summary>
 	public const string Major = "1";
+
+	/// <summary>Minor API version.</summary>
 	public const string Minor = "0";
+
+	/// <summary>Name of the Le Løgin OpenAPI document that every controller maps to.</summary>
 	public const string LeLøginScreenApiName = $"le-løgin-api-v{Major}";
+
+	/// <summary>API version declared on every Le Løgin controller (<c>{Major}.{Minor}</c>).</summary>
 	public const string LeLøginScreenApiVersion = $"{Major}.{Minor}";
 
 	/// <summary>
@@ -64,6 +71,7 @@ public static class ApiBase
 	/// Per-render token, forwarded so the greeting resolves the same asset as the background and
 	/// logo requests of the same render. See <see cref="LeLøgin.Core.Runtime.LoginRuntimeContext"/>.
 	/// </param>
+	/// <returns>The URI-escaped module path, including the path base and the render-token query string.</returns>
 	public static string GetGreetingModuleUrl(PathString pathBase, int renderToken) =>
 		// PathString.ToString() yields the URI-escaped form, so the non-ASCII segment is emitted
 		// as "le-l%C3%B8gin" rather than relying on the browser to encode it.

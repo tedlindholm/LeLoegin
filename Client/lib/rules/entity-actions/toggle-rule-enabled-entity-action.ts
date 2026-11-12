@@ -14,6 +14,11 @@ import { LeLøginScreenRuleRepository } from '../rule.repository.js';
 export class LeLøginScreenToggleRuleEnabledEntityAction extends UmbEntityActionBase<MetaEntityActionDefaultKind> {
 	#localize = new UmbLocalizationController(this);
 
+	/**
+	 * Reads the saved rule, saves it with `enabled` flipped and shows a success or failure
+	 * notification. After a successful save, updates any open rule editor and rule list and
+	 * reloads the tree structure. Does nothing when the action has no unique.
+	 */
 	override async execute() {
 		const unique = this.args.unique;
 		if (!unique) return;

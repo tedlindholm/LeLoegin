@@ -18,6 +18,7 @@ const manageLeLøginScreenPermissionManifest = {
 	}
 } satisfies ManifestEntityUserPermission;
 
+/** Extension manifests registering the Le Løgin manage permission with Umbraco's user groups UI. */
 export const manifests = [
 	manageLeLøginScreenPermissionManifest
 ] satisfies ReadonlyArray<ManifestEntityUserPermission>;

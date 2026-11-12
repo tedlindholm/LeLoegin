@@ -8,6 +8,10 @@ import { UMB_LOGIN_SCREEN_RULE_WORKSPACE_CONTEXT } from '../rule-workspace.conte
 import type { LeLøginScreenToggleRuleEnabledEntityAction } from './toggle-rule-enabled-entity-action.js';
 import { LeLøginScreenRuleRepository } from '../rule.repository.js';
 
+/**
+ * Menu item for the toggle-enabled entity action. Its icon reflects the rule's current state,
+ * read from the open rule editor, the rule list, or the server when neither is in scope.
+ */
 export class LeLøginScreenToggleRuleEnabledElement extends UmbElementMixin(HTMLElement) {
 	#api: LeLøginScreenToggleRuleEnabledEntityAction | undefined;
 	#unique: string | null = null;
@@ -16,12 +20,25 @@ export class LeLøginScreenToggleRuleEnabledElement extends UmbElementMixin(HTML
 	#menuItem: HTMLElement;
 	#icon: Element;
 
+	/** The entity action manifest, set by the host. */
 	manifest?: ManifestEntityAction;
+	/** The entity type of the action's target, set by the host. */
 	entityType?: string | null;
 
+	/**
+	 * Gets the identifier of the rule the action targets.
+	 *
+	 * @returns The rule identifier, or `null`
+	 */
 	get unique() {
 		return this.#unique;
 	}
+	/**
+	 * Sets the target rule and refreshes the icon, loading the rule from the server when it is
+	 * not in the rule list.
+	 *
+	 * @param value - The rule identifier
+	 */
 	set unique(value: string | null | undefined) {
 		this.#unique = value ?? null;
 		const match = this.#rules.find((r) => r.id === this.#unique);
@@ -33,6 +50,11 @@ export class LeLøginScreenToggleRuleEnabledElement extends UmbElementMixin(HTML
 		}
 	}
 
+	/**
+	 * Sets the entity action executed when the menu item is clicked.
+	 *
+	 * @param value - The toggle-enabled entity action
+	 */
 	set api(value: LeLøginScreenToggleRuleEnabledEntityAction | undefined) {
 		this.#api = value;
 	}

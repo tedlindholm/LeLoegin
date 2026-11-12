@@ -1,6 +1,17 @@
 /** Creates and revokes in-browser URLs; injectable so tests can observe both. */
 export interface ObjectUrlFactory {
+	/**
+	 * Creates an object URL for a blob.
+	 *
+	 * @param blob - The image data
+	 * @returns A URL valid until revoked
+	 */
 	create(blob: Blob): string;
+	/**
+	 * Revokes an object URL created by {@link create}, releasing its blob.
+	 *
+	 * @param url - The URL to revoke
+	 */
 	revoke(url: string): void;
 }
 
@@ -26,6 +37,8 @@ export class AssetThumbnailUrls {
 	#disposed = false;
 
 	/**
+	 * Creates an empty URL cache; nothing loads until {@link peek} is called.
+	 *
 	 * @param load - Fetches the thumbnail for an asset; resolves to `undefined` when it cannot.
 	 * @param onChange - Called once for each thumbnail that becomes available.
 	 * @param objectUrls - Creates and revokes the object URLs.

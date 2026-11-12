@@ -9,6 +9,10 @@ namespace LeLøgin.Core.Runtime;
 /// lock-step or the editor preview drifts from what ImageSharp.Web will serve at
 /// runtime.
 /// </summary>
+/// <param name="X1">Left edge of the window, as a fraction of image width.</param>
+/// <param name="Y1">Top edge of the window, as a fraction of image height.</param>
+/// <param name="X2">Right edge of the window, as a fraction of image width.</param>
+/// <param name="Y2">Bottom edge of the window, as a fraction of image height.</param>
 public readonly record struct LoginScreenCropRegion(double X1, double Y1, double X2, double Y2)
 {
 	/// <summary>
@@ -34,6 +38,9 @@ public readonly record struct LoginScreenCropRegion(double X1, double Y1, double
 	/// panning" in the editor. The TypeScript helper must mirror this so the
 	/// preview stays WYSIWYG.
 	/// </summary>
+	/// <param name="focalPoint">The focal point; the centre when <see langword="null"/>.</param>
+	/// <param name="zoom">The zoom factor; non-finite or at most 1.001 yields the full-image window.</param>
+	/// <returns>The crop window, all edges within 0–1.</returns>
 	public static LoginScreenCropRegion Compute(FocalPoint? focalPoint, double zoom)
 	{
 		if (!double.IsFinite(zoom) || zoom <= ZoomNoopThreshold)

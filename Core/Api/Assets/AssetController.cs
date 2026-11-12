@@ -13,8 +13,15 @@ using Umbraco.Cms.Core.Security;
 namespace LeLøgin.Core.Api.Assets;
 
 /// <summary>
-/// Manages login screen image assets — list, get, upload, delete.
+/// Management endpoints for login screen image assets: list, get, preview, thumbnail, upload,
+/// update and delete. Source files are read from the package-owned asset file system only.
 /// </summary>
+/// <param name="store">Reads and writes assets and rules.</param>
+/// <param name="fileService">Saves uploads, encodes thumbnails and deletes asset files.</param>
+/// <param name="fileStreamSecurityValidator">Umbraco's validator that rejects unsafe upload content.</param>
+/// <param name="contentSettings">The site's upload policy (allowed and disallowed extensions).</param>
+/// <param name="assetManager">Gives access to the asset file system.</param>
+/// <param name="logger">Logs thumbnail failures.</param>
 public class AssetController(
 	ILeLøginScreenStore store,
 	ILeLøginScreenFileService fileService,
@@ -26,6 +33,8 @@ public class AssetController(
 	private const long MaxUploadSizeBytes = 10 * 1024 * 1024;
 	private const long MaxUploadRequestSizeBytes = MaxUploadSizeBytes + 64 * 1024; // Multipart fields and headers.
 
+	/// <summary>Lists every asset of both kinds.</summary>
+	/// <returns>200 with the assets.</returns>
 	[HttpGet("assets")]
 	[ProducesResponseType<IEnumerable<LoginImageAsset>>(StatusCodes.Status200OK)]
 	public async Task<IActionResult> GetAll()
@@ -34,6 +43,9 @@ public class AssetController(
 		return Ok(assets);
 	}
 
+	/// <summary>Gets a single asset's metadata.</summary>
+	/// <param name="id">Id of the asset.</param>
+	/// <returns>200 with the asset; 404 when it does not exist.</returns>
 	[HttpGet("assets/{id}")]
 	[ProducesResponseType<LoginImageAsset>(StatusCodes.Status200OK)]
 	[ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -43,6 +55,9 @@ public class AssetController(
 		return asset is null ? NotFound() : Ok(asset);
 	}
 
+	/// <summary>Streams the asset's full-size source file, with a content type inferred from its extension.</summary>
+	/// <param name="id">Id of the asset.</param>
+	/// <returns>200 with the file; 404 when the asset or its file does not exist or cannot be read.</returns>
 	[HttpGet("assets/{id}/preview")]
 	[ProducesResponseType(StatusCodes.Status200OK)]
 	[ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -78,8 +93,13 @@ public class AssetController(
 
 	/// <summary>
 	/// Returns a downscaled WebP of the asset, or the sanitised source for SVG assets, for the
-	/// backoffice cards and editor previews.
+	/// backoffice cards and editor previews. Encodes and caches the thumbnail on first request.
 	/// </summary>
+	/// <param name="id">Id of the asset.</param>
+	/// <returns>
+	/// 200 with the thumbnail; 304 when unchanged since <c>If-Modified-Since</c>; 404 when the
+	/// asset does not exist or the thumbnail cannot be produced (the failure is logged).
+	/// </returns>
 	[HttpGet("assets/{id}/thumbnail")]
 	[ProducesResponseType(StatusCodes.Status200OK)]
 	[ProducesResponseType(StatusCodes.Status304NotModified)]
@@ -123,6 +143,12 @@ public class AssetController(
 		}
 	}
 
+	/// <summary>
+	/// Uploads a new asset. The file must be at most 10 MB, allowed by the site's upload policy, a
+	/// supported image format (SVG for logos only) and pass Umbraco's file-stream security check.
+	/// </summary>
+	/// <param name="request">The file, name, kind and optional alternative text.</param>
+	/// <returns>201 with the created asset; 400 when the upload is rejected.</returns>
 	[HttpPost("assets")]
 	[RequestSizeLimit(MaxUploadRequestSizeBytes)]
 	[RequestFormLimits(MultipartBodyLengthLimit = MaxUploadSizeBytes)]
@@ -202,6 +228,14 @@ public class AssetController(
 		return CreatedAtAction(nameof(Get), new { id = asset.Id }, asset);
 	}
 
+	/// <summary>
+	/// Updates an asset's metadata. A null name keeps the current one; every other field is replaced.
+	/// Greeting, logo, focal point and zoom apply to backgrounds only and are cleared on logos.
+	/// Focal point is clamped to 0–1 and zoom to 1–10.
+	/// </summary>
+	/// <param name="id">Id of the asset.</param>
+	/// <param name="request">The asset's new values.</param>
+	/// <returns>200 with the updated asset; 400 when the logo id is not an existing logo; 404 when the asset does not exist.</returns>
 	[HttpPut("assets/{id}")]
 	[ProducesResponseType<LoginImageAsset>(StatusCodes.Status200OK)]
 	[ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -242,6 +276,12 @@ public class AssetController(
 		return Ok(asset);
 	}
 
+	/// <summary>
+	/// Deletes an asset and its files. A deleted logo is unlinked from every background using it;
+	/// the asset is removed from every rule, and a rule left without images is disabled.
+	/// </summary>
+	/// <param name="id">Id of the asset.</param>
+	/// <returns>204 when deleted; 404 when the asset does not exist.</returns>
 	[HttpDelete("assets/{id}")]
 	[ProducesResponseType(StatusCodes.Status204NoContent)]
 	[ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -302,6 +342,11 @@ public class AssetController(
 		}
 	}
 
+	/// <summary>
+	/// Retired endpoint: publishing a single asset is no longer supported; a catch-all rule replaces it.
+	/// </summary>
+	/// <param name="id">Id of the asset.</param>
+	/// <returns>400 for an existing asset; 404 when the asset does not exist.</returns>
 	[HttpPost("assets/{id}/publish")]
 	[ProducesResponseType(StatusCodes.Status400BadRequest)]
 	[ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -346,6 +391,15 @@ public class AssetController(
 
 }
 
+/// <summary>
+/// Request body for updating an asset's metadata. Blank text values are stored as <see langword="null"/>.
+/// </summary>
+/// <param name="Name">New display name, or <see langword="null"/> to keep the current one.</param>
+/// <param name="AltText">Alternative text for the image.</param>
+/// <param name="GreetingText">Greeting shown with a background; ignored for logos.</param>
+/// <param name="LogoAssetId">Id of the logo to pair with a background; ignored for logos.</param>
+/// <param name="FocalPoint">Focal point of a background, clamped to 0–1; ignored for logos.</param>
+/// <param name="Zoom">Zoom factor of a background, clamped to 1–10; <see langword="null"/> or non-finite means 1.</param>
 public sealed record AssetUpdateRequest(
 	[property: MaxLength(200)] string? Name,
 	[property: MaxLength(500)] string? AltText,
@@ -354,21 +408,28 @@ public sealed record AssetUpdateRequest(
 	FocalPoint? FocalPoint,
 	double? Zoom);
 
+/// <summary>
+/// Multipart form for uploading a new asset.
+/// </summary>
 public sealed class UploadAssetRequest
 {
+	/// <summary>The image file (form field <c>file</c>).</summary>
 	[Required]
 	[FromForm(Name = "file")]
 	public required IFormFile File { get; init; }
 
+	/// <summary>Display name of the asset (form field <c>name</c>).</summary>
 	[Required]
 	[MaxLength(200)]
 	[FromForm(Name = "name")]
 	public required string Name { get; init; }
 
+	/// <summary>Whether the asset is a background or a logo (form field <c>kind</c>).</summary>
 	[Required]
 	[FromForm(Name = "kind")]
 	public required LoginImageAssetKind Kind { get; init; }
 
+	/// <summary>Optional alternative text (form field <c>altText</c>).</summary>
 	[MaxLength(500)]
 	[FromForm(Name = "altText")]
 	public string? AltText { get; init; }

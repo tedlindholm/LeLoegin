@@ -13,9 +13,18 @@ using Umbraco.Cms.Core.Services;
 namespace LeLøgin.Core.Api.Runtime;
 
 /// <summary>
-/// Public endpoint that returns the active login screen image path.
+/// Public, read-only endpoints that expose the login screen resolved for the current request.
 /// Public before authentication: the Overview preview reads runtime/active and the login page loads runtime/greeting.js.
+/// Both endpoints resolve per request and respond with <c>Cache-Control: no-store</c>.
 /// </summary>
+/// <param name="store">Reads assets and rules.</param>
+/// <param name="fileService">Publishes the resolved image to the public file system.</param>
+/// <param name="runtimeResolver">Picks the background asset that applies to the request.</param>
+/// <param name="timeProvider">Supplies the current time for weekday and month conditions.</param>
+/// <param name="logger">Logs resolution and publishing failures.</param>
+/// <param name="imageSharpOptions">ImageSharp.Web options used to sign crop URLs.</param>
+/// <param name="runtimeState">Reports whether Umbraco is fully running; otherwise the endpoints return empty results.</param>
+/// <param name="requestAuthorizationUtilities">Signs ImageSharp.Web command URLs when HMAC is configured; <see langword="null"/> when unavailable.</param>
 public class RuntimeController(
 	ILeLøginScreenStore store,
 	ILeLøginScreenFileService fileService,
@@ -26,6 +35,14 @@ public class RuntimeController(
 	IRuntimeState runtimeState,
 	RequestAuthorizationUtilities? requestAuthorizationUtilities = null) : RuntimeControllerBase
 {
+	/// <summary>
+	/// Returns the background asset that applies to the current request, publishing its image and
+	/// pruning published images no enabled rule can show.
+	/// </summary>
+	/// <returns>
+	/// 200 with an <see cref="ActiveLeLøginScreenResponse"/>; 204 when Umbraco is not running, no
+	/// rule matches, or publishing fails (the failure is logged).
+	/// </returns>
 	[HttpGet("runtime/active")]
 	[ProducesResponseType<ActiveLeLøginScreenResponse>(StatusCodes.Status200OK)]
 	[ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -79,6 +96,10 @@ public class RuntimeController(
 	/// namespace is emitted: in Umbraco 18 both the login page and the logout view read
 	/// <c>login_greeting0..6</c>, and <c>auth_greeting*</c> is deprecated for removal in 20.
 	/// </summary>
+	/// <returns>
+	/// A <c>text/javascript</c> module whose default export overrides every weekday greeting, or an
+	/// empty object when no greeting applies or Umbraco is not running.
+	/// </returns>
 	[HttpGet(ApiBase.GreetingModuleActionRoute)]
 	// An ES module resource, not part of the JSON API contract — keep it out of the OpenAPI
 	// document so the generated client stays stable.
@@ -140,6 +161,16 @@ public class RuntimeController(
 	}
 }
 
+/// <summary>
+/// The login screen resolved for a request (runtime/active) or a rule (rules/{id}/preview).
+/// </summary>
+/// <param name="AssetId">Id of the resolved background asset.</param>
+/// <param name="ImageUrl">Public URL of the published image, with ImageSharp crop commands when a focal point or zoom applies.</param>
+/// <param name="AltText">Alternative text for the image, if any.</param>
+/// <param name="GreetingText">Greeting shown with the image, if any.</param>
+/// <param name="FocalPoint">Focal point of the image, if set.</param>
+/// <param name="Zoom">Zoom factor around the focal point.</param>
+/// <param name="LogoAssetId">Id of the paired logo asset, if any.</param>
 public sealed record ActiveLeLøginScreenResponse(
 	string AssetId,
 	string ImageUrl,

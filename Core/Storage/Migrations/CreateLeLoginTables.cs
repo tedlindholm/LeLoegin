@@ -10,10 +10,14 @@ namespace LeLøgin.Core.Storage.Migrations;
 /// </summary>
 public sealed class CreateLeLoginTables : AsyncMigrationBase
 {
+	/// <summary>Creates the migration step.</summary>
+	/// <param name="context">The Umbraco migration context, supplying the database and logger.</param>
 	public CreateLeLoginTables(IMigrationContext context) : base(context)
 	{
 	}
 
+	/// <summary>Creates each missing table from its schema snapshot; existing tables are left untouched.</summary>
+	/// <returns>A completed task; the work is synchronous.</returns>
 	protected override Task MigrateAsync()
 	{
 		Logger.LogDebug("Running migration {MigrationStep}", nameof(CreateLeLoginTables));

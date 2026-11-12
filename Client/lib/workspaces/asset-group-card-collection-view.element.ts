@@ -38,6 +38,10 @@ function queryRequired<T extends Element>(
 	return element;
 }
 
+/**
+ * Card view for the asset group collection: one asset card per collection item, or a
+ * kind-specific empty message when the group has no assets.
+ */
 export class LeLøginScreenAssetGroupCardCollectionView extends UmbElementMixin(HTMLElement) {
 	#items: Array<LeLøginAssetCollectionItemModel> = [];
 	#root: HTMLElement | undefined;
@@ -67,6 +71,11 @@ export class LeLøginScreenAssetGroupCardCollectionView extends UmbElementMixin(
 		});
 	}
 
+	/**
+	 * Creates the render root on first connection and renders.
+	 *
+	 * @throws {Error} When a card or the grid template cannot be created.
+	 */
 	override connectedCallback() {
 		super.connectedCallback();
 		if (this.#root === undefined && this.shadowRoot !== null) {

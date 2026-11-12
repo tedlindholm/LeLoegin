@@ -10,11 +10,15 @@ namespace LeLøgin.Core.Storage;
 /// <c>builder.SetLoginPublishFileSystem(factory => …)</c> in a composer decorated with
 /// <c>[ComposeAfter(typeof(LeLøginScreenComposer))]</c>.
 /// </summary>
+/// <param name="fileSystem">The publicly served file system for runtime publications.</param>
 public sealed class LeLøginPublishFileManager(IFileSystem fileSystem)
 {
+    /// <summary>The publicly served file system holding runtime publications.</summary>
     public IFileSystem FileSystem { get; } = fileSystem;
 
     /// <summary>Returns the public URL for a published file by name.</summary>
+    /// <param name="fileName">The file name, relative to the publish file system root.</param>
+    /// <returns>The URL the browser can load the file from.</returns>
     /// <exception cref="InvalidOperationException">
     /// The backing file system returned a null URL — typically a sign that the publish
     /// file system is not configured with a non-empty root URL. Surfacing it as an

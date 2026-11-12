@@ -17,8 +17,16 @@ public static class LoginScreenImageUrlBuilder
 {
 	/// <summary>
 	/// Appends ImageSharp.Web crop/focal-point parameters to a published image URL and signs
-	/// it when HMAC is configured in ImageSharp's middleware options.
+	/// it when HMAC is configured in ImageSharp's middleware options. A zoomed asset gets a
+	/// <c>cc</c> crop; an unzoomed asset with a focal point gets <c>rmode=crop&amp;rxy</c>.
 	/// </summary>
+	/// <param name="baseUrl">The published image URL, returned unchanged when no processing applies.</param>
+	/// <param name="focalPoint">The editor's focal point, if any.</param>
+	/// <param name="zoom">The editor's zoom factor.</param>
+	/// <param name="imageSharpOptions">ImageSharp.Web options; a non-empty HMAC key requires signing.</param>
+	/// <param name="requestAuthorizationUtilities">The signer; when missing but required, a warning is logged and the URL stays unsigned.</param>
+	/// <param name="logger">Logger for the missing-signer warning.</param>
+	/// <returns>The processed, and when required signed, image URL.</returns>
 	public static string ApplyImageProcessing(
 		string baseUrl,
 		FocalPoint? focalPoint,

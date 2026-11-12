@@ -114,7 +114,7 @@ const syncResizeObservation = (
  *
  * @param authView - The auth view host element
  * @param getCustomisation - Callback returning the current customisation state
- * @returns A function to stop observing
+ * @returns A function that stops observing and cancels any pending frame
  */
 export const observeAuthViewCustomisation = (
 	authView: HTMLElement,

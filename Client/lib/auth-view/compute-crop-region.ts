@@ -1,5 +1,6 @@
 import type { FocalPoint } from '../models/index.js';
 
+/** A crop window in normalised image coordinates, matching the server's `cc=` parameter. */
 export interface CropRegion {
 	/** Left edge of the crop in normalised image coordinates (0–1). */
 	readonly x1: number;
@@ -31,6 +32,10 @@ const ZOOM_NOOP_THRESHOLD = 1.001;
  * Returns the full image `(0, 0)–(1, 1)` for any zoom ≤ 1 (or non-finite) so
  * callers can plug the result straight into cover-fit maths regardless of
  * whether a zoom is configured.
+ *
+ * @param focalPoint - Normalised focal point; defaults to the image centre
+ * @param zoom - Zoom factor; values at or below the no-op threshold mean no crop
+ * @returns The crop window, always inside `(0, 0)–(1, 1)`
  */
 export const computeCropRegion = (
 	focalPoint: FocalPoint | undefined,

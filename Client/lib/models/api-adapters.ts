@@ -24,7 +24,7 @@ import type {
 import { ensureConditionField, ensureConditionOperator } from './api-rule-contract.js';
 
 /** Request body for an asset update, as the generated client expects it. */
-export type ApiAssetUpdateBody =ApiAssetUpdateRequest;
+export type ApiAssetUpdateBody = ApiAssetUpdateRequest;
 
 const normaliseNullable = <T>(value: T | null | undefined): T | undefined => value ?? undefined;
 const isObject = (value: unknown): value is Record<string, unknown> =>
@@ -86,7 +86,7 @@ const mapApiFocalPoint = (value: ApiFocalPoint | null | undefined): FocalPoint |
  * @returns The domain asset.
  * @throws {Error} When `width` or `height` is not numeric.
  */
-export const mapApiLoginAsset =(asset: ApiLoginImageAsset): LoginImageAsset => {
+export const mapApiLoginAsset = (asset: ApiLoginImageAsset): LoginImageAsset => {
 	const altText = normaliseNullable(asset.altText);
 	const greetingText = normaliseNullable(asset.greetingText);
 	const logoAssetId = normaliseNullable(asset.logoAssetId);
@@ -124,7 +124,7 @@ export const mapApiLoginAsset =(asset: ApiLoginImageAsset): LoginImageAsset => {
  * @returns The domain assets, in the same order.
  * @throws {Error} When any asset has a non-numeric `width` or `height`.
  */
-export const mapApiLoginAssets =(assets: Array<ApiLoginImageAsset>): Array<LoginImageAsset> =>
+export const mapApiLoginAssets = (assets: Array<ApiLoginImageAsset>): Array<LoginImageAsset> =>
 	assets.map(mapApiLoginAsset);
 
 /**
@@ -135,7 +135,7 @@ export const mapApiLoginAssets =(assets: Array<ApiLoginImageAsset>): Array<Login
  * @returns The domain rule.
  * @throws {Error} When `priority` is not numeric.
  */
-export const mapApiLoginRule =(rule: LoginRuleResponseModel): LoginRule => ({
+export const mapApiLoginRule = (rule: LoginRuleResponseModel): LoginRule => ({
 	id: rule.id,
 	name: rule.name,
 	priority: toDomainNumber(rule.priority, 'priority'),
@@ -151,7 +151,7 @@ export const mapApiLoginRule =(rule: LoginRuleResponseModel): LoginRule => ({
  * @returns The domain rules, in the same order.
  * @throws {Error} When any rule has a non-numeric `priority`.
  */
-export const mapApiLoginRules =(rules: Array<LoginRuleResponseModel>): Array<LoginRule> =>
+export const mapApiLoginRules = (rules: Array<LoginRuleResponseModel>): Array<LoginRule> =>
 	rules.map(mapApiLoginRule);
 
 /**
@@ -161,7 +161,7 @@ export const mapApiLoginRules =(rules: Array<LoginRuleResponseModel>): Array<Log
  * @param rule - The rule to save.
  * @returns The request body for the generated client.
  */
-export const toSaveRuleRequest =(rule: LoginRule): SaveRuleRequest => ({
+export const toSaveRuleRequest = (rule: LoginRule): SaveRuleRequest => ({
 	id: rule.id,
 	name: rule.name,
 	priority: rule.priority,
@@ -283,7 +283,7 @@ const parseConditionFieldMetadata = (meta: unknown): ConditionFieldMetadata => {
  * @returns Operator and field metadata as maps.
  * @throws {Error} When an operator, field, arity or field entry is unknown or malformed.
  */
-export const toConditionMetadata =(api: ApiConditionMetadata): ConditionMetadata => {
+export const toConditionMetadata = (api: ApiConditionMetadata): ConditionMetadata => {
 	const operators = new Map<LoginRuleConditionOperator, ConditionOperatorMetadata>(
 		Object.entries(api.operators).map(([op, meta]) => [
 			ensureConditionOperator(op),

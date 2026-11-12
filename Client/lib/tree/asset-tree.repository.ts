@@ -18,14 +18,26 @@ class AssetTreeDataSource extends UmbTreeServerDataSourceBase<
 	}
 }
 
+/**
+ * Tree repository behind `LeLøgin.Tree.Assets`. Supplies the fixed asset root and delegates
+ * groups and leaves to the asset tree data source.
+ */
 export class LeLøginScreenAssetTreeRepository
 	extends UmbTreeRepositoryBase<LeLøginScreenAnyAssetTreeItemModel, LeLøginScreenAssetTreeRootModel>
 	implements UmbApi
 {
+	/**
+	 * @param host - The controller host that owns the repository.
+	 */
 	constructor(host: UmbControllerHost) {
 		super(host, AssetTreeDataSource);
 	}
 
+	/**
+	 * Returns the static asset root node. No request is made; the root always exists.
+	 *
+	 * @returns A response envelope holding the root model.
+	 */
 	async requestTreeRoot() {
 		const data: LeLøginScreenAssetTreeRootModel = {
 			unique: null,
@@ -39,4 +51,5 @@ export class LeLøginScreenAssetTreeRepository
 	}
 }
 
+/** Exported as `api` so the manifest's lazy import resolves the repository. */
 export { LeLøginScreenAssetTreeRepository as api };

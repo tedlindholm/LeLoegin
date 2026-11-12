@@ -26,6 +26,11 @@ export class LeLøginScreenRuleTreeRepository
 		super(host, RuleTreeDataSource);
 	}
 
+	/**
+	 * Builds the static rule list root node; no server call is made.
+	 *
+	 * @returns The tree root model
+	 */
 	async requestTreeRoot() {
 		const data: LeLøginScreenRuleTreeRootModel = {
 			unique: null,

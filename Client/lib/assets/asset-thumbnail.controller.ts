@@ -14,6 +14,8 @@ export class LeLøginAssetThumbnailController extends UmbControllerBase {
 	#urls: AssetThumbnailUrls;
 
 	/**
+	 * Creates the controller and its owned repository.
+	 *
 	 * @param host - The element that shows the thumbnails.
 	 * @param onChange - Called when a requested thumbnail becomes available, so the host can re-render.
 	 */
@@ -25,6 +27,8 @@ export class LeLøginAssetThumbnailController extends UmbControllerBase {
 	}
 
 	/**
+	 * Returns the thumbnail URL when ready, starting the download on first request.
+	 *
 	 * @param assetId - The asset whose thumbnail is wanted.
 	 * @returns The thumbnail URL once loaded; `undefined` until then or when it cannot be loaded.
 	 */
@@ -32,12 +36,14 @@ export class LeLøginAssetThumbnailController extends UmbControllerBase {
 		return this.#urls.peek(assetId);
 	}
 
+	/** Revokes all URLs and starts a fresh cache, so a reconnect reloads thumbnails. */
 	override hostDisconnected() {
 		super.hostDisconnected();
 		this.#urls.dispose();
 		this.#urls = this.#createUrls();
 	}
 
+	/** Revokes all URLs before tearing down the controller. */
 	override destroy() {
 		this.#urls.dispose();
 		super.destroy();

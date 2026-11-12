@@ -15,6 +15,13 @@ const makeValidator = <Value extends string>(label: string, values: readonly Val
 	};
 };
 
+/**
+ * Narrows a plain string to a known condition operator.
+ *
+ * @param value - The candidate operator.
+ * @returns The value, typed as a condition operator.
+ * @throws {Error} When the value is not a supported operator.
+ */
 export const ensureConditionOperator = makeValidator('condition operator', [
 	'is',
 	'isNot',
@@ -24,6 +31,13 @@ export const ensureConditionOperator = makeValidator('condition operator', [
 	'notBetween'
 ] as const satisfies readonly LoginRuleConditionOperator[]);
 
+/**
+ * Narrows a plain string to a known condition field.
+ *
+ * @param value - The candidate field.
+ * @returns The value, typed as a condition field.
+ * @throws {Error} When the value is not a supported field.
+ */
 export const ensureConditionField = makeValidator('condition field', [
 	'weekday',
 	'month'

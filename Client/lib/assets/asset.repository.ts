@@ -12,6 +12,11 @@ import { LeLøginScreenAssetDataSource } from './asset.data-source.js';
 export class LeLøginScreenAssetRepository extends UmbRepositoryBase {
 	#dataSource: LeLøginScreenAssetDataSource;
 
+	/**
+	 * Creates the repository and its owned data source.
+	 *
+	 * @param host - The controller host that owns this repository
+	 */
 	constructor(host: UmbControllerHost) {
 		super(host);
 		this.#dataSource = new LeLøginScreenAssetDataSource(this);
@@ -53,6 +58,7 @@ export class LeLøginScreenAssetRepository extends UmbRepositoryBase {
 	 *
 	 * @param file - The image file to upload
 	 * @param name - The display name for the asset
+	 * @param kind - Whether the image is a background or a logo
 	 * @param altText - Optional alternative text for accessibility
 	 * @returns A promise resolving to an object with the created asset or error
 	 *
@@ -144,8 +150,10 @@ export class LeLøginScreenAssetRepository extends UmbRepositoryBase {
 	}
 }
 
+/** The resolved result of {@link LeLøginScreenAssetRepository.requestItems}: asset list or error. */
 export type LeLøginScreenAssetRepositoryResponse = Awaited<
 	ReturnType<LeLøginScreenAssetRepository['requestItems']>
 >;
 
+/** Default `api` export so the repository manifest can load this class lazily. */
 export { LeLøginScreenAssetRepository as api };

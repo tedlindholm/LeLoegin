@@ -46,6 +46,10 @@ function getEventTargetElement(event: Event): Element | null {
 	return event.target instanceof Element ? event.target : null;
 }
 
+/**
+ * Dialog that asks whether to upload a background image or a logo. Choosing an option submits
+ * the modal with that kind; Close rejects it.
+ */
 export class LeLøginCreateAssetModalElement
 	extends UmbElementMixin(HTMLElement)
 	implements UmbModalExtensionElement<CreateAssetModalData, CreateAssetModalValue>
@@ -53,6 +57,7 @@ export class LeLøginCreateAssetModalElement
 	#modalContext: UmbModalContext<CreateAssetModalData, CreateAssetModalValue> | undefined;
 	#layout: HTMLElement;
 
+	/** The modal context the dialog submits to. Setting it re-renders the dialog. */
 	get modalContext() {
 		return this.#modalContext;
 	}

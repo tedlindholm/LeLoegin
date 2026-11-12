@@ -29,6 +29,7 @@ const buildAssetEditWorkspacePath = (assetId: string): string =>
 const BACKGROUND_WORKSPACE_ALIAS = 'LeLøgin.Workspace.AssetUpload.Background';
 const LOGO_WORKSPACE_ALIAS = 'LeLøgin.Workspace.AssetUpload.Logo';
 
+/** Context token for the upload workspaces; matches the background and the logo upload contexts. */
 export const UMB_LOGIN_SCREEN_ASSET_UPLOAD_WORKSPACE_CONTEXT = new UmbContextToken<
 	UmbWorkspaceContext,
 	LeLøginScreenAssetUploadWorkspaceContextBase
@@ -51,13 +52,17 @@ export const UMB_LOGIN_SCREEN_ASSET_UPLOAD_WORKSPACE_CONTEXT = new UmbContextTok
  * workspace alias / entity type from the manifest matches the action invoked.
  */
 abstract class LeLøginScreenAssetUploadWorkspaceContextBase extends UmbContextBase {
+	/** Workspace routes; serves `edit/:unique`, which resets the form for a new upload. */
 	readonly routes = new UmbWorkspaceRouteManager(this);
 	// Marker the umb-entity-detail-workspace-editor uses to claim this context.
 	// eslint-disable-next-line @typescript-eslint/naming-convention
 	readonly IS_ENTITY_DETAIL_WORKSPACE_CONTEXT = true;
+	/** Loading states the workspace editor reads; the upload adds none. */
 	readonly loading = new UmbStateManager(this);
+	/** Forbidden states the workspace editor reads; the upload adds none. */
 	readonly forbidden = new UmbStateManager(this);
 
+	/** Alias of the workspace manifest this context belongs to. */
 	readonly workspaceAlias: string;
 	readonly #kind: LoginImageAssetKind;
 	readonly #entityType: string;
@@ -75,12 +80,19 @@ abstract class LeLøginScreenAssetUploadWorkspaceContextBase extends UmbContextB
 	#data = new UmbObjectState<{ entityType: string }>({ entityType: '' });
 	#localize = new UmbLocalizationController(this);
 
+	/** Name the new asset will get. */
 	readonly name = this.#name.asObservable();
+	/** The chosen file, or `undefined` when none is chosen or it was rejected. */
 	readonly selectedFile = this.#selectedFile.asObservable();
+	/** Why the last chosen file was rejected; empty when it was not. */
 	readonly rejectMessage = this.#rejectMessage.asObservable();
+	/** A draft id, so Umbraco's Save button is enabled before the asset exists. */
 	readonly unique = this.#unique.asObservable();
+	/** The upload entity type for this context's kind. */
 	readonly entityType: ReturnType<UmbStringState<string>['asObservable']>;
+	/** Always true: this workspace only creates assets. */
 	readonly isNew = this.#isNew.asObservable();
+	/** Truthy placeholder so the workspace editor does not show its not-found view. */
 	readonly data = this.#data.asObservable();
 	// eslint-disable-next-line @typescript-eslint/naming-convention
 	readonly _internal_createUnderParent = this.#createUnderParent.asObservable();
@@ -93,6 +105,12 @@ abstract class LeLøginScreenAssetUploadWorkspaceContextBase extends UmbContextB
 		(parent) => parent?.entityType
 	);
 
+	/**
+	 * Provides the context and registers the upload route.
+	 *
+	 * @param host - The workspace's controller host.
+	 * @param options - The asset kind to upload, and the entity type and workspace alias that match it.
+	 */
 	constructor(
 		host: UmbControllerHost,
 		options: { kind: LoginImageAssetKind; entityType: string; workspaceAlias: string }
@@ -126,30 +144,46 @@ abstract class LeLøginScreenAssetUploadWorkspaceContextBase extends UmbContextB
 		]);
 	}
 
+	/** @returns The upload entity type for this context's kind. */
 	getEntityType() {
 		return this.#entityType;
 	}
 
+	/** @returns The draft id set when the route matched. */
 	getUnique() {
 		return this.#unique.getValue();
 	}
 
+	/** @returns The name the new asset will get. */
 	getName(): string {
 		return this.#name.getValue();
 	}
 
+	/**
+	 * Sets the name the new asset will get.
+	 *
+	 * @param name - The name.
+	 */
 	setName(name: string) {
 		this.#name.setValue(name);
 	}
 
+	/** @returns Always true. */
 	getIsNew(): boolean {
 		return this.#isNew.getValue();
 	}
 
+	/** @returns The kind of asset this context uploads. */
 	getKind(): LoginImageAssetKind {
 		return this.#kind;
 	}
 
+	/**
+	 * Chooses the file to upload and clears any rejection. When no name has been entered, the
+	 * name defaults to the file name without its extension.
+	 *
+	 * @param file - The file, or `undefined` to clear the choice.
+	 */
 	setSelectedFile(file: File | undefined) {
 		this.#selectedFile.setValue(file);
 		this.#rejectMessage.setValue('');
@@ -161,12 +195,24 @@ abstract class LeLøginScreenAssetUploadWorkspaceContextBase extends UmbContextB
 		}
 	}
 
+	/**
+	 * Clears the chosen file and reports why it was rejected. Repeating the same message still
+	 * notifies observers.
+	 *
+	 * @param message - The localised reason.
+	 */
 	setRejectMessage(message: string) {
 		this.#selectedFile.setValue(undefined);
 		// A second identical rejection must show its message again.
 		setStringStateAlways(this.#rejectMessage, message);
 	}
 
+	/**
+	 * Uploads the chosen file under the entered name, showing a notification for the outcome.
+	 * On success, reloads the asset group in the tree and navigates to the new asset's workspace.
+	 *
+	 * @returns True when the asset was uploaded.
+	 */
 	async requestSubmit(): Promise<boolean> {
 		const file = this.#selectedFile.getValue();
 		const name = this.#name.getValue().trim();
@@ -202,7 +248,9 @@ abstract class LeLøginScreenAssetUploadWorkspaceContextBase extends UmbContextB
 	}
 }
 
+/** Upload workspace context for background images. */
 export class LeLøginScreenAssetUploadBackgroundWorkspaceContext extends LeLøginScreenAssetUploadWorkspaceContextBase {
+	/** @param host - The workspace's controller host. */
 	constructor(host: UmbControllerHost) {
 		super(host, {
 			kind: 'background',
@@ -212,7 +260,9 @@ export class LeLøginScreenAssetUploadBackgroundWorkspaceContext extends LeLøgi
 	}
 }
 
+/** Upload workspace context for logos. */
 export class LeLøginScreenAssetUploadLogoWorkspaceContext extends LeLøginScreenAssetUploadWorkspaceContextBase {
+	/** @param host - The workspace's controller host. */
 	constructor(host: UmbControllerHost) {
 		super(host, {
 			kind: 'logo',
@@ -222,4 +272,5 @@ export class LeLøginScreenAssetUploadLogoWorkspaceContext extends LeLøginScree
 	}
 }
 
+/** Either upload workspace context, as consumers see it through the context token. */
 export type LeLøginScreenAssetUploadWorkspaceContext = LeLøginScreenAssetUploadWorkspaceContextBase;

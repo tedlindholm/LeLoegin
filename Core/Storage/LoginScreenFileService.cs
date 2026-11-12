@@ -17,6 +17,9 @@ namespace LeLøgin.Core.Storage;
 /// <see cref="LeLøginPublishFileManager"/>. All paths are filesystem-relative to their
 /// respective manager roots — no absolute paths are used or stored.
 /// </summary>
+/// <param name="assetManager">Private storage for source assets and thumbnails.</param>
+/// <param name="publishManager">Public storage for runtime publications.</param>
+/// <param name="logger">Logger for publishing and clean-up failures.</param>
 public sealed class LeLøginScreenFileService(
     LeLøginAssetFileManager assetManager,
     LeLøginPublishFileManager publishManager,
@@ -31,6 +34,7 @@ public sealed class LeLøginScreenFileService(
     private const int ThumbnailMaxDimension = 1280;
     private const int ThumbnailWebpQuality = 75;
 
+    /// <inheritdoc />
     public async Task<(string storagePath, int width, int height)> SaveUploadAsync(string assetId, IFormFile file)
     {
         var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
@@ -70,6 +74,7 @@ public sealed class LeLøginScreenFileService(
         }
     }
 
+    /// <inheritdoc />
     public void DeleteAsset(LoginImageAsset asset)
     {
         ArgumentNullException.ThrowIfNull(asset);
@@ -108,6 +113,8 @@ public sealed class LeLøginScreenFileService(
         }
     }
 
+    /// <inheritdoc />
+    /// <remarks>Stale publications are pruned only after a new file is written; failures are logged and rethrown.</remarks>
     public async Task<PublishedRuntimeAssetPaths> EnsureRuntimeAssetsAsync(
         LoginImageAsset imageAsset,
         IReadOnlyCollection<LoginImageAsset> assetsToKeepPublished)
@@ -136,6 +143,7 @@ public sealed class LeLøginScreenFileService(
         }
     }
 
+    /// <inheritdoc />
     public async Task<EncodedThumbnail> GetThumbnailAsync(LoginImageAsset asset)
     {
         var sourcePath = asset.StoragePath;

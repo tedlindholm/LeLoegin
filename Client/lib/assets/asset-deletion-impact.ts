@@ -11,6 +11,10 @@ export interface AssetDeletionImpact {
 /**
  * Predicts the server's rule clean-up for an asset delete, so the confirmation can name the rules
  * before anything changes. Mirrors `AssetController.Delete`: ids compare case-insensitively.
+ *
+ * @param rules - The rules to check, in display order
+ * @param assetId - The id of the asset about to be deleted
+ * @returns The names of the rules that would be disabled and those that would only lose the image
  */
 export const assetDeletionImpact = (
 	rules: ReadonlyArray<Pick<LoginRule, 'name' | 'enabled' | 'assetIds'>>,

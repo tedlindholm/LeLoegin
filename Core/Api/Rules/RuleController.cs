@@ -12,8 +12,14 @@ using LeLøgin.Core.Storage;
 namespace LeLøgin.Core.Api.Rules;
 
 /// <summary>
-/// Manages login screen rules.
+/// Management endpoints for login screen rules: list, read, create, update, delete and preview.
 /// </summary>
+/// <param name="store">Reads and writes rules and assets.</param>
+/// <param name="fileService">Publishes the image shown by a rule preview.</param>
+/// <param name="runtimeResolver">Determines which images must stay published.</param>
+/// <param name="logger">Logs mapping and publishing failures.</param>
+/// <param name="imageSharpOptions">ImageSharp.Web options used to sign crop URLs.</param>
+/// <param name="requestAuthorizationUtilities">Signs ImageSharp.Web command URLs when HMAC is configured; <see langword="null"/> when unavailable.</param>
 public sealed class RuleController(
 	ILeLøginScreenStore store,
 	ILeLøginScreenFileService fileService,
@@ -28,6 +34,11 @@ public sealed class RuleController(
 	/// <summary>Gap between consecutive rule priorities, matching the client's reorder.</summary>
 	private const int PriorityStep = 100;
 
+	/// <summary>
+	/// Describes the condition editor's vocabulary: each operator's value shape and, for each field,
+	/// the allowed operators, default value and allowed values.
+	/// </summary>
+	/// <returns>200 with a <see cref="ConditionMetadataResponse"/>.</returns>
 	[HttpGet("rules/condition-metadata")]
 	[ProducesResponseType<ConditionMetadataResponse>(StatusCodes.Status200OK)]
 	public IActionResult GetConditionMetadata()
@@ -59,6 +70,11 @@ public sealed class RuleController(
 		return Ok(response);
 	}
 
+	/// <summary>
+	/// Lists every rule in evaluation order (priority, then id). Stored rules whose condition can
+	/// no longer be mapped are logged and left out.
+	/// </summary>
+	/// <returns>200 with the rules.</returns>
 	[HttpGet("rules")]
 	[ProducesResponseType<IEnumerable<LoginRuleResponseModel>>(StatusCodes.Status200OK)]
 	public async Task<IActionResult> GetAll()
@@ -73,6 +89,9 @@ public sealed class RuleController(
 		return Ok(rules);
 	}
 
+	/// <summary>Gets a single rule.</summary>
+	/// <param name="id">Id of the rule.</param>
+	/// <returns>200 with the rule; 404 when it does not exist or its stored condition cannot be mapped.</returns>
 	[HttpGet("rules/{id}")]
 	[ProducesResponseType<LoginRuleResponseModel>(StatusCodes.Status200OK)]
 	[ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -86,6 +105,12 @@ public sealed class RuleController(
 			: NotFound();
 	}
 
+	/// <summary>
+	/// Creates a rule with a server-generated id, placed after every existing rule. The requested
+	/// priority is ignored.
+	/// </summary>
+	/// <param name="request">Name, enabled flag, condition and background asset ids of the rule.</param>
+	/// <returns>201 with the created rule; 400 with validation problems when the request is invalid.</returns>
 	[HttpPost("rules")]
 	[ProducesResponseType<LoginRuleResponseModel>(StatusCodes.Status201Created)]
 	[ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -108,6 +133,10 @@ public sealed class RuleController(
 		return CreatedAtAction(nameof(Get), new { id = rule.Id }, mapped);
 	}
 
+	/// <summary>Replaces an existing rule, including its priority.</summary>
+	/// <param name="id">Id of the rule to update.</param>
+	/// <param name="request">The rule's new values.</param>
+	/// <returns>200 with the updated rule; 400 with validation problems; 404 when the rule does not exist.</returns>
 	[HttpPut("rules/{id}")]
 	[ProducesResponseType<LoginRuleResponseModel>(StatusCodes.Status200OK)]
 	[ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -131,6 +160,9 @@ public sealed class RuleController(
 		return Ok(mapped);
 	}
 
+	/// <summary>Deletes a rule. Its images are not deleted.</summary>
+	/// <param name="id">Id of the rule to delete.</param>
+	/// <returns>204 when deleted; 404 when the rule does not exist.</returns>
 	[HttpDelete("rules/{id}")]
 	[ProducesResponseType(StatusCodes.Status204NoContent)]
 	[ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -147,8 +179,13 @@ public sealed class RuleController(
 	/// Returns the resolved screen for a specific rule — bypassing context matching so the
 	/// backoffice picker can preview each rule's screen on demand. Auth-protected (inherited
 	/// from <see cref="ApiControllerBase"/>) because it lets callers enumerate rule IDs and
-	/// resolve their image URLs.
+	/// resolve their image URLs. Shows the rule's first image and publishes it as a side effect.
 	/// </summary>
+	/// <param name="id">Id of the rule to preview.</param>
+	/// <returns>
+	/// 200 with the rule's screen; 204 when its first image is missing or not a background, or
+	/// publishing fails; 404 when the rule does not exist.
+	/// </returns>
 	[HttpGet("rules/{id}/preview")]
 	[ProducesResponseType<ActiveLeLøginScreenResponse>(StatusCodes.Status200OK)]
 	[ProducesResponseType(StatusCodes.Status204NoContent)]

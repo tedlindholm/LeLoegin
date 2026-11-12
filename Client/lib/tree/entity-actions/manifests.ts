@@ -110,6 +110,11 @@ const deleteAssetActionManifest: UmbExtensionManifest = {
 	conditions: [manageLeLøginScreenCondition]
 };
 
+/**
+ * Extension manifests for the asset tree's entity actions: the asset repository, the create
+ * actions and upload options for each group, reload on the root, and Le Løgin's own delete.
+ * All are gated by the Le Løgin manage permission.
+ */
 export const manifests: Array<UmbExtensionManifest> = [
 	assetRepositoryManifest,
 	createBackgroundGroupActionManifest,

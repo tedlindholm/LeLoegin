@@ -43,4 +43,5 @@ const localisationManifests = [
 	}
 ] satisfies ReadonlyArray<ManifestLocalization>;
 
+/** Localisation extensions for every culture Le Løgin ships (en, da, sv, nb-no). */
 export const manifests = [...localisationManifests];

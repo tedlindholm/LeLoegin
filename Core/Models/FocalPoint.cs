@@ -7,6 +7,9 @@ namespace LeLøgin.Core.Models;
 /// </summary>
 public sealed class FocalPoint
 {
+	/// <summary>Horizontal position, from 0 (left edge) to 1 (right edge).</summary>
 	public double Left { get; set; }
+
+	/// <summary>Vertical position, from 0 (top edge) to 1 (bottom edge).</summary>
 	public double Top { get; set; }
 }

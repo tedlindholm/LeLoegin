@@ -17,6 +17,7 @@ namespace LeLøgin.Core.Runtime;
 /// Both endpoints currently return the same logo bytes — Le Løgin has a single logo concept,
 /// not a primary/alternative split. If we ever need distinct light/dark logos this is the place.
 /// </summary>
+/// <param name="next">The next middleware, invoked whenever Le Løgin does not handle the request.</param>
 public sealed class LeLøginLogoMiddleware(RequestDelegate next)
 {
 	private static readonly string[] LogoPaths =
@@ -25,6 +26,20 @@ public sealed class LeLøginLogoMiddleware(RequestDelegate next)
 		"/umbraco/management/api/v1/security/back-office/graphics/login-logo-alternative",
 	];
 
+	/// <summary>
+	/// Handles one request. Only GET/HEAD on the logo paths are considered, and only once Umbraco
+	/// is fully running. When the resolved background has a logo whose file exists, streams it
+	/// with the image security headers and <c>Cache-Control: no-store</c>; otherwise, or when the
+	/// file disappears or lies outside the safe directory, calls the next middleware.
+	/// </summary>
+	/// <param name="context">The current HTTP context.</param>
+	/// <param name="store">Source of assets and rules.</param>
+	/// <param name="runtimeResolver">Picks the background asset for the request's runtime context.</param>
+	/// <param name="timeProvider">Clock used to build the runtime context.</param>
+	/// <param name="assetManager">File system holding the source logo files.</param>
+	/// <param name="logger">Logger for missing or refused logo files.</param>
+	/// <param name="runtimeState">Umbraco runtime state; requests pass through until it is <see cref="RuntimeLevel.Run"/>.</param>
+	/// <returns>A task that completes when the logo is streamed or the next middleware finishes.</returns>
 	public async Task InvokeAsync(
 		HttpContext context,
 		ILeLøginScreenStore store,

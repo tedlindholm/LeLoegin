@@ -12,6 +12,7 @@ public interface ILeLøginRandom
 	/// Returns a token identifying one login page render. The login shell puts the same value on
 	/// its background, logo, and greeting URLs so all three resolve to the same image.
 	/// </summary>
+	/// <returns>The render token; any <see cref="int"/> value is valid.</returns>
 	int NextRenderToken();
 }
 
@@ -20,6 +21,7 @@ public interface ILeLøginRandom
 /// </summary>
 public sealed class LeLøginRandom : ILeLøginRandom
 {
+	/// <inheritdoc />
 	[SuppressMessage(
 		"Security",
 		"CA5394:Do not use insecure randomness",

@@ -2,6 +2,7 @@ import { createLeLøginScreenManagePermissionCondition } from '../user-permissio
 
 const SETTINGS_SECTION_ALIAS = 'Umb.Section.Settings';
 
+/** Alias of the Le Løgin menu in Settings; menu items register against it. */
 export const LOGIN_SCREEN_SETTINGS_MENU_ALIAS = 'LeLøgin.Menu.Settings';
 
 const manageLeLøginScreenCondition = createLeLøginScreenManagePermissionCondition();
@@ -45,6 +46,11 @@ const overviewMenuItem: UmbExtensionManifest = {
 	conditions: [manageLeLøginScreenCondition]
 };
 
+/**
+ * Extension manifests for the Le Løgin menu group in Settings: the menu, its sidebar app
+ * (shown only in the Settings section) and the Overview menu item, all gated by the Le Løgin
+ * manage permission.
+ */
 export const manifests: Array<UmbExtensionManifest> = [
 	menuManifest,
 	sidebarManifest,

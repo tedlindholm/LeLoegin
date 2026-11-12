@@ -7,6 +7,7 @@
  */
 import type { LeLøginScreenLocalisationDictionary } from './types.js';
 
+/** Norwegian Bokmål UI strings, loaded by the `LeLøgin.Localization.Nb_NO` extension. */
 export default {
 	user: {
 		'permissionsEntityGroup_login-screen': 'Le Løgin'

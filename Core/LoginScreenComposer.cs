@@ -21,6 +21,13 @@ namespace LeLøgin.Core;
 /// </summary>
 public class LeLøginScreenComposer : IComposer
 {
+	/// <summary>
+	/// Registers the OpenAPI document, the manage-permission policy and handler, user-group
+	/// provisioning, storage and migrations, the default physical file systems
+	/// (<c>App_Data/LeLøgin</c> for assets, <c>wwwroot/login-screen</c> for publications), the
+	/// runtime resolver, and the logo and background middlewares ahead of Umbraco's routing.
+	/// </summary>
+	/// <param name="builder">The Umbraco builder.</param>
 	public void Compose(IUmbracoBuilder builder)
 	{
 		builder.AddLeLøginOpenApiDocument();

@@ -4,11 +4,23 @@ import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import { V1 } from '../api/index.js';
 import { mapApiActiveLeLøginScreenResponse } from '../models/api-adapters.js';
 
+/** Data source for the resolved login screen: the live `runtime/active` result and per-rule previews. */
 export class LeLøginScreenActiveScreenDataSource extends UmbControllerBase {
+	/**
+	 * Creates the data source; API calls run through `tryExecute` against this controller.
+	 *
+	 * @param host - The controller host that owns this data source
+	 */
 	constructor(host: UmbControllerHost) {
 		super(host);
 	}
 
+	/**
+	 * Fetches the screen the login page would currently show, bypassing HTTP caches.
+	 *
+	 * @returns The mapped screen; `data: null` when no rule matches (204); or an error, including
+	 * a mapping failure on a malformed response
+	 */
 	async getActive() {
 		const { data, error } = await tryExecute(
 			this,
@@ -34,6 +46,10 @@ export class LeLøginScreenActiveScreenDataSource extends UmbControllerBase {
 	/**
 	 * Resolves the screen for a specific rule, bypassing context matching. Used by the
 	 * Overview picker to preview each rule's screen on demand.
+	 *
+	 * @param ruleId - The rule to resolve
+	 * @returns The mapped screen; `data: null` when the rule resolves to nothing; or an error,
+	 * including a mapping failure on a malformed response
 	 */
 	async getPreviewForRule(ruleId: string) {
 		const { data, error } = await tryExecute(

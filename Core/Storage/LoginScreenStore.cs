@@ -13,11 +13,14 @@ public sealed class LeLøginScreenStore : ILeLøginScreenStore
 {
 	private readonly IScopeProvider _scopeProvider;
 
+	/// <summary>Creates the store.</summary>
+	/// <param name="scopeProvider">Creates the database scope each operation runs in.</param>
 	public LeLøginScreenStore(IScopeProvider scopeProvider)
 	{
 		_scopeProvider = scopeProvider;
 	}
 
+	/// <inheritdoc />
 	public async Task<IReadOnlyList<LoginImageAsset>> GetAllAssetsAsync()
 	{
 		using var scope = _scopeProvider.CreateScope();
@@ -26,6 +29,8 @@ public sealed class LeLøginScreenStore : ILeLøginScreenStore
 		return dtos.Select(MapToDomain).ToList();
 	}
 
+	/// <inheritdoc />
+	/// <exception cref="ArgumentNullException"><paramref name="id"/> is <see langword="null"/>.</exception>
 	public async Task<LoginImageAsset?> GetAssetAsync(string id)
 	{
 		ArgumentNullException.ThrowIfNull(id);
@@ -35,6 +40,8 @@ public sealed class LeLøginScreenStore : ILeLøginScreenStore
 		return dto is null ? null : MapToDomain(dto);
 	}
 
+	/// <inheritdoc />
+	/// <exception cref="ArgumentNullException"><paramref name="asset"/> is <see langword="null"/>.</exception>
 	public async Task UpsertAssetAsync(LoginImageAsset asset)
 	{
 		ArgumentNullException.ThrowIfNull(asset);
@@ -52,6 +59,8 @@ public sealed class LeLøginScreenStore : ILeLøginScreenStore
 		scope.Complete();
 	}
 
+	/// <inheritdoc />
+	/// <exception cref="ArgumentNullException"><paramref name="id"/> is <see langword="null"/>.</exception>
 	public async Task<bool> DeleteAssetAsync(string id)
 	{
 		ArgumentNullException.ThrowIfNull(id);
@@ -67,6 +76,7 @@ public sealed class LeLøginScreenStore : ILeLøginScreenStore
 		return true;
 	}
 
+	/// <inheritdoc />
 	public async Task<IReadOnlyList<LoginRule>> GetAllRulesAsync()
 	{
 		using var scope = _scopeProvider.CreateScope();
@@ -75,6 +85,8 @@ public sealed class LeLøginScreenStore : ILeLøginScreenStore
 		return dtos.Select(MapToDomain).ToList();
 	}
 
+	/// <inheritdoc />
+	/// <exception cref="ArgumentNullException"><paramref name="id"/> is <see langword="null"/>.</exception>
 	public async Task<LoginRule?> GetRuleAsync(string id)
 	{
 		ArgumentNullException.ThrowIfNull(id);
@@ -84,6 +96,8 @@ public sealed class LeLøginScreenStore : ILeLøginScreenStore
 		return dto is null ? null : MapToDomain(dto);
 	}
 
+	/// <inheritdoc />
+	/// <exception cref="ArgumentNullException"><paramref name="rule"/> is <see langword="null"/>.</exception>
 	public async Task UpsertRuleAsync(LoginRule rule)
 	{
 		ArgumentNullException.ThrowIfNull(rule);
@@ -101,6 +115,8 @@ public sealed class LeLøginScreenStore : ILeLøginScreenStore
 		scope.Complete();
 	}
 
+	/// <inheritdoc />
+	/// <exception cref="ArgumentNullException"><paramref name="id"/> is <see langword="null"/>.</exception>
 	public async Task<bool> DeleteRuleAsync(string id)
 	{
 		ArgumentNullException.ThrowIfNull(id);

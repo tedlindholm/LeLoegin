@@ -15,6 +15,7 @@ public static class ImageResponseHeaders
 
 	/// <summary>Sets <c>X-Content-Type-Options</c> and <c>Content-Security-Policy</c> on <paramref name="response"/>.</summary>
 	/// <param name="response">The response that will carry the image.</param>
+	/// <exception cref="ArgumentNullException"><paramref name="response"/> is <see langword="null"/>.</exception>
 	public static void Apply(HttpResponse response)
 	{
 		ArgumentNullException.ThrowIfNull(response);

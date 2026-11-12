@@ -6,8 +6,19 @@ namespace LeLøgin.Core.Runtime;
 /// <summary>
 /// Validates and evaluates the supported JsonLogic subset for Le Løgin rules.
 /// </summary>
+/// <remarks>
+/// Supported operators: <c>and</c>, <c>or</c>, <c>!</c>, <c>==</c>, <c>!=</c>, <c>&gt;=</c>,
+/// <c>&lt;=</c> and <c>in</c>, over string or integer literals and the variables
+/// <c>weekday</c> and <c>month</c>. Anything else makes the condition unsupported.
+/// </remarks>
 public static class LoginRuleConditionEvaluator
 {
+	/// <summary>
+	/// Checks that <paramref name="condition"/> uses only the supported subset, by evaluating it
+	/// against a fixed dummy context. The outcome of that evaluation is discarded.
+	/// </summary>
+	/// <param name="condition">The parsed JsonLogic condition.</param>
+	/// <returns><see langword="true"/> when the condition is well-formed and supported.</returns>
 	public static bool IsSupportedCondition(JsonElement condition)
 	{
 		// Shape-checking only — the values never affect whether the condition is *supported*,
@@ -16,6 +27,13 @@ public static class LoginRuleConditionEvaluator
 		return TryEvaluate(condition, validationContext, out _);
 	}
 
+	/// <summary>
+	/// Parses and evaluates a JSON condition string. Never throws on malformed JSON.
+	/// </summary>
+	/// <param name="condition">The condition as stored JSON; blank is treated as unsupported.</param>
+	/// <param name="context">The runtime values the condition's variables resolve to.</param>
+	/// <param name="result">The condition's outcome; <see langword="false"/> when evaluation fails.</param>
+	/// <returns><see langword="true"/> when the condition parsed and is supported.</returns>
 	public static bool TryEvaluate(
 		string? condition,
 		LoginRuntimeContext context,
@@ -39,6 +57,14 @@ public static class LoginRuleConditionEvaluator
 		}
 	}
 
+	/// <summary>
+	/// Evaluates a parsed condition. Literal <c>true</c>/<c>false</c> and supported operator
+	/// objects are accepted; every other JSON kind is unsupported.
+	/// </summary>
+	/// <param name="condition">The parsed JsonLogic condition.</param>
+	/// <param name="context">The runtime values the condition's variables resolve to.</param>
+	/// <param name="result">The condition's outcome; <see langword="false"/> when evaluation fails.</param>
+	/// <returns><see langword="true"/> when the condition is supported and was evaluated.</returns>
 	public static bool TryEvaluate(
 		JsonElement condition,
 		LoginRuntimeContext context,

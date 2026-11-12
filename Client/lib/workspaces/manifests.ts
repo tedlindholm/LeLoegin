@@ -17,9 +17,12 @@ import {
 	LOGIN_SCREEN_RULE_LIST_ENTITY_TYPE
 } from '../rules/entity-types.js';
 
+/** Alias of the asset edit workspace. */
 export const LOGIN_SCREEN_ASSET_WORKSPACE_ALIAS = 'LeLøgin.Workspace.Asset';
+/** Alias of the background image upload workspace. */
 export const LOGIN_SCREEN_ASSET_UPLOAD_BACKGROUND_WORKSPACE_ALIAS =
 	'LeLøgin.Workspace.AssetUpload.Background';
+/** Alias of the logo upload workspace. */
 export const LOGIN_SCREEN_ASSET_UPLOAD_LOGO_WORKSPACE_ALIAS = 'LeLøgin.Workspace.AssetUpload.Logo';
 
 const rootWorkspaceManifest = {
@@ -262,6 +265,7 @@ const assetGroupCardCollectionViewManifest: UmbExtensionManifest = {
 	]
 };
 
+/** Every workspace, workspace action, modal and asset group collection extension Le Løgin registers from this folder. */
 export const manifests = [
 	rootWorkspaceManifest,
 	logoPickerModalManifest,

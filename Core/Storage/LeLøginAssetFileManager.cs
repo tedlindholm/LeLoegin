@@ -11,7 +11,9 @@ namespace LeLøgin.Core.Storage;
 /// <c>builder.SetLoginAssetFileSystem(factory => …)</c> in a composer decorated with
 /// <c>[ComposeAfter(typeof(LeLøginScreenComposer))]</c>.
 /// </summary>
+/// <param name="fileSystem">The private file system for source assets and thumbnails; never publicly served.</param>
 public sealed class LeLøginAssetFileManager(IFileSystem fileSystem)
 {
+    /// <summary>The private file system holding source assets and thumbnails.</summary>
     public IFileSystem FileSystem { get; } = fileSystem;
 }

@@ -9,7 +9,12 @@ namespace LeLøgin.Core.Api;
 
 public static partial class ApiConfiguration
 {
-	/// <summary>Registers the Le Løgin Swagger document on Umbraco 17.</summary>
+	/// <summary>
+	/// Registers the Le Løgin Swagger document on Umbraco 17, with backoffice security requirements
+	/// and the schema overrides from <see cref="ApplySchemaOverride"/>.
+	/// </summary>
+	/// <param name="builder">The Umbraco builder to register the document on.</param>
+	/// <returns>The same <paramref name="builder"/>, for chaining.</returns>
 	public static IUmbracoBuilder AddLeLøginOpenApiDocument(this IUmbracoBuilder builder)
 	{
 		builder.Services.ConfigureOptions<LeLøginSwaggerGenOptions>();
@@ -50,6 +55,7 @@ public static partial class ApiConfiguration
 	/// </summary>
 	internal sealed class LeLøginSwaggerSchemaFilter : ISchemaFilter
 	{
+		/// <inheritdoc />
 		public void Apply(IOpenApiSchema schema, SchemaFilterContext context) =>
 			Apply(schema, context.Type);
 

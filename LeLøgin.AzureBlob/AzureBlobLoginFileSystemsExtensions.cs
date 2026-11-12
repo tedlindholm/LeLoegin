@@ -54,7 +54,11 @@ public static class AzureBlobLoginFileSystemsExtensions
     /// default <see cref="BlobContainerClient"/> factory, which requires a literal storage connection string.
     /// For managed-identity or other URI-based credentials use the overload that accepts configure callbacks
     /// and call <see cref="AzureBlobFileSystemOptionsExtensions.TryCreateBlobContainerClientUsingUri"/>.
+    /// Also mounts the publish file system on the web root so its URLs are served as static files.
     /// </summary>
+    /// <param name="builder">The Umbraco builder.</param>
+    /// <returns>The same <paramref name="builder"/>, for chaining.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="builder"/> is <see langword="null"/>.</exception>
     public static IUmbracoBuilder AddAzureBlobLoginFileSystems(this IUmbracoBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -67,7 +71,13 @@ public static class AzureBlobLoginFileSystemsExtensions
     /// configuration binding. Use this overload to wire a custom <see cref="BlobContainerClient"/>
     /// factory — e.g. <see cref="AzureBlobFileSystemOptionsExtensions.TryCreateBlobContainerClientUsingUri"/>
     /// with <c>DefaultAzureCredential</c> for managed identity.
+    /// Also mounts the publish file system on the web root so its URLs are served as static files.
     /// </summary>
+    /// <param name="builder">The Umbraco builder.</param>
+    /// <param name="configureAssets">Configures the <see cref="AssetsFileSystemName"/> options after binding and the default virtual path.</param>
+    /// <param name="configurePublish">Configures the <see cref="PublishFileSystemName"/> options after binding and the default virtual path.</param>
+    /// <returns>The same <paramref name="builder"/>, for chaining.</returns>
+    /// <exception cref="ArgumentNullException">Any argument is <see langword="null"/>.</exception>
     public static IUmbracoBuilder AddAzureBlobLoginFileSystems(
         this IUmbracoBuilder builder,
         Action<AzureBlobFileSystemOptions> configureAssets,
@@ -143,7 +153,10 @@ public static class AzureBlobLoginFileSystemsExtensions
     /// Umbraco's media variant of that provider only differs in handling special characters in
     /// file names, which published <c>&lt;guid&gt;.jpg</c> names never contain.
     /// </summary>
-    /// <returns><c>false</c> when the file system cannot provide an <see cref="IFileProvider"/>.</returns>
+    /// <param name="environment">The host environment whose <see cref="IWebHostEnvironment.WebRootFileProvider"/> is replaced.</param>
+    /// <param name="fileSystem">The file system to mount.</param>
+    /// <param name="virtualPath">The web path to mount it under; a trailing slash is ignored.</param>
+    /// <returns><c>true</c> when mounted; <c>false</c> when the file system cannot provide an <see cref="IFileProvider"/>.</returns>
     internal static bool MountOnWebRoot(IWebHostEnvironment environment, IFileSystem fileSystem, string virtualPath)
     {
         if (!fileSystem.TryCreateFileProvider(out var fileProvider))

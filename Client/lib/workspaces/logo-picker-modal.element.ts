@@ -53,6 +53,11 @@ function getEventTargetElement(event: Event): Element | null {
 	return event.target instanceof Element ? event.target : null;
 }
 
+/**
+ * Dialog that picks the logo for a background asset: a "no logo" card showing Umbraco's own
+ * logo, then a card per logo asset. Choosing a card submits its id (empty for "no logo");
+ * Close rejects the modal.
+ */
 export class LeLøginLogoPickerModalElement
 	extends UmbElementMixin(HTMLElement)
 	implements UmbModalExtensionElement<LogoPickerModalData, LogoPickerModalValue>
@@ -61,6 +66,7 @@ export class LeLøginLogoPickerModalElement
 	#layout: HTMLElement;
 	#thumbnails = new LeLøginAssetThumbnailController(this, () => this.#render());
 
+	/** The modal context holding the logos and current choice. Setting it re-renders the dialog. */
 	get modalContext() {
 		return this.#modalContext;
 	}

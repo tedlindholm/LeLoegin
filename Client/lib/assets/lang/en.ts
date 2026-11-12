@@ -7,6 +7,7 @@
  */
 import type { UmbLocalizationDictionary } from '@umbraco-cms/backoffice/localization-api';
 
+/** English UI strings; the source of truth for the dictionary shape other cultures must match. */
 export const englishDictionary = {
 	user: {
 		'permissionsEntityGroup_login-screen': 'Le Løgin'
@@ -97,4 +98,5 @@ export const englishDictionary = {
 	}
 } satisfies UmbLocalizationDictionary;
 
+/** Default export loaded by the `LeLøgin.Localization.En` extension. */
 export default englishDictionary;

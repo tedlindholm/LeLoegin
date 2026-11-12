@@ -14,6 +14,7 @@ import {
 } from '@umbraco-cms/backoffice/entity-action';
 import { LOGIN_SCREEN_ASSET_ENTITY_TYPE } from '../tree/types.js';
 
+/** Context token for consuming the asset workspace context from descendant elements. */
 export const UMB_LOGIN_SCREEN_ASSET_WORKSPACE_CONTEXT =
 	new UmbContextToken<LeLøginScreenAssetWorkspaceContext>(
 		'UmbWorkspaceContext',
@@ -32,12 +33,20 @@ export class LeLøginScreenAssetWorkspaceContext extends UmbContextBase {
 	#isLoading = new UmbBooleanState(false);
 	#loadError = new UmbBooleanState(false);
 
+	/** The loaded assets, keyed by id. */
 	readonly assets = this.#assets.asObservable();
+	/** True while {@link load} is in flight. */
 	readonly isLoading = this.#isLoading.asObservable();
+	/** True when the most recent {@link load} failed. */
 	readonly loadError = this.#loadError.asObservable();
 
 	#actionEvents: UmbActionEventContext | undefined;
 
+	/**
+	 * Provides the context and subscribes to asset structure-reload events so the list stays fresh.
+	 *
+	 * @param host - The controller host that provides this context
+	 */
 	constructor(host: UmbControllerHost) {
 		super(host, UMB_LOGIN_SCREEN_ASSET_WORKSPACE_CONTEXT);
 		this.#repository = new LeLøginScreenAssetRepository(this);
@@ -57,6 +66,7 @@ export class LeLøginScreenAssetWorkspaceContext extends UmbContextBase {
 		});
 	}
 
+	/** Unsubscribes from action events before tearing down the context. */
 	override destroy() {
 		this.#actionEvents?.removeEventListener(
 			UmbRequestReloadStructureForEntityEvent.TYPE,
@@ -156,4 +166,5 @@ export class LeLøginScreenAssetWorkspaceContext extends UmbContextBase {
 	}
 }
 
+/** Default `api` export so the workspace context manifest can load this class lazily. */
 export { LeLøginScreenAssetWorkspaceContext as api };

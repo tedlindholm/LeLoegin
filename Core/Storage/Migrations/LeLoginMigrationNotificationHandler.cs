@@ -21,6 +21,11 @@ public sealed class LeLoginMigrationNotificationHandler : INotificationAsyncHand
     private readonly IKeyValueService _keyValueService;
     private readonly IRuntimeState _runtimeState;
 
+    /// <summary>Creates the handler.</summary>
+    /// <param name="migrationPlanExecutor">Executes the migration plan.</param>
+    /// <param name="coreScopeProvider">Provides the scope the upgrade runs in.</param>
+    /// <param name="keyValueService">Stores the plan's last completed state.</param>
+    /// <param name="runtimeState">Umbraco runtime state; migrations run only at <see cref="RuntimeLevel.Run"/>.</param>
     public LeLoginMigrationNotificationHandler(
         IMigrationPlanExecutor migrationPlanExecutor,
         ICoreScopeProvider coreScopeProvider,
@@ -33,6 +38,13 @@ public sealed class LeLoginMigrationNotificationHandler : INotificationAsyncHand
         _runtimeState = runtimeState;
     }
 
+    /// <summary>
+    /// Runs any pending steps of the <c>LeLogin</c> plan. Does nothing while Umbraco is installing,
+    /// upgrading or otherwise not at <see cref="RuntimeLevel.Run"/>.
+    /// </summary>
+    /// <param name="notification">The application-starting notification.</param>
+    /// <param name="cancellationToken">Not observed; the upgrade runs to completion.</param>
+    /// <returns>A task that completes when the plan has run.</returns>
     public async Task HandleAsync(UmbracoApplicationStartingNotification notification, CancellationToken cancellationToken)
     {
         if (_runtimeState.Level != RuntimeLevel.Run)

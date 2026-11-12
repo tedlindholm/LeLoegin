@@ -145,6 +145,7 @@ const deleteRuleActionManifest: UmbExtensionManifest = {
 	conditions: [manageLeLøginScreenCondition]
 };
 
+/** Every extension manifest for the rules area: repositories, tree, menu item and entity actions. */
 export const manifests: Array<UmbExtensionManifest> = [
 	treeRepositoryManifest,
 	ruleRepositoryManifest,

@@ -61,7 +61,8 @@ const uploadPathFor = (kind: CreateAssetKind): string =>
 	kind === 'background' ? BACKGROUND_UPLOAD_PATH : LOGO_UPLOAD_PATH;
 
 /**
- * Asset root workspace — collection-style overview for login screen assets.
+ * Asset root workspace — collection-style overview for login screen assets, with a Create
+ * button that asks for the asset kind and opens its upload workspace.
  */
 export class LeLøginScreenAssetRootWorkspace extends UmbElementMixin(HTMLElement) {
 	#workspaceContext = new LeLøginScreenAssetWorkspaceContext(this);
@@ -95,6 +96,11 @@ export class LeLøginScreenAssetRootWorkspace extends UmbElementMixin(HTMLElemen
 		});
 	}
 
+	/**
+	 * Renders the workspace editor on first connection, then loads the assets.
+	 *
+	 * @throws {Error} When the template is missing its actions or content container.
+	 */
 	override connectedCallback() {
 		super.connectedCallback();
 

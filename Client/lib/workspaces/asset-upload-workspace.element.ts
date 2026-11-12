@@ -105,7 +105,8 @@ const formatFileSize = (value: number): string => {
 };
 
 /**
- * Asset upload workspace — dedicated upload page for new login screen assets.
+ * Asset upload workspace — dedicated upload page for new login screen assets. Reports file
+ * choices to the upload workspace context and shows its rejection messages as notifications.
  */
 export class LeLøginScreenAssetUploadWorkspace extends UmbElementMixin(HTMLElement) {
 	#workspaceContext: LeLøginScreenAssetUploadWorkspaceContext | undefined;
@@ -157,6 +158,7 @@ export class LeLøginScreenAssetUploadWorkspace extends UmbElementMixin(HTMLElem
 		});
 	}
 
+	/** Renders the upload field when the element is attached. */
 	override connectedCallback() {
 		super.connectedCallback();
 		this.#render();

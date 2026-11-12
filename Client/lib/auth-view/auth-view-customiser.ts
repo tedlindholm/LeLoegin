@@ -1,12 +1,19 @@
 import { toLoginImageBackground } from './login-image-background.js';
 import { applyCropPreview } from './crop-preview.js';
 
+/** What to paint onto a backoffice `umb-auth-view`; omitted fields leave Umbraco's own output. */
 export interface LoginAuthViewCustomisation {
+	/** Background image URL, written to the `--umb-login-image` custom property. */
 	imageUrl?: string;
+	/** Greeting heading text; when omitted Umbraco's greeting stays, dimmed as a placeholder. */
 	greetingText?: string;
+	/** Logo URL for both logo slots; `undefined` clears and hides any previous logo. */
 	logoUrl?: string;
+	/** Hides the greeting heading while keeping its space in the layout. */
 	hideGreeting?: boolean;
+	/** `preview` adds the editor layout, disabled providers and crop simulation; `runtime` removes them. */
 	mode?: 'runtime' | 'preview';
+	/** CSS height for the preview layout (default `100%`); preview mode only. */
 	previewHeight?: string;
 	/**
 	 * Normalised focal point (0–1) used to position the background image in preview mode.
@@ -216,6 +223,16 @@ const ensurePreviewProviders = (shadowRoot: ShadowRoot, noteText: string) => {
 // lives in `./crop-preview.ts`. It's applied only when the caller is in preview
 // mode and supplies image dimensions.
 
+/**
+ * Applies a customisation to a backoffice-rendered `umb-auth-view` once. Sets the image custom
+ * property on the host, then (if the shadow root exists) updates greeting and logos and adopts
+ * the logo-box stylesheet. Preview mode also mutates the host layout, disables the sign-in
+ * providers and paints the crop simulation; runtime mode tears that preview state down.
+ * Only for the backoffice preview, never the real login page.
+ *
+ * @param authView - The `umb-auth-view` host element
+ * @param customisation - What to apply
+ */
 export const applyAuthViewCustomisation = (
 	authView: HTMLElement,
 	customisation: LoginAuthViewCustomisation
@@ -284,4 +301,5 @@ const toCropPreviewInputs = (customisation: LoginAuthViewCustomisation) => {
 // Reactive observation of the auth view (mutation observer + ResizeObserver) lives
 // in `./auth-view-observation.ts`. It's re-exported from there so existing callers
 // keep importing from this module.
+/** Re-export of {@link observeAuthViewCustomisation} from `./auth-view-observation.ts`. */
 export { observeAuthViewCustomisation } from './auth-view-observation.js';

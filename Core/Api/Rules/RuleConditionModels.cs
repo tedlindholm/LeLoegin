@@ -11,8 +11,10 @@ namespace LeLøgin.Core.Api.Rules;
 [JsonConverter(typeof(LoginRuleFieldJsonConverter))]
 public enum LoginRuleField
 {
+	/// <summary>Day of the week, compared as lowercase English names (<c>monday</c>…<c>sunday</c>); serialised as <c>weekday</c>.</summary>
 	Weekday,
 
+	/// <summary>Month of the year, compared as numbers 1–12; serialised as <c>month</c>.</summary>
 	Month
 }
 
@@ -22,16 +24,22 @@ public enum LoginRuleField
 [JsonConverter(typeof(LoginRuleConditionOperatorJsonConverter))]
 public enum LoginRuleConditionOperator
 {
+	/// <summary>The field equals the single value; serialised as <c>is</c>.</summary>
 	Is,
 
+	/// <summary>The field does not equal the single value; serialised as <c>isNot</c>.</summary>
 	IsNot,
 
+	/// <summary>The field equals one of the values; serialised as <c>in</c>.</summary>
 	In,
 
+	/// <summary>The field equals none of the values; serialised as <c>notIn</c>.</summary>
 	NotIn,
 
+	/// <summary>The field lies within the two inclusive bounds; serialised as <c>between</c>.</summary>
 	Between,
 
+	/// <summary>The field lies outside the two inclusive bounds; serialised as <c>notBetween</c>.</summary>
 	NotBetween
 }
 
@@ -43,13 +51,17 @@ public enum LoginRuleConditionOperator
 [JsonConverter(typeof(LoginRuleConditionGroupOperatorJsonConverter))]
 public enum LoginRuleConditionGroupOperator
 {
+	/// <summary>Every condition must match (JsonLogic <c>and</c>); serialised as <c>all</c>.</summary>
 	All,
 
+	/// <summary>At least one condition must match (JsonLogic <c>or</c>); serialised as <c>any</c>.</summary>
 	Any
 }
 
 /// <summary>
 /// Union-like condition value that serialises as either a string or an integer.
+/// Exactly one of <see cref="Text"/> and <see cref="Number"/> is set when built through the
+/// factory methods; a <see langword="default"/> instance holds neither.
 /// </summary>
 [JsonConverter(typeof(LoginRuleConditionValueJsonConverter))]
 public readonly record struct LoginRuleConditionValue
@@ -60,18 +72,31 @@ public readonly record struct LoginRuleConditionValue
 		Number = number;
 	}
 
+	/// <summary>The text value, or <see langword="null"/> when this is a number.</summary>
 	public string? Text { get; }
 
+	/// <summary>The numeric value, or <see langword="null"/> when this is text.</summary>
 	public int? Number { get; }
 
+	/// <summary>Whether the value holds text.</summary>
 	public bool HasText => Text is not null;
 
+	/// <summary>Whether the value holds a number.</summary>
 	public bool HasNumber => Number.HasValue;
 
+	/// <summary>Creates a text value.</summary>
+	/// <param name="value">The text.</param>
+	/// <returns>A value holding <paramref name="value"/> as text.</returns>
 	public static LoginRuleConditionValue FromText(string value) => new(value, null);
 
+	/// <summary>Creates a numeric value.</summary>
+	/// <param name="value">The number.</param>
+	/// <returns>A value holding <paramref name="value"/> as a number.</returns>
 	public static LoginRuleConditionValue FromNumber(int value) => new(null, value);
 
+	/// <summary>Unwraps the value for JsonLogic serialisation.</summary>
+	/// <returns>The <see cref="string"/> text, or the boxed <see cref="int"/> number.</returns>
+	/// <exception cref="InvalidOperationException">The value holds neither text nor a number.</exception>
 	public object ToPrimitive()
 	{
 		var text = Text;
@@ -93,6 +118,10 @@ public readonly record struct LoginRuleConditionValue
 /// <summary>
 /// API model for a single editable Le Løgin rule condition.
 /// </summary>
+/// <param name="Id">Client-side identifier of the condition. Not stored; regenerated from the rule id when read back.</param>
+/// <param name="Field">The field to compare.</param>
+/// <param name="Operator">How the field is compared with <paramref name="Values"/>.</param>
+/// <param name="Values">One value for <c>is</c>/<c>isNot</c>, two bounds for <c>between</c>/<c>notBetween</c>, one or more for <c>in</c>/<c>notIn</c>. Months are numbers; weekdays are text.</param>
 public sealed record LoginRuleConditionModel(
 	[property: Required] string Id,
 	[property: Required] LoginRuleField Field,
@@ -102,6 +131,8 @@ public sealed record LoginRuleConditionModel(
 /// <summary>
 /// API model for an editable Le Løgin rule condition group.
 /// </summary>
+/// <param name="Operator">Whether all or any of the conditions must match.</param>
+/// <param name="Conditions">The conditions in the group.</param>
 public sealed record LoginRuleConditionGroupModel(
 	[property: Required] LoginRuleConditionGroupOperator Operator,
 	[property: Required] IReadOnlyList<LoginRuleConditionModel> Conditions);
@@ -109,6 +140,12 @@ public sealed record LoginRuleConditionGroupModel(
 /// <summary>
 /// API model returned for a stored rule.
 /// </summary>
+/// <param name="Id">Unique identifier of the rule.</param>
+/// <param name="Name">Display name of the rule.</param>
+/// <param name="Priority">Evaluation order; lower values are evaluated first.</param>
+/// <param name="Enabled">Whether the rule takes part in resolution.</param>
+/// <param name="Condition">The rule's conditions.</param>
+/// <param name="AssetIds">Background images the rule can show; one is picked at random when there are several.</param>
 public sealed record LoginRuleResponseModel(
 	string Id,
 	string Name,
@@ -125,16 +162,21 @@ public sealed class SaveRuleRequest
 	/// <summary>Ignored: rule ids are generated by the server on create and taken from the route on update.</summary>
 	public string? Id { get; init; }
 
+	/// <summary>Display name; trimmed, required and at most 255 characters.</summary>
 	[Required]
 	public required string Name { get; init; }
 
+	/// <summary>Evaluation order; applied on update and ignored on create, where the rule goes last.</summary>
 	public int Priority { get; init; }
 
+	/// <summary>Whether the rule takes part in resolution. Defaults to <see langword="true"/>.</summary>
 	public bool Enabled { get; init; } = true;
 
+	/// <summary>The rule's conditions; must be expressible as supported JsonLogic.</summary>
 	[Required]
 	public required LoginRuleConditionGroupModel Condition { get; init; }
 
+	/// <summary>Ids of existing background images the rule can show; at least one. Blank and duplicate ids are dropped.</summary>
 	[Required]
 	public required IReadOnlyList<string> AssetIds { get; init; }
 }
@@ -144,6 +186,8 @@ public sealed class SaveRuleRequest
 /// </summary>
 public sealed class LoginRuleFieldJsonConverter : JsonConverter<LoginRuleField>
 {
+	/// <inheritdoc />
+	/// <exception cref="JsonException">The value is not <c>weekday</c> or <c>month</c> (case-insensitive).</exception>
 	public override LoginRuleField Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
 	{
 		var value = reader.GetString();
@@ -155,6 +199,8 @@ public sealed class LoginRuleFieldJsonConverter : JsonConverter<LoginRuleField>
 		};
 	}
 
+	/// <inheritdoc />
+	/// <exception cref="JsonException"><paramref name="value"/> is not a defined field.</exception>
 	public override void Write(Utf8JsonWriter writer, LoginRuleField value, JsonSerializerOptions options)
 	{
 		writer.WriteStringValue(value switch
@@ -171,6 +217,8 @@ public sealed class LoginRuleFieldJsonConverter : JsonConverter<LoginRuleField>
 /// </summary>
 public sealed class LoginRuleConditionOperatorJsonConverter : JsonConverter<LoginRuleConditionOperator>
 {
+	/// <inheritdoc />
+	/// <exception cref="JsonException">The value is not a supported operator in camelCase or PascalCase.</exception>
 	public override LoginRuleConditionOperator Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
 	{
 		var value = reader.GetString();
@@ -186,6 +234,8 @@ public sealed class LoginRuleConditionOperatorJsonConverter : JsonConverter<Logi
 		};
 	}
 
+	/// <inheritdoc />
+	/// <exception cref="JsonException"><paramref name="value"/> is not a defined operator.</exception>
 	public override void Write(Utf8JsonWriter writer, LoginRuleConditionOperator value, JsonSerializerOptions options)
 	{
 		writer.WriteStringValue(value switch
@@ -206,6 +256,8 @@ public sealed class LoginRuleConditionOperatorJsonConverter : JsonConverter<Logi
 /// </summary>
 public sealed class LoginRuleConditionGroupOperatorJsonConverter : JsonConverter<LoginRuleConditionGroupOperator>
 {
+	/// <inheritdoc />
+	/// <exception cref="JsonException">The value is not <c>all</c> or <c>any</c> (case-insensitive).</exception>
 	public override LoginRuleConditionGroupOperator Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
 	{
 		var value = reader.GetString();
@@ -217,6 +269,8 @@ public sealed class LoginRuleConditionGroupOperatorJsonConverter : JsonConverter
 		};
 	}
 
+	/// <inheritdoc />
+	/// <exception cref="JsonException"><paramref name="value"/> is not a defined group operator.</exception>
 	public override void Write(Utf8JsonWriter writer, LoginRuleConditionGroupOperator value, JsonSerializerOptions options)
 	{
 		writer.WriteStringValue(value switch
@@ -233,6 +287,8 @@ public sealed class LoginRuleConditionGroupOperatorJsonConverter : JsonConverter
 /// </summary>
 public sealed class LoginRuleConditionValueJsonConverter : JsonConverter<LoginRuleConditionValue>
 {
+	/// <inheritdoc />
+	/// <exception cref="JsonException">The token is not a string or a number that fits in a 32-bit integer.</exception>
 	public override LoginRuleConditionValue Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
 	{
 		return reader.TokenType switch
@@ -244,6 +300,8 @@ public sealed class LoginRuleConditionValueJsonConverter : JsonConverter<LoginRu
 		};
 	}
 
+	/// <inheritdoc />
+	/// <exception cref="JsonException"><paramref name="value"/> holds neither text nor a number.</exception>
 	public override void Write(Utf8JsonWriter writer, LoginRuleConditionValue value, JsonSerializerOptions options)
 	{
 		if (value.HasText)
@@ -271,12 +329,16 @@ public sealed class LoginRuleConditionValueJsonConverter : JsonConverter<LoginRu
 /// <summary>
 /// Metadata describing a single Le Løgin rule condition operator — its arity (single/set/range).
 /// </summary>
+/// <param name="Arity"><c>single</c> (one value), <c>set</c> (one or more values) or <c>range</c> (two bounds).</param>
 public sealed record ConditionOperatorMetadata(string Arity);
 
 /// <summary>
 /// Metadata describing a Le Løgin rule condition field: which operators are valid, the
 /// default value to use when a new condition is created, and optional allowed values.
 /// </summary>
+/// <param name="Operators">Wire names of the operators the editor offers for this field.</param>
+/// <param name="DefaultValue">Value of a newly added condition: a string or an integer.</param>
+/// <param name="AllowedValues">The values the field accepts, or <see langword="null"/> when unrestricted.</param>
 public sealed record ConditionFieldMetadata(
 	IReadOnlyList<string> Operators,
 	object DefaultValue,
@@ -287,6 +349,8 @@ public sealed record ConditionFieldMetadata(
 /// Consumed by the backoffice UI to drive the condition editor without baking the
 /// rules into client-side code.
 /// </summary>
+/// <param name="Operators">Operator metadata keyed by operator wire name.</param>
+/// <param name="Fields">Field metadata keyed by field wire name.</param>
 public sealed record ConditionMetadataResponse(
 	IReadOnlyDictionary<string, ConditionOperatorMetadata> Operators,
 	IReadOnlyDictionary<string, ConditionFieldMetadata> Fields);
@@ -296,6 +360,11 @@ public sealed record ConditionMetadataResponse(
 /// </summary>
 public static class LoginRuleConditionJsonMapper
 {
+	/// <summary>Parses a stored JsonLogic condition string into the editable group model.</summary>
+	/// <param name="conditionJson">The stored JsonLogic text.</param>
+	/// <param name="fallbackIdPrefix">Prefix for the generated condition ids (<c>{prefix}-1</c>, <c>{prefix}-2</c>, …).</param>
+	/// <returns>The condition group.</returns>
+	/// <exception cref="InvalidOperationException">The text is blank, not valid JSON, or not a supported JsonLogic shape.</exception>
 	public static LoginRuleConditionGroupModel ToConditionGroupModel(string conditionJson, string fallbackIdPrefix)
 	{
 		if (string.IsNullOrWhiteSpace(conditionJson))
@@ -314,6 +383,14 @@ public static class LoginRuleConditionJsonMapper
 		}
 	}
 
+	/// <summary>
+	/// Converts a JsonLogic <c>and</c>/<c>or</c> group into the editable group model. Supports
+	/// <c>==</c>, <c>!=</c>, <c>in</c>, a <c>&gt;=</c>/<c>&lt;=</c> range pair, and <c>!</c> negation of those.
+	/// </summary>
+	/// <param name="condition">The JsonLogic group object.</param>
+	/// <param name="fallbackIdPrefix">Prefix for the generated condition ids (<c>{prefix}-1</c>, <c>{prefix}-2</c>, …).</param>
+	/// <returns>The condition group.</returns>
+	/// <exception cref="InvalidOperationException">The element is not a supported JsonLogic shape, field or value type.</exception>
 	public static LoginRuleConditionGroupModel ToConditionGroupModel(JsonElement condition, string fallbackIdPrefix)
 	{
 		if (condition.ValueKind != JsonValueKind.Object)
@@ -355,6 +432,10 @@ public static class LoginRuleConditionJsonMapper
 		return new LoginRuleConditionGroupModel(groupOperator, conditions);
 	}
 
+	/// <summary>Converts the editable group model into its stored JsonLogic form.</summary>
+	/// <param name="conditionGroup">The condition group to convert.</param>
+	/// <returns>A JsonLogic <c>and</c> or <c>or</c> object. Condition ids are not stored.</returns>
+	/// <exception cref="InvalidOperationException">A condition has the wrong number of values for its operator, or a value of the wrong type for its field.</exception>
 	public static JsonElement ToJsonElement(LoginRuleConditionGroupModel conditionGroup)
 	{
 		var groupOperator = conditionGroup.Operator == LoginRuleConditionGroupOperator.All ? "and" : "or";
@@ -366,6 +447,10 @@ public static class LoginRuleConditionJsonMapper
 		});
 	}
 
+	/// <summary>Converts the editable group model into the JsonLogic text stored on a rule.</summary>
+	/// <param name="conditionGroup">The condition group to convert.</param>
+	/// <returns>The raw JsonLogic text.</returns>
+	/// <exception cref="InvalidOperationException">A condition is invalid; see <see cref="ToJsonElement"/>.</exception>
 	public static string ToStoredJson(LoginRuleConditionGroupModel conditionGroup) =>
 		ToJsonElement(conditionGroup).GetRawText();
 

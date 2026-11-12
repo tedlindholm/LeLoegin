@@ -21,10 +21,18 @@ namespace LeLøgin.Core.Storage.Migrations;
 /// </summary>
 public sealed class AddRuleAssetIds : AsyncMigrationBase
 {
+	/// <summary>Creates the migration step.</summary>
+	/// <param name="context">The Umbraco migration context, supplying the database and logger.</param>
 	public AddRuleAssetIds(IMigrationContext context) : base(context)
 	{
 	}
 
+	/// <summary>
+	/// Reads the legacy rows, drops and recreates <c>LeLoginRules</c> from
+	/// <see cref="LeLoginRuleSchema"/>, then re-inserts the converted rows. Skips when
+	/// <c>AssetIds</c> already exists.
+	/// </summary>
+	/// <returns>A task that completes when the table is migrated.</returns>
 	protected override async Task MigrateAsync()
 	{
 		Logger.LogDebug("Running migration {MigrationStep}", nameof(AddRuleAssetIds));
@@ -67,22 +75,28 @@ public sealed class AddRuleAssetIds : AsyncMigrationBase
 	[SuppressMessage("Performance", "CA1812", Justification = "Instantiated by NPoco via reflection.")]
 	private sealed class LegacyRuleDto
 	{
+		/// <summary>Rule id (primary key).</summary>
 		[PrimaryKeyColumn(AutoIncrement = false)]
 		[Column("Id")]
 		public string Id { get; set; } = string.Empty;
 
+		/// <summary>Rule display name.</summary>
 		[Column("Name")]
 		public string Name { get; set; } = string.Empty;
 
+		/// <summary>Whether the rule takes part in resolution.</summary>
 		[Column("Enabled")]
 		public bool Enabled { get; set; } = true;
 
+		/// <summary>Evaluation order; lower values are evaluated first.</summary>
 		[Column("Priority")]
 		public int Priority { get; set; }
 
+		/// <summary>JsonLogic condition, as JSON text.</summary>
 		[Column("Condition")]
 		public string Condition { get; set; } = string.Empty;
 
+		/// <summary>The single image id the rule showed before the migration.</summary>
 		[Column("AssetId")]
 		public string AssetId { get; set; } = string.Empty;
 	}

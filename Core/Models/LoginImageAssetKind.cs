@@ -9,8 +9,10 @@ namespace LeLøgin.Core.Models;
 [JsonConverter(typeof(LoginImageAssetKindJsonConverter))]
 public enum LoginImageAssetKind
 {
+	/// <summary>A full-screen login background image; serialised as <c>background</c>.</summary>
 	Background,
 
+	/// <summary>A login logo image; serialised as <c>logo</c>.</summary>
 	Logo
 }
 
@@ -19,6 +21,8 @@ public enum LoginImageAssetKind
 /// </summary>
 public sealed class LoginImageAssetKindJsonConverter : JsonConverter<LoginImageAssetKind>
 {
+	/// <inheritdoc />
+	/// <exception cref="JsonException">The value is not <c>background</c> or <c>logo</c> (case-insensitive).</exception>
 	public override LoginImageAssetKind Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
 	{
 		var value = reader.GetString();
@@ -30,6 +34,8 @@ public sealed class LoginImageAssetKindJsonConverter : JsonConverter<LoginImageA
 		};
 	}
 
+	/// <inheritdoc />
+	/// <exception cref="JsonException"><paramref name="value"/> is not a defined kind.</exception>
 	public override void Write(Utf8JsonWriter writer, LoginImageAssetKind value, JsonSerializerOptions options)
 	{
 		writer.WriteStringValue(value switch

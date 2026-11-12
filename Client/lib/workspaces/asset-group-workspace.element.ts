@@ -8,6 +8,10 @@ import {
 
 const COLLECTION_ALIAS = 'LeLøgin.Collection.AssetGroup';
 
+/**
+ * Asset group workspace: lists the group's assets as a collection, with an upload button for
+ * the group's kind in the action menu.
+ */
 export class LeLøginScreenAssetGroupWorkspace extends UmbElementMixin(HTMLElement) {
 	#ctx: LeLøginScreenAssetGroupWorkspaceContext | undefined;
 	#editor: HTMLElement | undefined;
@@ -26,6 +30,11 @@ export class LeLøginScreenAssetGroupWorkspace extends UmbElementMixin(HTMLEleme
 		});
 	}
 
+	/**
+	 * Renders the workspace editor on first connection.
+	 *
+	 * @throws {Error} When the template has no workspace editor.
+	 */
 	override connectedCallback() {
 		super.connectedCallback();
 		const shadow = this.shadowRoot;

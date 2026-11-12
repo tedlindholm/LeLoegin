@@ -21,10 +21,15 @@ type RuleItemsError = NonNullable<RuleItemsResponse['error']>;
 
 const RULE_ICON = 'icon-autofill';
 
+/** Intermediate tree item produced from a rule before it is mapped to a tree item model. */
 export interface RuleTreeServerItem {
+	/** Rule identifier. */
 	id: string;
+	/** Rule display name. */
 	name: string;
+	/** Always `false`: rules are leaf nodes. */
 	hasChildren: boolean;
+	/** Icon alias shown in the tree. */
 	icon: string;
 }
 
@@ -35,6 +40,12 @@ const toRuleTreeServerItem = (rule: { id: string; name: string }): RuleTreeServe
 	icon: RULE_ICON
 });
 
+/**
+ * Maps a server item to a rule tree item parented to the rule list root.
+ *
+ * @param item - The server item to map
+ * @returns A leaf tree item model for the rule
+ */
 export const toRuleTreeItemModel = (item: RuleTreeServerItem): LeLøginScreenRuleTreeItemModel => ({
 	unique: item.id,
 	parent: {
@@ -52,19 +63,26 @@ export const toRuleTreeItemModel = (item: RuleTreeServerItem): LeLøginScreenRul
  * UmbTreeServerDataSourceBase branches on `if (data)` and only falls through to `return { error }`
  * when data is absent. Returning an empty-items envelope alongside an error would therefore
  * present the failure as an empty tree, so a failed read leaves `data` unset entirely.
+ *
+ * Result of a root-items or children request.
  */
 export interface RuleTreeItemsResult {
+	/** The page of items; absent when the request failed. */
 	data?: {
 		items: RuleTreeServerItem[];
 		total: number;
 		totalBefore: number;
 		totalAfter: number;
 	};
+	/** The request error, when the read failed. */
 	error?: RuleItemsError;
 }
 
+/** Result of an ancestors request. */
 export interface RuleTreeAncestorsResult {
+	/** The rule itself when found, otherwise empty. */
 	data?: RuleTreeServerItem[];
+	/** The request error, when the read failed. */
 	error?: RuleItemsError;
 }
 
@@ -72,6 +90,14 @@ const itemsResult = (items: RuleTreeServerItem[]): RuleTreeItemsResult => ({
 	data: { items, total: items.length, totalBefore: 0, totalAfter: 0 }
 });
 
+/**
+ * Builds the `UmbTreeServerDataSourceBase` configuration for the flat rules tree. Root items are
+ * every rule, children are always empty, and ancestors resolve to the rule itself (or nothing
+ * when it is not found).
+ *
+ * @param ruleSource - Source of the rule list
+ * @returns The data source configuration, including the tree item mapper
+ */
 export const buildDataSourceConfig = (ruleSource: RuleItemsSource) => ({
 	getRootItems: async (_args: UmbTreeRootItemsRequestArgs): Promise<RuleTreeItemsResult> => {
 		const { data, error } = await ruleSource.requestItems();

@@ -7,14 +7,24 @@ import { LeLøginScreenAssetRepository } from '../assets/asset.repository.js';
 import { LOGIN_SCREEN_ASSET_ENTITY_TYPE } from '../tree/types.js';
 import { UMB_LOGIN_SCREEN_ASSET_GROUP_WORKSPACE_CONTEXT } from './asset-group-workspace.context.js';
 
+/** One asset as the asset group collection lists it. */
 export interface LeLøginAssetCollectionItemModel {
+	/** Asset id. */
 	unique: string;
+	/** Always the login-screen asset entity type. */
 	entityType: string;
+	/** Display name of the asset. */
 	name: string;
+	/** Alternative text, if the asset has any. */
 	altText: string | undefined;
+	/** Backoffice URL of the asset's edit workspace. */
 	editHref: string;
 }
 
+/**
+ * Collection repository for an asset group workspace: lists the assets whose kind matches the
+ * group (background or logo), read from the surrounding asset group workspace context.
+ */
 export class LeLøginScreenAssetGroupCollectionRepository
 	extends UmbRepositoryBase
 	implements UmbCollectionRepository<LeLøginAssetCollectionItemModel>
@@ -22,6 +32,9 @@ export class LeLøginScreenAssetGroupCollectionRepository
 	#assetRepository = new LeLøginScreenAssetRepository(this);
 	#kind: LoginImageAssetKind | undefined;
 
+	/**
+	 * @param host - Controller host; must sit inside an asset group workspace so the kind can be consumed.
+	 */
 	constructor(host: UmbControllerHost) {
 		super(host);
 
@@ -36,6 +49,9 @@ export class LeLøginScreenAssetGroupCollectionRepository
 	/**
 	 * Fetches the group's assets afresh on every request. Umbraco's collection reloads after a
 	 * delete or rename of an asset it shows; a cached list would still contain the old asset.
+	 *
+	 * @param _filter - Ignored; the group is small and returned in full.
+	 * @returns The group's assets and their total, or the repository error.
 	 */
 	async requestCollection(_filter?: UmbCollectionFilterModel) {
 		const { data, error } = await this.#assetRepository.requestItems();

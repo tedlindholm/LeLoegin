@@ -9,12 +9,18 @@ import { LeLøginScreenRuleRepository } from './rule.repository.js';
 import { requestStructureReload } from '../utils/request-structure-reload.js';
 import { LOGIN_SCREEN_RULE_ENTITY_TYPE } from './entity-types.js';
 
+/** Context token for the rule list workspace context. */
 export const UMB_LOGIN_SCREEN_RULE_WORKSPACE_CONTEXT =
 	new UmbContextToken<LeLøginScreenRuleWorkspaceContext>(
 		'UmbWorkspaceContext',
 		'LeLøgin.WorkspaceContext.Rule'
 	);
 
+/**
+ * Workspace context for the rule list. Holds the loaded rules and applies reorder, enable and
+ * delete changes optimistically; when a save fails it reloads from the server and shows a
+ * danger notification.
+ */
 export class LeLøginScreenRuleWorkspaceContext extends UmbContextBase {
 	#repository: LeLøginScreenRuleRepository;
 	#rules = new UmbArrayState<LoginRule>([], (rule) => rule.id);
@@ -22,8 +28,11 @@ export class LeLøginScreenRuleWorkspaceContext extends UmbContextBase {
 	#loadError = new UmbBooleanState(false);
 	#localize = new UmbLocalizationController(this);
 
+	/** The rules in priority order. */
 	readonly rules = this.#rules.asObservable();
+	/** Whether a load is in progress. */
 	readonly isLoading = this.#isLoading.asObservable();
+	/** Whether the last load failed. */
 	readonly loadError = this.#loadError.asObservable();
 
 	constructor(host: UmbControllerHost) {
@@ -31,6 +40,12 @@ export class LeLøginScreenRuleWorkspaceContext extends UmbContextBase {
 		this.#repository = new LeLøginScreenRuleRepository(this);
 	}
 
+	/**
+	 * Loads every rule from the server into {@link rules}. On failure the previous rules are kept
+	 * and {@link loadError} is set.
+	 *
+	 * @returns The loaded rules, or the request error
+	 */
 	async load() {
 		this.#isLoading.setValue(true);
 		this.#loadError.setValue(false);
@@ -51,6 +66,13 @@ export class LeLøginScreenRuleWorkspaceContext extends UmbContextBase {
 		}
 	}
 
+	/**
+	 * Reorders the rules and reassigns priorities in steps of 100. Only rules whose priority
+	 * changed are saved. Unknown ids are ignored, and rules missing from `orderedIds` are dropped
+	 * from the local list.
+	 *
+	 * @param orderedIds - Rule identifiers in their new order
+	 */
 	async reorder(orderedIds: Array<string>) {
 		const byId = new Map(this.#rules.getValue().map((rule) => [rule.id, rule]));
 		const reordered: Array<LoginRule> = [];
@@ -77,12 +99,23 @@ export class LeLøginScreenRuleWorkspaceContext extends UmbContextBase {
 		}
 	}
 
+	/**
+	 * Flips a rule's enabled state. Does nothing when the rule is not loaded.
+	 *
+	 * @param ruleId - Identifier of the rule
+	 */
 	async toggleEnabled(ruleId: string) {
 		const rule = this.#rules.getValue().find((r) => r.id === ruleId);
 		if (rule === undefined) return;
 		await this.setEnabled(ruleId, !rule.enabled);
 	}
 
+	/**
+	 * Sets a rule's enabled state and saves it. Does nothing when the rule is not loaded.
+	 *
+	 * @param ruleId - Identifier of the rule
+	 * @param enabled - The new enabled state
+	 */
 	async setEnabled(ruleId: string, enabled: boolean) {
 		const rule = this.#rules.getValue().find((candidate) => candidate.id === ruleId);
 		if (rule === undefined) {
@@ -101,6 +134,13 @@ export class LeLøginScreenRuleWorkspaceContext extends UmbContextBase {
 		}
 	}
 
+	/**
+	 * Deletes a rule, removes it from the list and reloads the tree structure. On failure a danger
+	 * notification is shown.
+	 *
+	 * @param ruleId - Identifier of the rule to delete
+	 * @returns `data: true` when deleted, otherwise `false` with the request error
+	 */
 	async delete(ruleId: string) {
 		const { data, error } = await this.#repository.delete(ruleId);
 		if (error) {

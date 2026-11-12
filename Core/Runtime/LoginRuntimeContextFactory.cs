@@ -32,7 +32,12 @@ public static class LoginRuntimeContextFactory
 
 	/// <summary>
 	/// Builds the context for <paramref name="request"/>, honouring any render token it carries.
+	/// Weekday and month come from the server's local time.
 	/// </summary>
+	/// <param name="request">The request whose <see cref="RenderTokenQueryKey"/> query value, if a valid integer, becomes the render token.</param>
+	/// <param name="timeProvider">Clock supplying local time and the fallback time bucket.</param>
+	/// <returns>The context to resolve rules against.</returns>
+	/// <exception cref="ArgumentNullException"><paramref name="request"/> is <see langword="null"/>.</exception>
 	public static LoginRuntimeContext Create(HttpRequest request, TimeProvider timeProvider)
 	{
 		ArgumentNullException.ThrowIfNull(request);

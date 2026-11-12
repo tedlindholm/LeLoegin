@@ -15,6 +15,11 @@ export class LeLøginScreenConditionMetadataDataSource extends UmbControllerBase
 		super(host);
 	}
 
+	/**
+	 * Fetches the condition metadata through the authenticated management API.
+	 *
+	 * @returns The adapted metadata, or `data: undefined` with the error when the request fails
+	 */
 	async getConditionMetadata(): Promise<{ data: ConditionMetadata | undefined; error: unknown }> {
 		const { data, error } = await tryExecute(this, V1.getRulesConditionMetadata());
 

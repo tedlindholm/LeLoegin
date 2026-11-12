@@ -1,10 +1,16 @@
 import { computeCropRegion } from './compute-crop-region.js';
 
+/** Inputs for the editor crop simulation; the preview only activates when zoom exceeds 1.001. */
 export interface CropPreviewInputs {
+	/** Uncropped image URL to paint. */
 	imageUrl: string;
+	/** Natural pixel width of the uncropped image. */
 	imageWidth: number;
+	/** Natural pixel height of the uncropped image. */
 	imageHeight: number;
+	/** Normalised focal point (0–1); defaults to the centre. */
 	focalPoint?: { left: number; top: number };
+	/** Zoom factor (≥ 1). */
 	zoom?: number;
 }
 
@@ -71,6 +77,14 @@ const ensureCropPreviewWrapper = (graphic: HTMLElement, existing: Element | null
 	return wrapper;
 };
 
+/**
+ * Paints, updates or removes the crop-simulation wrapper inside the auth view's `#graphic`
+ * panel (see the strategy notes above). Inactive inputs, or a panel with no size, remove the
+ * wrapper and restore `#graphic`'s own background.
+ *
+ * @param shadowRoot - The `umb-auth-view` shadow root
+ * @param inputs - The crop to simulate, or `undefined` to tear the preview down
+ */
 export const applyCropPreview = (shadowRoot: ShadowRoot, inputs: CropPreviewInputs | undefined) => {
 	const graphic = shadowRoot.getElementById('graphic');
 	if (!(graphic instanceof HTMLElement)) return;

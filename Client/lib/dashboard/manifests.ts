@@ -22,4 +22,5 @@ const overviewDashboardManifest = {
 	]
 } satisfies ManifestDashboard;
 
+/** The Overview dashboard, shown in Settings to users with the Le Løgin permission. */
 export const manifests = [overviewDashboardManifest] satisfies ReadonlyArray<ManifestDashboard>;

@@ -72,6 +72,10 @@ function getEventTargetElement(event: Event): Element | null {
 	return event.target instanceof Element ? event.target : null;
 }
 
+/**
+ * Rule list workspace: lists the rules in evaluation order (priority, then id), with a Create
+ * button, enable toggles and delete with confirmation.
+ */
 export class LeLøginScreenRuleListWorkspace extends UmbElementMixin(HTMLElement) {
 	#workspaceContext = new LeLøginScreenRuleWorkspaceContext(this);
 	#rules: Array<LoginRule> = [];
@@ -105,6 +109,7 @@ export class LeLøginScreenRuleListWorkspace extends UmbElementMixin(HTMLElement
 		});
 	}
 
+	/** Renders the workspace editor on first connection, then loads the rules. */
 	override connectedCallback() {
 		super.connectedCallback();
 		if (this.#listBox === undefined) this.#initShadow();

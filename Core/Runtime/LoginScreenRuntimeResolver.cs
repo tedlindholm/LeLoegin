@@ -9,6 +9,16 @@ public sealed class LeLøginScreenRuntimeResolver
 {
 	private readonly StringComparer _assetIdComparer = StringComparer.OrdinalIgnoreCase;
 
+	/// <summary>
+	/// Returns the asset of the first enabled rule, by priority then id, whose condition matches
+	/// <paramref name="context"/> and that references at least one existing asset. With several
+	/// existing assets the render token picks one deterministically. Rules with unsupported
+	/// conditions are skipped.
+	/// </summary>
+	/// <param name="assets">The candidate assets, normally the background assets.</param>
+	/// <param name="rules">All stored rules.</param>
+	/// <param name="context">The request's runtime context.</param>
+	/// <returns>The asset to show, or <see langword="null"/> when no rule applies.</returns>
 	public LoginImageAsset? ResolveAsset(
 		IEnumerable<LoginImageAsset> assets,
 		IEnumerable<LoginRule> rules,

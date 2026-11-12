@@ -14,10 +14,12 @@ namespace LeLøgin.Core.Storage.Migrations.Schemas;
 [SuppressMessage("Performance", "CA1812", Justification = "Used as a generic-type argument by Create.Table<T>(); NPoco reads its attributes via reflection.")]
 internal sealed class LeLoginSettingsSchema
 {
+    /// <summary>Row id (primary key); always <c>1</c>.</summary>
     [PrimaryKeyColumn(AutoIncrement = false)]
     [Column("Id")]
     public int Id { get; set; }
 
+    /// <summary>Cache lifetime in seconds for the public runtime endpoint, as created by the migration; defaults to 300. No runtime code reads this column.</summary>
     [Column("PublicEndpointCacheSeconds")]
     public int PublicEndpointCacheSeconds { get; set; } = 300;
 }

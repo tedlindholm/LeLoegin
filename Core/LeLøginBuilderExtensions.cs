@@ -3,6 +3,9 @@ using Umbraco.Cms.Core.IO;
 
 namespace LeLøgin.Core;
 
+/// <summary>
+/// Extension points for hosts that store Le Løgin's files somewhere other than the local disk.
+/// </summary>
 public static class LeLøginBuilderExtensions
 {
     /// <summary>
@@ -14,6 +17,9 @@ public static class LeLøginBuilderExtensions
     /// <c>[ComposeAfter(typeof(LeLøginScreenComposer))]</c> so it runs after the default
     /// <see cref="PhysicalFileSystem"/> is registered.
     /// </remarks>
+    /// <param name="builder">The Umbraco builder.</param>
+    /// <param name="factory">Creates the file system; invoked once, as the manager is a singleton.</param>
+    /// <returns>The same <paramref name="builder"/>, for chaining.</returns>
     public static IUmbracoBuilder SetLoginAssetFileSystem(
         this IUmbracoBuilder builder,
         Func<IServiceProvider, IFileSystem> factory)
@@ -33,6 +39,9 @@ public static class LeLøginBuilderExtensions
     /// Call this in a composer decorated with
     /// <c>[ComposeAfter(typeof(LeLøginScreenComposer))]</c>.
     /// </remarks>
+    /// <param name="builder">The Umbraco builder.</param>
+    /// <param name="factory">Creates the file system; invoked once, as the manager is a singleton.</param>
+    /// <returns>The same <paramref name="builder"/>, for chaining.</returns>
     public static IUmbracoBuilder SetLoginPublishFileSystem(
         this IUmbracoBuilder builder,
         Func<IServiceProvider, IFileSystem> factory)
