@@ -10,8 +10,8 @@ Le Løgin is a distributable Umbraco package for managing the backoffice login-s
 
 - the `LeLøgin` Razor Class Library assembly
 - static web assets under `App_Plugins/le-løgin`
-- `umbraco-package.json` with both backoffice and runtime entry points
-- authenticated management APIs plus the public runtime endpoint
+- `umbraco-package.json` with the backoffice entry point; the login-page script is loaded by the package's Razor login view (`umbraco/UmbracoLogin/Index.cshtml`)
+- authenticated management APIs plus two public runtime endpoints (`runtime/active` and `runtime/greeting.js`)
 
 ## Building the package
 
@@ -77,9 +77,10 @@ The practical consequences are:
 - An Umbraco 18 or later host may choose its own compatible minor and patch versions.
 - There is no NuGet upper bound preventing installation into Umbraco 19. Runtime compatibility
   still depends on Umbraco 19 retaining the APIs used by Le Løgin.
-- NuGet will also allow installation into Umbraco 17 or an ordinary .NET 10 application because
-  the nupkg does not declare an Umbraco dependency. Those environments are not supported and may
-  fail when the package is loaded.
+- NuGet will also let a package from one track install into the other major, or into an ordinary
+  .NET 10 application, because the nupkg does not declare an Umbraco dependency. Use the package
+  matching the site's Umbraco major; other combinations are not supported and may fail when the
+  package is loaded.
 - Private security pins protect Le Løgin's own build graph but do not flow to consuming sites. The
   host must independently keep its runtime dependencies patched.
 

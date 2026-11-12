@@ -4,7 +4,7 @@ namespace LeLøgin.Core.Storage;
 
 /// <summary>
 /// Holds the <see cref="IFileSystem"/> used for publicly-servable runtime publications
-/// (the JPEG / PNG / SVG files the login-background redirect points to).
+/// (the GUID-named JPEG copies of background images the login-background redirect points to).
 ///
 /// Replace the backing store by calling
 /// <c>builder.SetLoginPublishFileSystem(factory => …)</c> in a composer decorated with

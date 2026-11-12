@@ -2,7 +2,7 @@
 
 ## Why this matters
 
-Le Løgin stores uploaded image assets and generated runtime publications (the transcoded JPEG/PNG/SVG files served to the login screen) on disk. By default these files live inside the web application's `App_Data/LeLøgin/` directory and `wwwroot/login-screen/` directory respectively.
+Le Løgin stores uploaded image assets and generated runtime publications (GUID-named JPEG copies of the background images served to the login screen) on disk. By default these files live inside the web application's `App_Data/LeLøgin/` directory and `wwwroot/login-screen/` directory respectively.
 
 On **ephemeral hosts** — Azure App Service, Docker containers, any infrastructure that does not preserve the filesystem between deploys — `App_Data` is wiped on every deployment. Uploaded assets survive a running instance but disappear on redeploy, leaving asset records in the Umbraco database that point to files that no longer exist.
 
@@ -60,7 +60,7 @@ public class MyCustomStorageComposer : IComposer
 
         builder.SetLoginPublishFileSystem(sp =>
         {
-            // Public blobs — GetUrl() must return a publicly reachable URL
+            // GetUrl() must return a URL the site serves, so ImageSharp can crop it
             return new MyAzurePublicBlobFileSystem(sp);
         });
     }
@@ -71,7 +71,7 @@ public class MyCustomStorageComposer : IComposer
 
 ### Requirements for `LeLøginPublishFileManager`
 
-`IFileSystem.GetUrl(fileName)` must return a **publicly reachable URL** — this is the URL embedded in the login screen API response that the browser fetches directly. For a physical filesystem this is a path under `wwwroot`. For blob storage it must be a CDN or public blob URL.
+`IFileSystem.GetUrl(fileName)` must return a URL the browser can fetch. It is returned, with ImageSharp crop parameters added, by `runtime/active`, and the `/login-background` middleware redirects to it. For the focal-point and zoom crop to work, the URL must resolve to a path the site's web root serves, so ImageSharp can process it. For a physical file system this is a path under `wwwroot`. The `LeLøgin.AzureBlob` adapter mounts the publish container on the web root at its `VirtualPath`, as Umbraco does for media. A direct CDN or public blob URL works only if you accept losing the crop.
 
 For `LeLøginAssetFileManager`, `GetUrl` is never called — only `AddFile`, `OpenFile`, `FileExists`, `GetLastModified`, `GetFiles`, and `DeleteFile` are used.
 

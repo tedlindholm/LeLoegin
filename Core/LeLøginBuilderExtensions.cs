@@ -25,7 +25,7 @@ public static class LeLøginBuilderExtensions
 
     /// <summary>
     /// Replaces the <see cref="IFileSystem"/> used for publicly-servable runtime
-    /// publications (the JPEG / PNG / SVG files the login-background redirect points to).
+    /// publications (the GUID-named JPEG copies of background images the login-background redirect points to).
     /// <see cref="IFileSystem.GetUrl"/> on this filesystem must return a publicly reachable
     /// URL — e.g. a blob storage URL when using Azure.
     /// </summary>

@@ -6,7 +6,7 @@ Every production `PackageReference` in Le Løgin is marked `PrivateAssets="all"`
 **compiled against** the versions in `Directory.Build.props` — on the 18 track, Umbraco 18.3.0 —
 but **declares none of them as dependencies** in the nupkg. ImageSharp 3.2.0 arrives with
 `Umbraco.Cms.Imaging.ImageSharp` and is not referenced directly: ImageSharp 3.2 checks a Six Labors
-license key for direct references, including Release builds.
+licence key for direct references, including Release builds.
 
 Instead, the **consuming Umbraco site (the host) owns and supplies these assemblies at runtime**.
 
@@ -27,8 +27,8 @@ Instead, the **consuming Umbraco site (the host) owns and supplies these assembl
 |---------|--------|
 | `Umbraco.Cms.Api.Management` | Host owns its Umbraco version. Transitively covers Core, Infrastructure, Web.Common and Api.Common. |
 | `Umbraco.Cms.Imaging.ImageSharp` | Host owns its Umbraco version. Supplies the middleware options and HMAC signing used by `LoginScreenImageUrlBuilder`. |
-| `SixLabors.ImageSharp` | **Umbraco ships it** — it arrives transitively with `Umbraco.Cms.Imaging.ImageSharp`, so the host already has it. Le Løgin does not take a direct reference, because ImageSharp 3.2 enforces a license key on direct references. |
-| `Microsoft.OpenApi`, `System.Security.Cryptography.Xml`, `MessagePack` | Security pins that match the selected track's Umbraco floor and stay inside Le Løgin's own build graph. MessagePack is pinned because `Umbraco.StorageProviders.AzureBlob` 18.0.0 still resolves 3.1.7. |
+| `SixLabors.ImageSharp` | **Umbraco ships it** — it arrives transitively with `Umbraco.Cms.Imaging.ImageSharp`, so the host already has it. Le Løgin does not take a direct reference, because ImageSharp 3.2 enforces a licence key on direct references. |
+| `Microsoft.OpenApi`, `System.Security.Cryptography.Xml`, `MessagePack` | Security pins that match the selected track's Umbraco floor and stay inside Le Løgin's own build graph. MessagePack is pinned to 3.1.12 because Umbraco 17.7.2 resolves 3.1.8 and `Umbraco.StorageProviders.AzureBlob` 18.0.0 resolves 3.1.7. |
 | `Umbraco.StorageProviders.AzureBlob` (in `LeLøgin.AzureBlob`) | Host owns its storage-provider version; it must match the host's Umbraco major. |
 
 ### What this does and does not guarantee
@@ -81,7 +81,7 @@ A consuming site supplies the runtime assemblies through its own Umbraco referen
 
 ```xml
 <PackageReference Include="Umbraco.Cms" Version="18.2.1" />
-<PackageReference Include="LeLøgin" Version="18.0.0" />
+<PackageReference Include="LeLøgin" Version="18.0.0-rc.1" />
 <!-- SixLabors.ImageSharp arrives transitively with Umbraco; pin it explicitly only to
      take a patched version ahead of Umbraco's own floor. -->
 ```
@@ -95,6 +95,5 @@ global-usings caveat that comes with not referencing the `Umbraco.Cms` meta-pack
 ### See Also
 
 - [readme.md — Runtime dependency ownership](../readme.md#runtime-dependency-ownership)
-- [Fresh-install database-readiness remedy](./plans/fresh-install-database-readiness-remedy-plan.md)
 - [Filesystem Providers](./filesystem-providers.md) — the host-owned pattern applied to storage backends
 - [LeLøgin.AzureBlob readme](../LeLøgin.AzureBlob/readme.md) — dependency policy for the Azure adapter

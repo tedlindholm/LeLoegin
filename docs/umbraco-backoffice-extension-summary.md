@@ -47,7 +47,7 @@ Because Umbraco imports these files dynamically and looks for the `onInit` expor
 Workspaces are the primary editing environments in the backoffice (e.g., editing a Document, Media item, or custom entity).
 
 *   **Architecture Flow:**
-    1.  **Workspace Context:** Acts as the centralized state manager. It exposes state via Observables.
+    1.  **Workspace Context:** Acts as the centralised state manager. It exposes state via Observables.
     2.  **Workspace Views:** The tabs/content areas. They observe the Context to render data.
     3.  **Workspace Actions:** Buttons (usually in the footer) that trigger commands to mutate data.
 *   **Scoping:** Workspaces are automatically scoped to their specific instance. If you have two documents open, their workspace contexts do not interfere with each other.
@@ -97,11 +97,15 @@ To make a newly registered section visible, an Administrator must:
 
 - It uses a `backofficeEntryPoint` to configure its authenticated API client and then register manifests
 - Instead of a top-level custom section, it currently integrates into `Umb.Section.Settings` using a `sectionSidebarApp` of kind `menu`
-- It registers its own Settings-side menu items for `Overview` and `Assets`
+- It registers menu items for Overview, Assets and Rules under a Le Løgin sidebar app (`LeLøgin.SectionSidebarApp.Settings`)
 - The Assets area uses a tree plus multiple workspaces:
-    - root workspace
     - asset root workspace
+    - asset group workspaces (background and logo)
     - asset workspace
-    - dedicated asset upload workspace
-- The Overview experience is rendered through a root workspace that hosts a custom dashboard element
-- The asset slice follows the standard Umbraco flow of repository/context-driven state rather than direct element-level transport calls
+    - separate background and logo upload workspaces
+    - create-asset and logo-picker modals
+- The Rules area has its own tree, a rule list workspace and a rule workspace, with entity actions to create, reload, enable or disable, and delete
+- The Overview experience is rendered through a root workspace that hosts a custom dashboard element; the same element is also registered as a Settings-section dashboard (`LeLøgin.Dashboard.Overview`)
+- Every Le Løgin manifest is gated by the `LeLøgin.Manage` permission condition (`Client/lib/user-permissions`)
+- The asset and rule slices follow the standard Umbraco flow of repository/context-driven state rather than direct element-level transport calls
+- The login page does not use an `appEntryPoint`. The package's `umbraco/UmbracoLogin/Index.cshtml` loads `login-bootstrap.ts`, which registers the greeting from `runtime/greeting.js` before importing Umbraco's login script

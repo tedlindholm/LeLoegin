@@ -489,7 +489,7 @@ sequenceDiagram
    };
    ```
 
-2. **Browser cache is warm.** Umbraco's login assets and any previously fetched package assets load much faster on the second pass. Historically Le Løgin also shipped login-page JavaScript, and that exposed a localisation-registry race on warm-cache loads (an `appEntryPoint`-registered `localization` extension with a top-level `await` blocked the registry's `Promise.all`, timing out `#waitForLocalization()` — see §6). The current package no longer ships that login-page `appEntryPoint`; the login customisation path is now server-side only. See §7 for the current architecture.
+2. **Browser cache is warm.** Umbraco's login assets and any previously fetched package assets load much faster on the second pass. Historically Le Løgin also shipped login-page JavaScript, and that exposed a localisation-registry race on warm-cache loads (an `appEntryPoint`-registered `localization` extension with a top-level `await` blocked the registry's `Promise.all`, timing out `#waitForLocalization()` — see §6). The current package no longer ships that login-page `appEntryPoint`; it uses a Razor-loaded login script instead. See §7 for the current architecture.
 
 3. **`storedPath` cleanup quirk** — `retrieveStoredPath()` actively rejects any stored path ending with `'logout'`:
 
@@ -503,7 +503,7 @@ sequenceDiagram
 
 ## 6. The Localisation Registry's `Promise.all` (Critical Mechanism)
 
-The Umbraco localisation system is the moving piece that interacts with Le Løgin's appEntryPoint. Understanding its loading model is mandatory for any third-party extension that registers localisation.
+The Umbraco localisation system is the moving piece that Le Løgin's Razor-loaded login entry (`Client/lib/login-bootstrap.ts`) interacts with: it registers a `localization` manifest and awaits `loadLanguage` before importing Umbraco's `login.js`. Understanding its loading model is mandatory for any third-party extension that registers localisation.
 
 [`localization.registry.ts`](https://github.com/umbraco/Umbraco-CMS/blob/release-18.1.0/src/Umbraco.Web.UI.Client/src/packages/core/localization/registry/localization.registry.ts):
 
@@ -614,9 +614,10 @@ The image and logo hooks live under [`Core/Runtime/`](../Core/Runtime/) and are 
 
 | Customisation | Hook | Mechanism |
 | --- | --- | --- |
-| Background image | [`LeLøginBackgroundMiddleware`](../Core/Runtime/LoginBackgroundMiddleware.cs) | Intercepts `GET /umbraco/management/api/v1/security/back-office/graphics/login-background` (pre-routing). When a rule-matched Le Løgin background asset exists, 302-redirects to its ImageSharp-processed public URL so focal-point / zoom crops are preserved. No match → falls through to Umbraco's `BackOfficeGraphicsController`. |
-| Logo | [`LeLøginLogoMiddleware`](../Core/Runtime/LoginLogoMiddleware.cs) | Intercepts both `/login-logo` and `/login-logo-alternative`. The logo is configured per background asset — the active background's `LogoAssetId` selects which logo file to stream. Path is confined to `App_Data/LeLøgin/assets/`; `X-Content-Type-Options: nosniff` is set. Both endpoints return the same bytes; Le Løgin has a single logo concept, not a primary/alternative split. |
+| Background image | [`LeLøginBackgroundMiddleware`](../Core/Runtime/LoginBackgroundMiddleware.cs) | Intercepts `GET /umbraco/management/api/v1/security/back-office/graphics/login-background` (pre-routing). When a rule-matched Le Løgin background asset exists, 302-redirects (with `Cache-Control: no-store`) to its ImageSharp-processed public URL so focal-point / zoom crops are preserved. No match → falls through to Umbraco's `BackOfficeGraphicsController`. |
+| Logo | [`LeLøginLogoMiddleware`](../Core/Runtime/LoginLogoMiddleware.cs) | Intercepts both `/login-logo` and `/login-logo-alternative`. The logo is configured per background asset — the active background's `LogoAssetId` selects which logo file to stream. Read from the asset `IFileSystem` (`assets/`), GET and HEAD only; `nosniff`, a sandboxing CSP (`ImageResponseHeaders`) and `Cache-Control: no-store` are set. Both endpoints return the same bytes; Le Løgin has a single logo concept, not a primary/alternative split. |
 | Greeting text | [`umbraco/UmbracoLogin/Index.cshtml`](../umbraco/UmbracoLogin/Index.cshtml) + `RuntimeController.GreetingModule` | The package Razor override replaces Umbraco's own `login.js` script tag with the package's `login.js` entry, which registers a `localization` manifest for the culture on `data-le-login-culture`, resolves `/umbraco/le-løgin/api/v1/runtime/greeting.js`, then awaits the culture load before `umb-auth` connects. The endpoint resolves the active asset per request and serves `export default { login: { greeting0..6 } }` with `Cache-Control: no-store`. If no greeting is configured the module exports an empty object and Umbraco's defaults render unchanged. |
+| Backoffice preview | `RuntimeController.GetActive` (`runtime/active`) + `Client/lib/auth-view/*` | The Overview dashboard and asset workspace render `umb-auth-view` and customise it client-side. Not used on the login page. |
 
 ### One namespace: `login`
 

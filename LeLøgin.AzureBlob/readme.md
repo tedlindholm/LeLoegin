@@ -97,3 +97,6 @@ then serve the published images, and ImageSharp applies the focal-point and zoom
 Løgin adds to their URLs. No extra package is needed: the adapter uses Umbraco's
 `TryCreateFileProvider` and the `PrependBasePathFileProvider` Umbraco itself ships and uses for
 `/App_Plugins`.
+
+The assets container is not mounted and is never linked publicly. The backoffice gets thumbnails
+and previews from authenticated endpoints such as `assets/{id}/thumbnail`.

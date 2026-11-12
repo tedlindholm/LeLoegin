@@ -7,7 +7,7 @@ This is Le Løgin's default pattern for rendering and re-rendering DOM in custom
 | Situation                                                 | Use                                                                             |
 | --------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | Trusted one-shot shell scaffolding in `connectedCallback` | `shadow.innerHTML = /* html */ \`...\`` (current pattern, no change)            |
-| Re-rendering a subtree on state changes                   | `<template>` + `cloneNode(true)` + `replaceChildren(...)`                       |
+| Re-rendering a subtree on state changes                   | `<template>` + `cloneTemplate()` + `replaceChildren(...)`                       |
 | Updating a small part of a stable subtree                 | Direct `textContent`, property assignment, `toggleAttribute`, or `setAttribute` |
 
 Think in standard custom-element terms: build one stable shell, keep stable event boundaries, and on state changes either update specific nodes or swap descendants built from a `<template>`. Umbraco changes which components we render, not how the rendering model works.
@@ -64,6 +64,8 @@ A module-level `document.createElement('template')` constant is equally valid. T
 
 ### 2. Build a row by cloning and populating
 
+The sample is illustrative: the real rule list uses `uui-toggle` and `uui-button` controls and a typed `queryRequired(root, selector, guard, description)`. Always clone through `cloneTemplate(template, description)` from [Client/lib/utils/template.ts](../Client/lib/utils/template.ts). It calls `customElements.upgrade(fragment)`, so `uui-*` elements have their real properties as soon as they are cloned.
+
 ```ts
 function queryRequired(root: ParentNode, selector: string): Element {
     const element = root.querySelector(selector);
@@ -74,10 +76,7 @@ function queryRequired(root: ParentNode, selector: string): Element {
 }
 
 #buildRow(rule: LoginRule): HTMLElement {
-    const fragment = this.#rowTemplate.content.cloneNode(true);
-    if (!(fragment instanceof DocumentFragment)) {
-        throw new Error('Row template clone failed.');
-    }
+    const fragment = cloneTemplate(this.#rowTemplate, 'Row');
 
     const row = fragment.firstElementChild;
     if (!(row instanceof HTMLElement)) {
@@ -193,6 +192,9 @@ The first migration pass is complete. These files now use the clone-populate-swa
 - [Client/lib/workspaces/root-workspace.element.ts](../Client/lib/workspaces/root-workspace.element.ts) - rule menu rendering
 - [Client/lib/dashboard/overview-dashboard.element.ts](../Client/lib/dashboard/overview-dashboard.element.ts) - preview shell rendering
 - [Client/lib/rules/condition-editor.element.ts](../Client/lib/rules/condition-editor.element.ts) - condition rows and value controls
+- [Client/lib/workspaces/create-asset-modal.element.ts](../Client/lib/workspaces/create-asset-modal.element.ts) - create-asset modal body
+
+Known exception: [Client/lib/workspaces/asset-card.element.ts](../Client/lib/workspaces/asset-card.element.ts) still reassigns `innerHTML` (with `escapeHTML`) on each render and is yet to be migrated.
 
 Use the same pattern for any future component that rebuilds descendants in response to observable or async state changes. If a new `#render()` path is about to concatenate HTML strings into `innerHTML`, stop and move that subtree behind a static template plus DOM population instead.
 

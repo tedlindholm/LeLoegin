@@ -70,11 +70,13 @@ Modern Umbraco development heavily leverages standard ASP.NET Core architectural
 - Public pre-auth runtime endpoints are separated into a dedicated runtime controller base under `/umbraco/le-løgin/api/v1/runtime/...`
 - Assets and rules are persisted in the Umbraco database through the NPoco-backed `LeLøginScreenStore`, which opens its own `IScopeProvider` scope for each operation
 - Umbraco migrations own the `LeLoginAssets` and `LeLoginRules` tables. They also create a singleton `LeLoginSettings` table, which nothing uses since its only setting was removed; it is left in place rather than dropped by a migration
-- Source files are stored under `App_Data/LeLøgin/assets/`
-- ImageSharp is used to read uploaded image dimensions and generate GUID-backed runtime exposure files under `wwwroot/login-screen/`
+- Source files and WebP thumbnails go through `LeLøginAssetFileManager` (by default `App_Data/LeLøgin/assets/` and `thumbnails/`); published copies go through `LeLøginPublishFileManager` (by default `wwwroot/login-screen/`). Hosts can replace either file system
+- ImageSharp reads raster dimensions, writes GUID-named JPEG copies (one per background an enabled rule can show), produces the WebP thumbnails and applies focal-point and zoom crops at request time. SVG uploads are sanitised and measured separately
 - Database-backed startup handlers, anonymous graphics middleware, and public runtime actions remain inert until `IRuntimeState.Level` is exactly `RuntimeLevel.Run`; this allows the package to be present during initial Umbraco database setup
 - The current implemented backend scope is:
-  - asset upload / list / update / delete
-  - publish selected asset as the explicit Le Løgin fallback image
-  - settings get / update
-  - rule-aware runtime read-only image resolution with GUID-backed public exposure paths
+  - asset upload / list / get / update / delete, plus authenticated preview and thumbnail streams
+  - rules create / list / get / update / delete, condition metadata and rule preview
+  - public `runtime/active` (used by the backoffice preview) and `runtime/greeting.js` (used by the login page)
+  - login background and logo middleware at Umbraco's own graphics URLs, served with `Cache-Control: no-store`
+  - the package-managed Le Løgin user group and the `LeLøgin.Manage` permission policy
+  - `POST assets/{id}/publish` remains but always returns 400; a catch-all rule replaces the old fallback image

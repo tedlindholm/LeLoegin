@@ -14,7 +14,7 @@ namespace LeLøgin.Core.Api.Runtime;
 
 /// <summary>
 /// Public endpoint that returns the active login screen image path.
-/// Called by the appEntryPoint before authentication.
+/// Public before authentication: the Overview preview reads runtime/active and the login page loads runtime/greeting.js.
 /// </summary>
 public class RuntimeController(
 	ILeLøginScreenStore store,
