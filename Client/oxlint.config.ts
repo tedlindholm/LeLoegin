@@ -17,6 +17,9 @@ export default defineConfig({
 		'no-debugger': 'error',
 		'no-var': 'error',
 		'prefer-const': 'error',
+		// AGENTS.md rule 5: no `any` and no `as` casts. `as const` is still allowed.
+		'typescript/no-explicit-any': 'error',
+		'typescript/consistent-type-assertions': ['error', { assertionStyle: 'never' }],
 		'max-lines': ['warn', { max: 300, skipBlankLines: true, skipComments: true }],
 		'max-lines-per-function': ['warn', { max: 40, skipBlankLines: true, skipComments: true }],
 		'max-params': ['warn', { max: 4 }],

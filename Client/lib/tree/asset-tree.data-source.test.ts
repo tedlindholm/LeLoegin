@@ -16,7 +16,7 @@ const LOGO_GROUP_ID = 'login-screen-assets-logos';
 
 type AssetItemsError = NonNullable<LeLøginScreenAssetRepositoryResponse['error']>;
 
-const apiError = (message: string) => new Error(message) as unknown as AssetItemsError;
+const apiError = (message: string): AssetItemsError => new Error(message);
 
 const asset = (id: string, kind: LoginImageAssetKind): LoginImageAsset => ({
 	id,

@@ -29,6 +29,12 @@ const logDebug = (...parts: Array<unknown>) => {
 /**
  * The authenticated backoffice entry, loaded by the package manifest's backofficeEntryPoint.
  * Kept separate from the login entry so neither page downloads the other's code.
+ *
+ * Configures the API client first and registers Le Løgin's manifests only once that succeeds;
+ * a failure is logged and nothing is registered.
+ *
+ * @param host - The entry point's host element.
+ * @param extensionRegistry - The registry the manifests are added to.
  */
 export const onInit: UmbEntryPointOnInit = (host, extensionRegistry) => {
 	logDebug('Le Løgin: onInit', manifests);
@@ -38,7 +44,7 @@ export const onInit: UmbEntryPointOnInit = (host, extensionRegistry) => {
 			logDebug('Le Løgin: API client configured with Umbraco auth');
 			extensionRegistry.registerMany(manifests);
 		})
-		.catch((error) => {
+		.catch((error: unknown) => {
 			console.error('Le Løgin: failed to configure API client', error);
 		});
 };

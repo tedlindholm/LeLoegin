@@ -6,7 +6,7 @@ import type { LeLøginScreenRuleRepositoryResponse } from './rule.repository.js'
 
 type RuleItemsError = NonNullable<LeLøginScreenRuleRepositoryResponse['error']>;
 
-const apiError = (message: string) => new Error(message) as unknown as RuleItemsError;
+const apiError = (message: string): RuleItemsError => new Error(message);
 
 const rule = (id: string): LoginRule => ({
 	id,

@@ -41,12 +41,15 @@ function readVersion(manifest: string): unknown {
 		: undefined;
 }
 
+/** `Array.isArray` narrows `unknown` to `any[]`; this keeps the elements `unknown`. */
+const isUnknownArray = (value: unknown): value is ReadonlyArray<unknown> => Array.isArray(value);
+
 /** The file names of the `js` entries a manifest asks Umbraco to import. */
 function manifestEntryFiles(manifest: string): Array<string> {
 	const parsed: unknown = JSON.parse(manifest);
 	if (typeof parsed !== 'object' || parsed === null || !('extensions' in parsed)) return [];
 	const extensions = parsed.extensions;
-	if (!Array.isArray(extensions)) return [];
+	if (!isUnknownArray(extensions)) return [];
 	const files: Array<string> = [];
 	for (const extension of extensions) {
 		if (typeof extension === 'object' && extension !== null && 'js' in extension) {
