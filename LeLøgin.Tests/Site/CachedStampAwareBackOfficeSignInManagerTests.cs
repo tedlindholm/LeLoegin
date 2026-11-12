@@ -28,7 +28,7 @@ namespace LeLøgin.Tests.Site;
 public sealed class CachedStampAwareBackOfficeSignInManagerTests
 {
 	private const string UserId = "-1";
-	private const string UserName = "ted.lindholm@nltg.com";
+	private const string UserName = "editor@example.com";
 	private const string PrincipalStamp = "NEW-STAMP";
 	private const string CachedStamp = "OLD-STAMP";
 	private const string SessionId = "b2b2b45a-1064-4795-b502-5431aaeee852";
