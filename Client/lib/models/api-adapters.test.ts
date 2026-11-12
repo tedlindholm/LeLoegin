@@ -58,6 +58,42 @@ describe('mapApiLoginAsset', () => {
 	});
 });
 
+describe('mapApiLoginAsset optional properties', () => {
+	it('omits nullable optional properties when they are null or absent', () => {
+		const asset = mapApiLoginAsset({
+			...apiLogoAsset,
+			focalPoint: null,
+			zoom: 0
+		});
+
+		expect(asset).not.toHaveProperty('altText');
+		expect(asset).not.toHaveProperty('greetingText');
+		expect(asset).not.toHaveProperty('logoAssetId');
+		expect(asset).not.toHaveProperty('focalPoint');
+		expect(asset).not.toHaveProperty('zoom');
+		expect(asset).not.toHaveProperty('publicPath');
+	});
+
+	it('includes optional properties when they are provided', () => {
+		const asset = mapApiLoginAsset({
+			...apiLogoAsset,
+			altText: 'Skyline',
+			greetingText: 'Hello',
+			logoAssetId: 'logo-1',
+			focalPoint: { left: 0.2, top: 0.8 },
+			zoom: 1.5,
+			publicPath: '/login-screen/bg.jpg'
+		});
+
+		expect(asset.altText).toBe('Skyline');
+		expect(asset.greetingText).toBe('Hello');
+		expect(asset.logoAssetId).toBe('logo-1');
+		expect(asset.focalPoint).toEqual({ left: 0.2, top: 0.8 });
+		expect(asset.zoom).toBe(1.5);
+		expect(asset.publicPath).toBe('/login-screen/bg.jpg');
+	});
+});
+
 describe('mapApiActiveLeLøginScreenResponse', () => {
 	it('maps the active login screen response including focal metadata', () => {
 		const response = mapApiActiveLeLøginScreenResponse({
@@ -110,6 +146,22 @@ describe('parseActiveLeLøginScreenResponse', () => {
 			},
 			zoom: 1
 		});
+		expect(response).not.toHaveProperty('altText');
+		expect(response).not.toHaveProperty('logoAssetId');
+	});
+
+	it('omits all optional properties when they are null or absent', () => {
+		const response = parseActiveLeLøginScreenResponse({
+			imageUrl: '/login-screen/active.jpg',
+			assetId: 'asset-abc',
+			altText: null,
+			greetingText: null,
+			focalPoint: null,
+			zoom: null,
+			logoAssetId: null
+		});
+
+		expect(Object.keys(response).sort()).toEqual(['assetId', 'imageUrl']);
 	});
 });
 
@@ -144,7 +196,6 @@ describe('mapApiLoginRule', () => {
 			}
 		});
 	});
-
 });
 
 describe('mapApiLoginRule with several images', () => {
@@ -196,5 +247,40 @@ describe('toConditionMetadata', () => {
 		expect(() => toConditionMetadata({ operators: { is: { arity: 'pair' } }, fields: {} })).toThrow(
 			"unsupported operator arity 'pair'"
 		);
+	});
+});
+
+describe('toConditionMetadata field metadata', () => {
+	it('maps field metadata with and without allowedValues', () => {
+		const allowedValues = ['monday', 'tuesday'];
+		const metadata = toConditionMetadata({
+			operators: { is: { arity: 'single' } },
+			fields: {
+				weekday: {
+					operators: ['is'],
+					defaultValue: 'monday',
+					allowedValues
+				},
+				month: {
+					operators: ['is'],
+					defaultValue: 1
+				}
+			}
+		});
+
+		const weekday = metadata.fields.get('weekday');
+		expect(weekday).toEqual({
+			operators: ['is'],
+			defaultValue: 'monday',
+			allowedValues: ['monday', 'tuesday']
+		});
+		expect(weekday?.allowedValues).not.toBe(allowedValues);
+
+		const month = metadata.fields.get('month');
+		expect(month).toEqual({
+			operators: ['is'],
+			defaultValue: 1
+		});
+		expect(month).not.toHaveProperty('allowedValues');
 	});
 });

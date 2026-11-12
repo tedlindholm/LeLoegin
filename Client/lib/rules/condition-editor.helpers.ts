@@ -110,9 +110,8 @@ export const isLabelElement = (value: Element | null): value is LabelElement =>
  * @param value - The string to test
  * @returns `true` when the value is `all` or `any`
  */
-export const isConditionGroupOperator = (
-	value: string
-): value is LoginRuleConditionGroupOperator => value === 'all' || value === 'any';
+export const isConditionGroupOperator = (value: string): value is LoginRuleConditionGroupOperator =>
+	value === 'all' || value === 'any';
 
 /**
  * Finds an element by id in a shadow root and narrows it with a guard.
@@ -269,9 +268,11 @@ export function operatorOptions(
 	field: LoginRuleField,
 	selected: LoginRuleConditionOperator
 ): Array<SelectOption> {
-	const ops: ReadonlyArray<LoginRuleConditionOperator> = metadata?.fields.get(field)
-		?.operators ?? ['is', 'isNot'];
-	return [...ops].map((op) => ({
+	const ops: ReadonlyArray<LoginRuleConditionOperator> = metadata?.fields.get(field)?.operators ?? [
+		'is',
+		'isNot'
+	];
+	return ops.map((op) => ({
 		name: operatorLabel(localize, op),
 		value: op,
 		selected: op === selected

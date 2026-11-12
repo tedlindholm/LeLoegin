@@ -33,12 +33,6 @@ function getRequiredById(root: ShadowRoot, id: string): HTMLElement {
 	return element;
 }
 
-const optional = <K extends string, V>(key: K, value: V | undefined): Partial<Record<K, V>> => {
-	const field: Partial<Record<K, V>> = {};
-	if (value !== undefined) field[key] = value;
-	return field;
-};
-
 // Focal point is meaningful at zoom=1 (server omits cc=, client positions via fp%);
 // at zoom>1 the server has already cropped around the focal point so the preview
 // must position center/center to match runtime.
@@ -223,15 +217,20 @@ export class LeLøginScreenOverviewDashboard extends UmbElementMixin(HTMLElement
 		// logo, not whichever logo Umbraco's `/login-logo` endpoint resolves for the
 		// current backoffice request — the middleware decides based on runtime context,
 		// which can disagree with the rule the user is previewing here.
-		return {
-			...optional('imageUrl', activeImage?.imageUrl),
-			...optional('greetingText', activeImage?.greetingText),
-			...optional('focalPoint', cropFocalPoint(activeImage)),
-			...optional('logoUrl', this.#logoThumbnailUrl(activeImage?.logoAssetId)),
+		const customisation: LoginAuthViewCustomisation = {
 			mode: 'preview',
 			previewHeight: '100%',
 			previewNote: this.localize.term('loginScreen_previewOnly')
 		};
+		if (activeImage?.imageUrl !== undefined) customisation.imageUrl = activeImage.imageUrl;
+		if (activeImage?.greetingText !== undefined) {
+			customisation.greetingText = activeImage.greetingText;
+		}
+		const focalPoint = cropFocalPoint(activeImage);
+		if (focalPoint !== undefined) customisation.focalPoint = focalPoint;
+		const logoUrl = this.#logoThumbnailUrl(activeImage?.logoAssetId);
+		if (logoUrl !== undefined) customisation.logoUrl = logoUrl;
+		return customisation;
 	}
 
 	#disposeAuthPreviewObserver() {

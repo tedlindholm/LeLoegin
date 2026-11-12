@@ -99,22 +99,23 @@ export const mapApiLoginAsset = (asset: ApiLoginImageAsset): LoginImageAsset => 
 		typeof asset.zoom === 'number' && Number.isFinite(asset.zoom) && asset.zoom >= 1
 			? asset.zoom
 			: undefined;
-	return {
+	const result: LoginImageAsset = {
 		id: asset.id,
 		name: asset.name,
 		kind: asset.kind,
-		...(altText === undefined ? {} : { altText }),
-		...(greetingText === undefined ? {} : { greetingText }),
-		...(logoAssetId === undefined ? {} : { logoAssetId }),
-		...(focalPoint === undefined ? {} : { focalPoint }),
-		...(zoom === undefined ? {} : { zoom }),
 		storagePath: asset.storagePath,
-		...(publicPath === undefined ? {} : { publicPath }),
 		width: toDomainNumber(asset.width, 'width'),
 		height: toDomainNumber(asset.height, 'height'),
 		createdAt: asset.createdAt,
 		updatedAt: asset.updatedAt
 	};
+	if (altText !== undefined) result.altText = altText;
+	if (greetingText !== undefined) result.greetingText = greetingText;
+	if (logoAssetId !== undefined) result.logoAssetId = logoAssetId;
+	if (focalPoint !== undefined) result.focalPoint = focalPoint;
+	if (zoom !== undefined) result.zoom = zoom;
+	if (publicPath !== undefined) result.publicPath = publicPath;
+	return result;
 };
 
 /**
@@ -178,7 +179,7 @@ export const toSaveRuleRequest = (rule: LoginRule): SaveRuleRequest => ({
  * @returns The validated active login-screen configuration.
  * @throws {Error} When the response does not match the expected shape.
  */
-export const mapApiActiveLeLøginScreenResponse =(response: unknown): ActiveLeLøginScreenResponse =>
+export const mapApiActiveLeLøginScreenResponse = (response: unknown): ActiveLeLøginScreenResponse =>
 	parseActiveLeLøginScreenResponse(response);
 
 const readOptionalString = (value: unknown, fieldName: string): string | undefined => {
@@ -268,10 +269,17 @@ const parseConditionFieldMetadata = (meta: unknown): ConditionFieldMetadata => {
 		"condition field metadata 'allowedValues'"
 	);
 
+	const mappedOperators = operators.map(ensureConditionOperator);
+	if (allowedValues !== undefined) {
+		return {
+			operators: mappedOperators,
+			defaultValue,
+			allowedValues: [...allowedValues]
+		};
+	}
 	return {
-		operators: operators.map(ensureConditionOperator),
-		defaultValue,
-		...(allowedValues === undefined ? {} : { allowedValues: [...allowedValues] })
+		operators: mappedOperators,
+		defaultValue
 	};
 };
 
@@ -329,13 +337,14 @@ export const parseActiveLeLøginScreenResponse = (
 	const zoom = readOptionalZoom(response.zoom, 'zoom');
 	const logoAssetId = readOptionalString(response.logoAssetId, 'logoAssetId');
 
-	return {
+	const result: ActiveLeLøginScreenResponse = {
 		imageUrl: response.imageUrl,
-		assetId: response.assetId,
-		...(altText === undefined ? {} : { altText }),
-		...(greetingText === undefined ? {} : { greetingText }),
-		...(focalPoint === undefined ? {} : { focalPoint }),
-		...(zoom === undefined ? {} : { zoom }),
-		...(logoAssetId === undefined ? {} : { logoAssetId })
+		assetId: response.assetId
 	};
+	if (altText !== undefined) result.altText = altText;
+	if (greetingText !== undefined) result.greetingText = greetingText;
+	if (focalPoint !== undefined) result.focalPoint = focalPoint;
+	if (zoom !== undefined) result.zoom = zoom;
+	if (logoAssetId !== undefined) result.logoAssetId = logoAssetId;
+	return result;
 };

@@ -84,14 +84,15 @@ const cloneCondition = (condition: LoginRuleConditionGroup): LoginRuleConditionG
  * @returns An independent copy.
  */
 export function cloneRuleDraft(draft: LoginRuleDraft): LoginRuleDraft {
-	return {
-		...(draft.id === undefined ? {} : { id: draft.id }),
+	const clone: LoginRuleDraft = {
 		name: draft.name,
 		priority: draft.priority,
 		enabled: draft.enabled,
 		assetIds: [...draft.assetIds],
 		condition: cloneCondition(draft.condition)
 	};
+	if (draft.id !== undefined) clone.id = draft.id;
+	return clone;
 }
 
 /**

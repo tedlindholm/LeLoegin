@@ -335,7 +335,7 @@ export class LeLøginScreenRuleWorkspace extends UmbElementMixin(HTMLElement) {
 
 	#updateDraft(update: Partial<LoginRuleDraft>, shouldRender = false) {
 		if (this.#draft === null || this.#workspaceContext === undefined) return;
-		this.#draft = { ...this.#draft, ...update };
+		Object.assign(this.#draft, update);
 		this.#workspaceContext.updateDraft({ ...this.#draft, name: this.#workspaceContext.getName() });
 		if (shouldRender) this.#render();
 	}

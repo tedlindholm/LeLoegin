@@ -244,17 +244,16 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 			return;
 		}
 
-		const { focalPoint: focalPointUpdate, zoom: zoomUpdate, ...rest } = update;
-		this.#draft = {
-			...this.#draft,
-			...rest,
-			...(focalPointUpdate === undefined ? {} : { focalPoint: focalPointUpdate ?? undefined }),
-			...(zoomUpdate === undefined ? {} : { zoom: zoomUpdate ?? undefined })
-		};
-
+		const draft = this.#draft;
 		if (update.name !== undefined) {
+			draft.name = update.name;
 			this.#name.setValue(update.name);
 		}
+		if (update.altText !== undefined) draft.altText = update.altText;
+		if (update.greetingText !== undefined) draft.greetingText = update.greetingText;
+		if (update.logoAssetId !== undefined) draft.logoAssetId = update.logoAssetId;
+		if (update.focalPoint !== undefined) draft.focalPoint = update.focalPoint ?? undefined;
+		if (update.zoom !== undefined) draft.zoom = update.zoom ?? undefined;
 	}
 
 	/**
@@ -300,7 +299,7 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 	 * @param update - The full save body.
 	 * @returns The saved asset, or the repository error.
 	 */
-	async saveAsset(assetId: string, update: AssetSaveRequest	) {
+	async saveAsset(assetId: string, update: AssetSaveRequest) {
 		const { data, error } = await this.#repository.update(assetId, update);
 		if (error) {
 			console.error('[LeLøginScreen] Failed to save asset', error);

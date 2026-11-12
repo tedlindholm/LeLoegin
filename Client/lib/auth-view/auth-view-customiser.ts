@@ -289,13 +289,20 @@ const applyPreviewMode = (
 
 const toCropPreviewInputs = (customisation: LoginAuthViewCustomisation) => {
 	if (customisation.imageUrl === undefined) return undefined;
-	return {
+	const inputs: {
+		imageUrl: string;
+		imageWidth: number;
+		imageHeight: number;
+		focalPoint?: LoginAuthViewCustomisation['focalPoint'];
+		zoom?: number;
+	} = {
 		imageUrl: customisation.imageUrl,
 		imageWidth: customisation.imageWidth ?? Number.NaN,
-		imageHeight: customisation.imageHeight ?? Number.NaN,
-		...(customisation.focalPoint === undefined ? {} : { focalPoint: customisation.focalPoint }),
-		...(customisation.zoom === undefined ? {} : { zoom: customisation.zoom })
+		imageHeight: customisation.imageHeight ?? Number.NaN
 	};
+	if (customisation.focalPoint !== undefined) inputs.focalPoint = customisation.focalPoint;
+	if (customisation.zoom !== undefined) inputs.zoom = customisation.zoom;
+	return inputs;
 };
 
 // Reactive observation of the auth view (mutation observer + ResizeObserver) lives

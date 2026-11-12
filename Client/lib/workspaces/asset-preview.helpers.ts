@@ -1,12 +1,5 @@
+import type { LoginAuthViewCustomisation } from '../auth-view/auth-view-customiser.js';
 import type { FocalPoint } from '../models/index.ts';
-
-// Spreadable optional field — collapses the noisy `...(x === undefined ? {} : { foo: x })`
-// pattern at the call site so the customisation object reads like a flat record.
-const optional = <K extends string, V>(key: K, value: V | undefined): Partial<Record<K, V>> => {
-	const field: Partial<Record<K, V>> = {};
-	if (value !== undefined) field[key] = value;
-	return field;
-};
 
 /** The background asset draft the asset workspace previews. */
 export interface BackgroundPreviewDraft {
@@ -37,23 +30,27 @@ export interface BackgroundPreviewDraft {
 export function buildAssetPreviewCustomisation(
 	draft: BackgroundPreviewDraft | undefined,
 	previewNote: string
-) {
-	const base = { mode: 'preview' as const, previewHeight: '100%', previewNote };
-	if (draft === undefined) return base;
+): LoginAuthViewCustomisation {
+	if (draft === undefined) {
+		return { mode: 'preview', previewHeight: '100%', previewNote };
+	}
 	// Image dimensions feed the crop+cover simulation in auth-view-customiser so the
 	// editor previews the exact pixels ImageSharp.Web will produce at runtime. Missing
 	// dimensions (legacy assets) leave the preview in the simpler fp%+cover fallback.
-	return {
-		...optional('imageUrl', draft.imageUrl),
-		...optional('greetingText', draft.greetingText),
-		...optional('logoUrl', draft.logoUrl),
-		...optional('focalPoint', draft.focalPoint),
-		...optional('zoom', draft.zoom > 1 ? draft.zoom : undefined),
-		...optional('imageWidth', draft.imageWidth),
-		...optional('imageHeight', draft.imageHeight),
+	const customisation: LoginAuthViewCustomisation = {
 		hideGreeting: true,
-		...base
+		mode: 'preview',
+		previewHeight: '100%',
+		previewNote
 	};
+	if (draft.imageUrl !== undefined) customisation.imageUrl = draft.imageUrl;
+	if (draft.greetingText !== undefined) customisation.greetingText = draft.greetingText;
+	if (draft.logoUrl !== undefined) customisation.logoUrl = draft.logoUrl;
+	if (draft.focalPoint !== undefined) customisation.focalPoint = draft.focalPoint;
+	if (draft.zoom > 1) customisation.zoom = draft.zoom;
+	if (draft.imageWidth !== undefined) customisation.imageWidth = draft.imageWidth;
+	if (draft.imageHeight !== undefined) customisation.imageHeight = draft.imageHeight;
+	return customisation;
 }
 
 /**
