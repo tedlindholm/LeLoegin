@@ -23,8 +23,4 @@ public interface ILeLøginScreenStore
 	Task UpsertRuleAsync(LoginRule rule);
 
 	Task<bool> DeleteRuleAsync(string id);
-
-	Task<LoginSettings> GetSettingsAsync();
-
-	Task UpdateSettingsAsync(LoginSettings settings);
 }

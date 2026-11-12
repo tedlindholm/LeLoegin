@@ -87,6 +87,8 @@ public sealed class LeLøginBackgroundMiddleware(RequestDelegate next)
 			return;
 		}
 
+		// The target depends on the rule that wins and on random picks; nothing may cache it.
+		context.Response.Headers.CacheControl = "no-store";
 		context.Response.Redirect(imageUrl, permanent: false);
 	}
 }

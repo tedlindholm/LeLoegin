@@ -4,7 +4,7 @@
 
 Le Løgin stores uploaded image assets and generated runtime publications (the transcoded JPEG/PNG/SVG files served to the login screen) on disk. By default these files live inside the web application's `App_Data/LeLøgin/` directory and `wwwroot/login-screen/` directory respectively.
 
-On **ephemeral hosts** — Azure App Service, Docker containers, any infrastructure that does not preserve the filesystem between deploys — `App_Data` is wiped on every deployment. Uploaded assets survive a running instance but disappear on redeploy, leaving orphaned `config.json` records pointing to files that no longer exist.
+On **ephemeral hosts** — Azure App Service, Docker containers, any infrastructure that does not preserve the filesystem between deploys — `App_Data` is wiped on every deployment. Uploaded assets survive a running instance but disappear on redeploy, leaving asset records in the Umbraco database that point to files that no longer exist.
 
 Le Løgin follows Umbraco's own pattern for Media storage to solve this: swap the underlying `IFileSystem` implementation without touching application code.
 
@@ -15,9 +15,9 @@ Le Løgin follows Umbraco's own pattern for Media storage to solve this: swap th
 | Manager | Default root | Contains |
 |---|---|---|
 | `LeLøginAssetFileManager` | `App_Data/LeLøgin/` | Source uploads (`assets/`), WebP thumbnail cache (`thumbnails/`) |
-| `LeLøginPublishFileManager` | `wwwroot/login-screen/` | Publicly-servable runtime images (`runtime-image-*.jpg`, `runtime-logo-*.svg`) |
+| `LeLøginPublishFileManager` | `wwwroot/login-screen/` | Publicly-servable runtime images (`<guid>.jpg`), one for each background image an enabled rule can show. Logos are served from the source file and are not published here. |
 
-`config.json` (managed by `JsonFlatFileDataStore`) is **not** covered by these managers and continues to live in `App_Data/LeLøgin/`. On Azure App Service, mount an Azure Files share to `App_Data/` to make it persistent — see Microsoft's documentation on [persistent storage for App Service](https://learn.microsoft.com/azure/app-service/configure-connect-to-azure-storage).
+Asset records and rules are stored in the Umbraco database (`LeLoginAssets` and `LeLoginRules`), not in these file systems, so they persist wherever the database does.
 
 ---
 
@@ -77,13 +77,6 @@ For `LeLøginAssetFileManager`, `GetUrl` is never called — only `AddFile`, `Op
 
 ---
 
-## StoragePath migration
-
-Older Le Løgin installations stored absolute filesystem paths (e.g. `/var/app/App_Data/LeLøgin/assets/abc123.jpg`) in `config.json`. On first startup after upgrading, `LeLøginScreenStore` automatically migrates these to filesystem-relative paths (`assets/abc123.jpg`). The migration is silent, one-time, and requires no action.
-
----
-
 ## What is not covered
 
-- `config.json` — stays on local disk via `JsonFlatFileDataStore`. Use a persistent share (Azure Files, EFS) for it.
 - Umbraco's own Media files — covered by Umbraco's separate `SetMediaFileSystem`.

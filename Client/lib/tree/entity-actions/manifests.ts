@@ -94,22 +94,18 @@ const reloadAssetsActionManifest: UmbExtensionManifest = {
 	conditions: [manageLeLøginScreenCondition]
 };
 
+// Le Løgin's own delete: the confirmation names the rules that use the image (see the action).
 const deleteAssetActionManifest: UmbExtensionManifest = {
 	type: 'entityAction',
-	kind: 'delete',
+	kind: 'default',
 	alias: 'LeLøgin.EntityAction.Asset.Delete',
 	name: 'Delete Login Screen Asset Entity Action',
 	forEntityTypes: [LOGIN_SCREEN_ASSET_ENTITY_TYPE],
 	weight: 1100,
+	api: () => import('./delete-asset-entity-action.js'),
 	meta: {
 		icon: 'icon-trash',
-		label: '#actions_delete',
-		itemRepositoryAlias: ASSET_REPOSITORY_ALIAS,
-		detailRepositoryAlias: ASSET_REPOSITORY_ALIAS,
-		confirm: {
-			headline: '#actions_delete',
-			message: '#loginScreen_assetTreeDeleteMessage'
-		}
+		label: '#actions_delete'
 	},
 	conditions: [manageLeLøginScreenCondition]
 };

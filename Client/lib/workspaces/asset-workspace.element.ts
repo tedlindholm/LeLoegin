@@ -36,11 +36,11 @@ const isValueElement = (value: Element | null): value is ValueElement =>
 
 // Spreadable optional field — collapses the noisy `...(x === undefined ? {} : { foo: x })`
 // pattern at the call site so the customisation object reads like a flat record.
-const optional = <K extends string, V>(
-	key: K,
-	value: V | undefined
-): Record<K, V> | Record<string, never> =>
-	value === undefined ? {} : ({ [key]: value } as Record<K, V>);
+const optional = <K extends string, V>(key: K, value: V | undefined): Partial<Record<K, V>> => {
+	const field: Partial<Record<K, V>> = {};
+	if (value !== undefined) field[key] = value;
+	return field;
+};
 
 function getRequiredById(root: ShadowRoot, id: string): HTMLElement {
 	const element = root.getElementById(id);
@@ -370,7 +370,11 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 
 	#authPreviewCustomisation() {
 		if (!this.#isBackgroundAssetLoaded() || this.#assetId === undefined) {
-			return { mode: 'preview' as const, previewHeight: '100%' };
+			return {
+				mode: 'preview' as const,
+				previewHeight: '100%',
+				previewNote: this.localize.term('loginScreen_previewOnly')
+			};
 		}
 		// Image dimensions feed the crop+cover simulation in auth-view-customiser so the
 		// editor previews the exact pixels ImageSharp.Web will produce at runtime. Missing
@@ -385,7 +389,8 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 			...optional('imageHeight', this.#asset?.height),
 			hideGreeting: true,
 			mode: 'preview' as const,
-			previewHeight: '100%'
+			previewHeight: '100%',
+			previewNote: this.localize.term('loginScreen_previewOnly')
 		};
 	}
 

@@ -42,6 +42,9 @@ if (greetingModulePath && culture) {
 }
 
 // Guaranteed by the package's Razor login shell and asserted by LoginRazorBootstrapTests.
-// Imported unconditionally: a missing value must surface as a module-resolution error rather
-// than leave umb-auth undefined on a blank login screen.
-await import(loginScriptUrl!);
+// A missing value must surface as an error rather than leave umb-auth undefined on a blank
+// login screen.
+if (loginScriptUrl === undefined) {
+	throw new Error('Le Løgin: the login shell did not provide the Umbraco login script URL.');
+}
+await import(loginScriptUrl);

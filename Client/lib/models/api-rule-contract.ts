@@ -8,9 +8,9 @@ import type { LoginRuleConditionOperator, LoginRuleField } from '../api/index.js
  * lists below.
  */
 const makeValidator = <Value extends string>(label: string, values: readonly Value[]) => {
-	const known = new Set<string>(values);
+	const isKnown = (value: string): value is Value => values.some((known) => known === value);
 	return (value: string): Value => {
-		if (known.has(value)) return value as Value;
+		if (isKnown(value)) return value;
 		throw new Error(`Le Løgin received an unsupported ${label} '${value}'.`);
 	};
 };

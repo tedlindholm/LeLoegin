@@ -8,7 +8,8 @@ const ENTRY_POINTS = {
 	[RAZOR_ENTRY_NAME]: 'lib/login-bootstrap.ts',
 	backoffice: 'lib/backoffice-entry.ts'
 };
-const INLINE_TEST_DEPS = [/^@umbraco-ui\//, /^@umbraco-cms\/backoffice\//];
+/** Vitest matches each name against `node_modules/<name>` in the module path. */
+const INLINE_TEST_DEPS = ['@umbraco-ui', '@umbraco-cms/backoffice'];
 
 /**
  * Release minification. Vite's own `build.minify` only selects which minifier runs; it leaves
@@ -53,7 +54,7 @@ function createBuildConfig(): NonNullable<UserConfig['build']> {
 			formats: ['es']
 		},
 		rolldownOptions: {
-			external: [/^@umbraco/],
+			external: (id: string) => id.startsWith('@umbraco'),
 			output: {
 				// The Razor shell cache-busts `login.js` with asp-append-version, so that name has
 				// to stay put. Umbraco imports the backoffice entry from the bare URL in

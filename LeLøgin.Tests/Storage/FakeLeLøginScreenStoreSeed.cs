@@ -62,15 +62,7 @@ internal static class FakeLeLøginScreenStoreSeed
 				AssetIds = [rule.AssetId]
 			});
 		}
-		if (legacy.Settings is not null)
-		{
-			store.WithSettings(new LoginSettings
-			{
-				PublicEndpointCacheSeconds = legacy.Settings.PublicEndpointCacheSeconds == 0
-					? 300
-					: legacy.Settings.PublicEndpointCacheSeconds
-			});
-		}
+		// A "settings" object in older fixtures is ignored: the setting was removed.
 		return store;
 	}
 
@@ -107,7 +99,6 @@ internal static class FakeLeLøginScreenStoreSeed
 	{
 		public List<LegacyAsset>? Assets { get; set; }
 		public List<LegacyRule>? Rules { get; set; }
-		public LegacySettings? Settings { get; set; }
 	}
 
 	[SuppressMessage("Performance", "CA1812", Justification = "Instantiated by System.Text.Json via reflection.")]
@@ -140,9 +131,4 @@ internal static class FakeLeLøginScreenStoreSeed
 		public string? AssetId { get; set; }
 	}
 
-	[SuppressMessage("Performance", "CA1812", Justification = "Instantiated by System.Text.Json via reflection.")]
-	private sealed class LegacySettings
-	{
-		public int PublicEndpointCacheSeconds { get; set; }
-	}
 }

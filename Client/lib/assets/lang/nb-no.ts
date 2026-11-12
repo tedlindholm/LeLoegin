@@ -86,6 +86,13 @@ export default {
 		validationRuleName: 'Regelnavn er påkrevd.',
 		validationRuleAsset: 'Et bilde er påkrevd.',
 		validationConditionValue: 'Hver betingelse må ha en verdi.',
+		assetsLoadFailed: 'Kunne ikke laste inn bildene. Se nettleserkonsollen for detaljer.',
+		rulesLoadFailed: 'Kunne ikke laste inn reglene. Se nettleserkonsollen for detaljer.',
+		loadingRule: 'Laster inn regel',
+		previewOnly: 'Kun forhåndsvisning',
+		assetDeleteRulesReduced: 'Disse reglene vil ikke lenger vise dette bildet: %0%.',
+		assetDeleteRulesDisabled: 'Disse reglene har ingen andre bilder og blir deaktivert: %0%.',
+		assetDeleteFailed: 'Kunne ikke slette bildet.',
 		toggleEnabled: 'Aktiver / Deaktiver'
 	}
 } satisfies LeLøginScreenLocalisationDictionary;

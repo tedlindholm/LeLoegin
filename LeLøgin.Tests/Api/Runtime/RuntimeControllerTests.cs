@@ -158,6 +158,7 @@ public sealed class RuntimeControllerTests : IDisposable
 
 		Assert.Equal("asset-rule", fileService.PublishedImageAssetId);
 		Assert.Equal("asset-rule", response.AssetId);
+		Assert.Equal("no-store", controller.ControllerContext.HttpContext.Response.Headers.CacheControl);
 		Assert.Equal("/login-screen/runtime-image-guid.jpg", response.ImageUrl);
 		Assert.Equal("Matched", response.GreetingText);
 	}

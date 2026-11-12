@@ -13,8 +13,13 @@ describe('active-screen data source', () => {
 		// The data source must wrap mapApiActiveLeLøginScreenResponse in try/catch so a
 		// malformed 200 response (e.g. imageUrl: null) becomes a recoverable error rather
 		// than an exception that leaves the dashboard stuck on the loading spinner.
-		const tryCatchMatches =
-			source.match(/try\s*{[\s\S]*?mapApiActiveLeLøginScreenResponse[\s\S]*?}\s*catch/g) ?? [];
-		expect(tryCatchMatches.length).toBeGreaterThanOrEqual(2);
+		const wrappedCalls = source
+			.split('try {')
+			.slice(1)
+			.filter((block) => {
+				const end = block.indexOf('} catch');
+				return end >= 0 && block.slice(0, end).includes('mapApiActiveLeLøginScreenResponse');
+			});
+		expect(wrappedCalls.length).toBeGreaterThanOrEqual(2);
 	});
 });

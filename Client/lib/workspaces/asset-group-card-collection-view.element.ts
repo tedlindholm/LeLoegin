@@ -4,6 +4,8 @@ import styles from './asset-group-card-collection-view.element.css?inline';
 import './asset-card.element.js';
 import type { LeLøginScreenAssetCard } from './asset-card.element.js';
 import type { LeLøginAssetCollectionItemModel } from './asset-group-collection.repository.js';
+import { UMB_LOGIN_SCREEN_ASSET_GROUP_WORKSPACE_CONTEXT } from './asset-group-workspace.context.js';
+import type { LoginImageAssetKind } from '../models/index.js';
 import { cloneTemplate } from '../utils/template.js';
 
 type ElementGuard<T extends Element> = (value: Element | null) => value is T;
@@ -12,6 +14,14 @@ const cardGridTemplate = document.createElement('template');
 cardGridTemplate.innerHTML = /* html */ `<div class="asset-card-grid"></div>`;
 
 const isHtmlElement = (value: Element | null): value is HTMLElement => value instanceof HTMLElement;
+const isCollectionItem = (value: unknown): value is LeLøginAssetCollectionItemModel =>
+	typeof value === 'object' &&
+	value !== null &&
+	'unique' in value &&
+	typeof value.unique === 'string' &&
+	'editHref' in value &&
+	typeof value.editHref === 'string';
+
 const isAssetCardElement = (value: Element | null): value is LeLøginScreenAssetCard =>
 	value instanceof HTMLElement && 'value' in value;
 
@@ -31,6 +41,7 @@ function queryRequired<T extends Element>(
 export class LeLøginScreenAssetGroupCardCollectionView extends UmbElementMixin(HTMLElement) {
 	#items: Array<LeLøginAssetCollectionItemModel> = [];
 	#root: HTMLElement | undefined;
+	#kind: LoginImageAssetKind | undefined;
 
 	constructor() {
 		super();
@@ -42,7 +53,15 @@ export class LeLøginScreenAssetGroupCardCollectionView extends UmbElementMixin(
 		this.consumeContext(UMB_COLLECTION_CONTEXT, (ctx) => {
 			if (ctx === undefined) return;
 			this.observe(ctx.items, (items) => {
-				this.#items = (items ?? []) as Array<LeLøginAssetCollectionItemModel>;
+				this.#items = (items ?? []).filter(isCollectionItem);
+				this.#render();
+			});
+		});
+
+		this.consumeContext(UMB_LOGIN_SCREEN_ASSET_GROUP_WORKSPACE_CONTEXT, (ctx) => {
+			if (ctx === undefined) return;
+			this.observe(ctx.kind, (kind) => {
+				this.#kind = kind;
 				this.#render();
 			});
 		});
@@ -50,9 +69,9 @@ export class LeLøginScreenAssetGroupCardCollectionView extends UmbElementMixin(
 
 	override connectedCallback() {
 		super.connectedCallback();
-		if (this.#root === undefined) {
+		if (this.#root === undefined && this.shadowRoot !== null) {
 			this.#root = document.createElement('div');
-			this.shadowRoot!.appendChild(this.#root);
+			this.shadowRoot.appendChild(this.#root);
 		}
 		this.#render();
 	}
@@ -63,7 +82,11 @@ export class LeLøginScreenAssetGroupCardCollectionView extends UmbElementMixin(
 		if (this.#items.length === 0) {
 			const emptyState = document.createElement('p');
 			emptyState.className = 'empty-state';
-			emptyState.textContent = this.localize.term('loginScreen_assetsWelcomeImagesEmpty');
+			emptyState.textContent = this.localize.term(
+				this.#kind === 'logo'
+					? 'loginScreen_assetsLogosEmpty'
+					: 'loginScreen_assetsWelcomeImagesEmpty'
+			);
 			this.#root.replaceChildren(emptyState);
 			return;
 		}

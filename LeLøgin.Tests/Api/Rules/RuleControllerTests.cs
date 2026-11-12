@@ -1,5 +1,6 @@
 using LeLøgin.Core.Api.Rules;
 using LeLøgin.Core.Api.Runtime;
+using LeLøgin.Core.Models;
 using LeLøgin.Core.Runtime;
 using LeLøgin.Core.Storage;
 using LeLøgin.Tests.Storage;
@@ -274,6 +275,89 @@ public sealed class RuleControllerTests : IDisposable
 		Assert.True(controller.ModelState.ContainsKey(nameof(SaveRuleRequest.AssetIds)));
 		Assert.Empty(await store.GetAllRulesAsync());
 	}
+
+	[Fact]
+	public async Task Create_Generates_The_Id_On_The_Server_And_Never_Overwrites_An_Existing_Rule()
+	{
+		var store = CreateStore(TwoBackgroundsAndOneLogo);
+		await store.UpsertRuleAsync(CreateRule("rule-existing", "Existing", 100, ["asset-a"]));
+		var controller = CreateController(store);
+
+		var created = Assert.IsType<CreatedAtActionResult>(await controller.Create(SaveRequest("Intruder", ["asset-b"], id: "rule-existing")));
+
+		var model = Assert.IsType<LoginRuleResponseModel>(created.Value);
+		Assert.NotEqual("rule-existing", model.Id);
+		Assert.Equal("Existing", (await store.GetRuleAsync("rule-existing"))!.Name);
+		Assert.Equal(2, (await store.GetAllRulesAsync()).Count);
+	}
+
+	[Fact]
+	public async Task Create_Rejects_A_Name_Longer_Than_The_Stored_Column()
+	{
+		var store = CreateStore(TwoBackgroundsAndOneLogo);
+		var controller = CreateController(store);
+
+		await controller.Create(SaveRequest(new string('x', 256), ["asset-a"]));
+
+		Assert.True(controller.ModelState.ContainsKey(nameof(SaveRuleRequest.Name)));
+		Assert.Empty(await store.GetAllRulesAsync());
+	}
+
+	[Fact]
+	public async Task Create_Rejects_A_Logo_As_A_Rule_Image()
+	{
+		var store = CreateStore(TwoBackgroundsAndOneLogo);
+		var controller = CreateController(store);
+
+		await controller.Create(SaveRequest("Logo rule", ["logo-a"]));
+
+		Assert.True(controller.ModelState.ContainsKey(nameof(SaveRuleRequest.AssetIds)));
+		Assert.Empty(await store.GetAllRulesAsync());
+	}
+
+	[Fact]
+	public async Task Create_Places_A_New_Rule_After_The_Last_One()
+	{
+		var store = CreateStore(TwoBackgroundsAndOneLogo);
+		await store.UpsertRuleAsync(CreateRule("rule-first", "First", 100, ["asset-a"]));
+		await store.UpsertRuleAsync(CreateRule("rule-last", "Last", 300, ["asset-b"]));
+		var controller = CreateController(store);
+
+		var created = Assert.IsType<CreatedAtActionResult>(await controller.Create(SaveRequest("New", ["asset-a"], priority: 100)));
+
+		Assert.Equal(400, Assert.IsType<LoginRuleResponseModel>(created.Value).Priority);
+	}
+
+	private const string TwoBackgroundsAndOneLogo = """
+		{
+		  "assets": [
+		    { "id": "asset-a", "name": "A", "kind": "background", "storagePath": "/tmp/a.jpg", "width": 10, "height": 10 },
+		    { "id": "asset-b", "name": "B", "kind": "background", "storagePath": "/tmp/b.jpg", "width": 10, "height": 10 },
+		    { "id": "logo-a", "name": "Logo", "kind": "logo", "storagePath": "/tmp/logo.svg", "width": 10, "height": 10 }
+		  ],
+		  "rules": []
+		}
+		""";
+
+	private static SaveRuleRequest SaveRequest(string name, IReadOnlyList<string> assetIds, string? id = null, int priority = 100) => new()
+	{
+		Id = id,
+		Name = name,
+		Priority = priority,
+		Enabled = true,
+		Condition = new LoginRuleConditionGroupModel(LoginRuleConditionGroupOperator.All, []),
+		AssetIds = assetIds,
+	};
+
+	private static LoginRule CreateRule(string id, string name, int priority, IReadOnlyList<string> assetIds) => new()
+	{
+		Id = id,
+		Name = name,
+		Priority = priority,
+		Enabled = true,
+		Condition = "{\"and\":[]}",
+		AssetIds = assetIds,
+	};
 
 	public void Dispose()
 	{

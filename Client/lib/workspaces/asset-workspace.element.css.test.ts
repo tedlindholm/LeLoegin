@@ -3,6 +3,12 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
+/** Whether `later` appears somewhere after `earlier` in `text`. */
+const appearsInOrder = (text: string, earlier: string, later: string): boolean => {
+	const start = text.indexOf(earlier);
+	return start >= 0 && text.indexOf(later, start + earlier.length) >= 0;
+};
+
 const currentDirectory = dirname(fileURLToPath(import.meta.url));
 const cssFilePath = resolve(currentDirectory, 'asset-workspace.element.css');
 
@@ -19,7 +25,7 @@ describe('asset workspace hover affordances', () => {
 	it('reveals the overlay action bars only when the preview stage is hovered or focused', async () => {
 		const source = await readFile(cssFilePath, 'utf8');
 
-		expect(source).toMatch(/\.preview-logo-picker[\s\S]*opacity: 0;/);
+		expect(appearsInOrder(source, '.preview-logo-picker', 'opacity: 0;')).toBe(true);
 		expect(source).toContain('.preview-stage:is(:hover, :focus-within) .preview-logo-picker');
 		expect(source).toContain('.preview-stage:is(:hover, :focus-within) .preview-zoom-controls');
 	});

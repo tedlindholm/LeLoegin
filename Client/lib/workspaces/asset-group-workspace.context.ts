@@ -2,6 +2,7 @@ import { UmbContextBase } from '@umbraco-cms/backoffice/class-api';
 import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
 import { UmbContextToken } from '@umbraco-cms/backoffice/context-api';
 import { UmbBooleanState, UmbObjectState } from '@umbraco-cms/backoffice/observable-api';
+import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
 import { UmbWorkspaceRouteManager } from '@umbraco-cms/backoffice/workspace';
 import type { UmbWorkspaceContext } from '@umbraco-cms/backoffice/workspace';
 import { LeLøginScreenAssetRepository } from '../assets/asset.repository.js';
@@ -43,6 +44,7 @@ export class LeLøginScreenAssetGroupWorkspaceContext extends UmbContextBase {
 	readonly kind = this.#kind.asObservable();
 	readonly assets = this.#assets.asObservable();
 	readonly isLoading = this.#isLoading.asObservable();
+	#localize = new UmbLocalizationController(this);
 
 	constructor(host: UmbControllerHost) {
 		super(host, UMB_LOGIN_SCREEN_ASSET_GROUP_WORKSPACE_CONTEXT);
@@ -72,8 +74,8 @@ export class LeLøginScreenAssetGroupWorkspaceContext extends UmbContextBase {
 
 	getName() {
 		const kind = this.#kind.getValue();
-		if (kind === 'background') return 'Welcome images';
-		if (kind === 'logo') return 'Logos';
+		if (kind === 'background') return this.#localize.term('loginScreen_assetsWelcomeImages');
+		if (kind === 'logo') return this.#localize.term('loginScreen_assetsLogos');
 		return '';
 	}
 

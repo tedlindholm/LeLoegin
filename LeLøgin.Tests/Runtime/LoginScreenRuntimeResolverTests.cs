@@ -275,6 +275,28 @@ public sealed class LeLøginScreenRuntimeResolverTests
 	}
 
 	[Fact]
+	public void ResolveAsset_Breaks_A_Priority_Tie_By_Rule_Id_Whatever_Order_The_Database_Returns()
+	{
+		var assets = new[] { CreateAsset("asset-a"), CreateAsset("asset-b") };
+		LoginRule Tied(string id, string assetId) => new()
+		{
+			Id = id,
+			Name = id,
+			Priority = 100,
+			Enabled = true,
+			AssetIds = [assetId],
+			Condition = "{\"and\":[]}"
+		};
+		var context = new LoginRuntimeContext("monday", 5, 0);
+
+		var resolvedInOrder = Resolve(assets, [Tied("rule-a", "asset-a"), Tied("rule-b", "asset-b")], context);
+		var resolvedReversed = Resolve(assets, [Tied("rule-b", "asset-b"), Tied("rule-a", "asset-a")], context);
+
+		Assert.Equal("asset-a", resolvedInOrder);
+		Assert.Equal("asset-a", resolvedReversed);
+	}
+
+	[Fact]
 	public void GetResolvableAssets_Returns_Each_Existing_Asset_That_An_Enabled_Rule_References_Once()
 	{
 		var assets = new[]

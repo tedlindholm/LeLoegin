@@ -140,7 +140,8 @@ export class LeLøginScreenAssetRootWorkspace extends UmbElementMixin(HTMLElemen
 	async #openCreateModal() {
 		const result = await umbOpenModal(this, CREATE_ASSET_MODAL_TOKEN).catch(() => undefined);
 		if (result === undefined) return;
-		window.location.href = uploadPathFor(result.kind);
+		// Navigate within the backoffice, as Umbraco's router does, instead of reloading the page.
+		window.history.pushState({}, '', uploadPathFor(result.kind));
 	}
 
 	#buildContentNodes(): Array<HTMLElement> {
@@ -151,7 +152,7 @@ export class LeLøginScreenAssetRootWorkspace extends UmbElementMixin(HTMLElemen
 		if (this.#loadError) {
 			return [
 				this.#buildStatusSection(
-					'Failed to load assets. Check browser console for details.',
+					this.localize.term('loginScreen_assetsLoadFailed'),
 					'var(--uui-color-danger)'
 				)
 			];

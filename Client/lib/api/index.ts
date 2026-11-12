@@ -63,7 +63,6 @@ export type {
 	LoginRuleConditionOperator,
 	LoginRuleField,
 	LoginRuleResponseModel,
-	LoginSettings,
 	PostAssetsByIdPublishData,
 	PostAssetsByIdPublishErrors,
 	PostAssetsData,

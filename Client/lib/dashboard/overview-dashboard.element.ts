@@ -30,11 +30,11 @@ function getRequiredById(root: ShadowRoot, id: string): HTMLElement {
 	return element;
 }
 
-const optional = <K extends string, V>(
-	key: K,
-	value: V | undefined
-): Record<K, V> | Record<string, never> =>
-	value === undefined ? {} : ({ [key]: value } as Record<K, V>);
+const optional = <K extends string, V>(key: K, value: V | undefined): Partial<Record<K, V>> => {
+	const field: Partial<Record<K, V>> = {};
+	if (value !== undefined) field[key] = value;
+	return field;
+};
 
 // Focal point is meaningful at zoom=1 (server omits cc=, client positions via fp%);
 // at zoom>1 the server has already cropped around the focal point so the preview
@@ -218,7 +218,8 @@ export class LeLøginScreenOverviewDashboard extends UmbElementMixin(HTMLElement
 			...optional('focalPoint', cropFocalPoint(activeImage)),
 			...optional('logoUrl', this.#logoThumbnailUrl(activeImage?.logoAssetId)),
 			mode: 'preview',
-			previewHeight: '100%'
+			previewHeight: '100%',
+			previewNote: this.localize.term('loginScreen_previewOnly')
 		};
 	}
 

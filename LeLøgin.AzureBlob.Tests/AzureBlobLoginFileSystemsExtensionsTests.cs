@@ -1,4 +1,6 @@
 using LeLøgin.Core.Storage;
+using IWebHostEnvironment = Microsoft.AspNetCore.Hosting.IWebHostEnvironment;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -170,7 +172,7 @@ public sealed class AzureBlobLoginFileSystemsExtensionsTests
 	}
 
 	[Fact]
-	public void AddAzureBlobLoginFileSystems_Registers_Pipeline_Filter_For_Publish_Static_Files()
+	public void AddAzureBlobLoginFileSystems_Registers_Pipeline_Filter_That_Mounts_The_Publish_File_System()
 	{
 		IServiceCollection services = BuildServicesWithMinimalBlobConfig();
 		IUmbracoBuilder builder = new TestUmbracoBuilder(
@@ -209,9 +211,8 @@ public sealed class AzureBlobLoginFileSystemsExtensionsTests
 	[Fact]
 	public void AddAzureBlobLoginFileSystems_Registers_Exactly_One_Pipeline_Filter()
 	{
-		// The package mounts the publish file system as static files. The assets
-		// file system is private (served via AssetController.Preview, never via URL)
-		// and must not appear in the static-files pipeline.
+		// The package mounts the publish file system on the web root. The assets file system is
+		// private (streamed by authenticated endpoints, never linked) and must not be mounted.
 		IServiceCollection services = BuildServicesWithMinimalBlobConfig();
 		IUmbracoBuilder builder = new TestUmbracoBuilder(
 			services,
@@ -230,10 +231,76 @@ public sealed class AzureBlobLoginFileSystemsExtensionsTests
 		Assert.Single(packageFilters);
 	}
 
-	private static IServiceCollection BuildServicesWithMinimalBlobConfig()
+	[Theory]
+	[InlineData(AzureBlobLoginFileSystemsExtensions.AssetsFileSystemName, "/configured/assets")]
+	[InlineData(AzureBlobLoginFileSystemsExtensions.PublishFileSystemName, "/configured/publish")]
+	public void AddAzureBlobLoginFileSystems_Keeps_A_VirtualPath_Set_In_Configuration(string fileSystemName, string virtualPath)
+	{
+		IServiceCollection services = BuildServicesWithMinimalBlobConfig(new Dictionary<string, string?>
+		{
+			[$"Umbraco:Storage:AzureBlob:{fileSystemName}:VirtualPath"] = virtualPath,
+		});
+		IUmbracoBuilder builder = new TestUmbracoBuilder(
+			services,
+			services.BuildServiceProvider().GetRequiredService<IConfiguration>());
+
+		builder.AddAzureBlobLoginFileSystems();
+
+		using ServiceProvider provider = services.BuildServiceProvider();
+		AzureBlobFileSystemOptions options = provider
+			.GetRequiredService<IOptionsMonitor<AzureBlobFileSystemOptions>>()
+			.Get(fileSystemName);
+		Assert.Equal(virtualPath, options.VirtualPath);
+	}
+
+	[Fact]
+	public void MountOnWebRoot_Serves_Published_Files_Under_The_Virtual_Path_Alongside_The_Web_Root()
+	{
+		// Mirrors Umbraco's UseUmbracoMediaFileProvider: once published images are part of the web
+		// root, ImageSharp's WebRootImageProvider can crop them and static files can serve them.
+		var root = Path.Combine(Path.GetTempPath(), "LeLøgin.AzureBlob.Tests", Guid.NewGuid().ToString("N"));
+		var webRoot = Directory.CreateDirectory(Path.Combine(root, "wwwroot")).FullName;
+		var publishRoot = Directory.CreateDirectory(Path.Combine(root, "publish")).FullName;
+		File.WriteAllText(Path.Combine(webRoot, "site.css"), "body {}");
+		File.WriteAllText(Path.Combine(publishRoot, "0123.jpg"), "jpeg");
+		try
+		{
+			var environment = new TestWebHostEnvironment { WebRootFileProvider = new PhysicalFileProvider(webRoot) };
+			var publishFileSystem = new PhysicalFileSystem(
+				Mock.Of<IIOHelper>(),
+				Mock.Of<IHostingEnvironment>(),
+				NullLogger<PhysicalFileSystem>.Instance,
+				publishRoot,
+				"/le-login/publish");
+
+			var mounted = AzureBlobLoginFileSystemsExtensions.MountOnWebRoot(environment, publishFileSystem, "/le-login/publish/");
+
+			Assert.True(mounted);
+			Assert.True(environment.WebRootFileProvider.GetFileInfo("/le-login/publish/0123.jpg").Exists);
+			Assert.False(environment.WebRootFileProvider.GetFileInfo("/le-login/publish/missing.jpg").Exists);
+			Assert.True(environment.WebRootFileProvider.GetFileInfo("/site.css").Exists);
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
+	}
+
+	private sealed class TestWebHostEnvironment : IWebHostEnvironment
+	{
+		public string WebRootPath { get; set; } = string.Empty;
+		public required IFileProvider WebRootFileProvider { get; set; }
+		public string ApplicationName { get; set; } = "LeLøgin.AzureBlob.Tests";
+		public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
+		public string ContentRootPath { get; set; } = string.Empty;
+		public string EnvironmentName { get; set; } = "Development";
+	}
+
+	private static IServiceCollection BuildServicesWithMinimalBlobConfig(IReadOnlyDictionary<string, string?>? extraSettings = null)
 	{
 		IServiceCollection services = new ServiceCollection();
 		IConfiguration configuration = new ConfigurationBuilder()
+			.AddInMemoryCollection(extraSettings ?? new Dictionary<string, string?>())
 			.AddInMemoryCollection(new Dictionary<string, string?>
 			{
 				[$"Umbraco:Storage:AzureBlob:{AzureBlobLoginFileSystemsExtensions.AssetsFileSystemName}:ConnectionString"] = "UseDevelopmentStorage=true",

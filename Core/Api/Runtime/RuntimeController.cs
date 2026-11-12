@@ -31,6 +31,8 @@ public class RuntimeController(
 	[ProducesResponseType(StatusCodes.Status204NoContent)]
 	public async Task<IActionResult> GetActive()
 	{
+		// Resolved per request (rules, random picks), like the greeting module: never cached.
+		Response.Headers.CacheControl = "no-store";
 		if (runtimeState.Level != RuntimeLevel.Run)
 		{
 			return NoContent();

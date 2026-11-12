@@ -344,6 +344,12 @@ export class LeLøginScreenRuleWorkspace extends UmbElementMixin(HTMLElement) {
 			return;
 		}
 
+		// The card's name is a link that opens the asset; following it must not change the rule.
+		// UUI's own selection ignores link clicks the same way.
+		if (event.composedPath().some((node) => node instanceof HTMLAnchorElement)) {
+			return;
+		}
+
 		const card = event.target.closest<HTMLElement>('uui-card-media[data-asset-id]');
 		if (card === null) {
 			return;

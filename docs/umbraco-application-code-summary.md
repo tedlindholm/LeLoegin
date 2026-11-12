@@ -68,8 +68,8 @@ Modern Umbraco development heavily leverages standard ASP.NET Core architectural
 
 - A package-specific API base and controller base define the authenticated management API surface under `/umbraco/le-løgin/api/v1/...`
 - Public pre-auth runtime endpoints are separated into a dedicated runtime controller base under `/umbraco/le-løgin/api/v1/runtime/...`
-- Assets, rules, and settings are persisted in the Umbraco database through the NPoco-backed `LeLøginScreenStore`, which opens its own `IScopeProvider` scope for each operation
-- Umbraco migrations own the `LeLoginAssets`, `LeLoginRules`, and singleton `LeLoginSettings` tables
+- Assets and rules are persisted in the Umbraco database through the NPoco-backed `LeLøginScreenStore`, which opens its own `IScopeProvider` scope for each operation
+- Umbraco migrations own the `LeLoginAssets` and `LeLoginRules` tables. They also create a singleton `LeLoginSettings` table, which nothing uses since its only setting was removed; it is left in place rather than dropped by a migration
 - Source files are stored under `App_Data/LeLøgin/assets/`
 - ImageSharp is used to read uploaded image dimensions and generate GUID-backed runtime exposure files under `wwwroot/login-screen/`
 - Database-backed startup handlers, anonymous graphics middleware, and public runtime actions remain inert until `IRuntimeState.Level` is exactly `RuntimeLevel.Run`; this allows the package to be present during initial Umbraco database setup

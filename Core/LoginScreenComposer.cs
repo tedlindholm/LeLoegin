@@ -40,7 +40,7 @@ public class LeLøginScreenComposer : IComposer
 		builder.Services.AddTransient<ILeLøginScreenStore, LeLøginScreenStore>();
 		builder.Services.AddTransient<ILeLøginScreenFileService, LeLøginScreenFileService>();
 
-		// Run schema creation and one-shot legacy-config import on UmbracoApplicationStarting.
+		// Create and migrate the Le Løgin tables on UmbracoApplicationStarting.
 		builder.AddNotificationAsyncHandler<UmbracoApplicationStartingNotification, LeLoginMigrationNotificationHandler>();
 
 		// Register default PhysicalFileSystem-backed managers. Consumer composers running after

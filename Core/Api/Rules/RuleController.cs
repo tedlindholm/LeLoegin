@@ -22,6 +22,12 @@ public sealed class RuleController(
 	IOptions<ImageSharpMiddlewareOptions> imageSharpOptions,
 	RequestAuthorizationUtilities? requestAuthorizationUtilities = null) : ApiControllerBase
 {
+	/// <summary>Matches the length of the <c>Name</c> column.</summary>
+	private const int MaxNameLength = 255;
+
+	/// <summary>Gap between consecutive rule priorities, matching the client's reorder.</summary>
+	private const int PriorityStep = 100;
+
 	[HttpGet("rules/condition-metadata")]
 	[ProducesResponseType<ConditionMetadataResponse>(StatusCodes.Status200OK)]
 	public IActionResult GetConditionMetadata()
@@ -57,8 +63,10 @@ public sealed class RuleController(
 	[ProducesResponseType<IEnumerable<LoginRuleResponseModel>>(StatusCodes.Status200OK)]
 	public async Task<IActionResult> GetAll()
 	{
+		// Same order as the runtime resolver, so the list shows which rule wins a tie.
 		var rules = (await store.GetAllRulesAsync())
 			.OrderBy(rule => rule.Priority)
+			.ThenBy(rule => rule.Id, StringComparer.Ordinal)
 			.Select(rule => TryMapRule(rule, out var mapped) ? mapped : null)
 			.OfType<LoginRuleResponseModel>()
 			.ToList();
@@ -85,6 +93,10 @@ public sealed class RuleController(
 	{
 		var rule = await MapRequestAsync(request);
 		if (!ModelState.IsValid) return ValidationProblem(ModelState);
+
+		// A new rule goes after every existing one; reordering the list sets explicit priorities.
+		var existingRules = await store.GetAllRulesAsync();
+		rule.Priority = existingRules.Count == 0 ? PriorityStep : existingRules.Max(existing => existing.Priority) + PriorityStep;
 
 		await store.UpsertRuleAsync(rule);
 		if (!TryMapRule(rule, out var mapped))
@@ -189,6 +201,8 @@ public sealed class RuleController(
 	{
 		if (string.IsNullOrWhiteSpace(request.Name))
 			ModelState.AddModelError(nameof(request.Name), "Rule name is required.");
+		else if (request.Name.Trim().Length > MaxNameLength)
+			ModelState.AddModelError(nameof(request.Name), $"Rule name must be at most {MaxNameLength} characters.");
 
 		var assetIds = (request.AssetIds ?? [])
 			.Select(id => id?.Trim() ?? string.Empty)
@@ -202,11 +216,13 @@ public sealed class RuleController(
 		}
 		else
 		{
-			var validAssetIds = (await store.GetAllAssetsAsync())
+			// Only background images can be shown by a rule; logos are attached to a background.
+			var backgroundAssetIds = (await store.GetAllAssetsAsync())
+				.Where(a => a.Kind == LoginImageAssetKind.Background)
 				.Select(a => a.Id)
 				.ToHashSet(StringComparer.OrdinalIgnoreCase);
-			if (assetIds.Any(id => !validAssetIds.Contains(id)))
-				ModelState.AddModelError(nameof(request.AssetIds), "Rule asset could not be found.");
+			if (assetIds.Any(id => !backgroundAssetIds.Contains(id)))
+				ModelState.AddModelError(nameof(request.AssetIds), "Rule images must be existing background images.");
 		}
 
 		string condition;
@@ -225,7 +241,8 @@ public sealed class RuleController(
 
 		return new LoginRule
 		{
-			Id = existingId ?? (string.IsNullOrWhiteSpace(request.Id) ? Guid.NewGuid().ToString("N") : request.Id.Trim()),
+			// Ids are always generated here, so a create can never overwrite another rule.
+			Id = existingId ?? Guid.NewGuid().ToString("N"),
 			Name = request.Name?.Trim() ?? string.Empty,
 			Priority = request.Priority,
 			Enabled = request.Enabled,

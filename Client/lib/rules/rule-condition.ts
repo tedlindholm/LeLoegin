@@ -81,6 +81,29 @@ export const normaliseValuesForOperator = (
 	}
 };
 
+/**
+ * Moves a condition to another field. The previous field's values mean nothing for the new field
+ * (a weekday name is not a month), so they are replaced by the new field's default. The operator
+ * is kept when the new field supports it; otherwise the new field's first operator is used.
+ */
+export const changeConditionField = (
+	condition: LoginRuleCondition,
+	field: LoginRuleField,
+	metadata: ConditionMetadata
+): LoginRuleCondition => {
+	const supportedOperators = metadata.fields.get(field)?.operators ?? [];
+	const operator = supportedOperators.includes(condition.operator)
+		? condition.operator
+		: (supportedOperators[0] ?? condition.operator);
+
+	return {
+		...condition,
+		field,
+		operator,
+		values: normaliseValuesForOperator(operator, field, [], metadata)
+	};
+};
+
 export const createEmptyRuleConditionGroup = (
 	metadata: ConditionMetadata
 ): LoginRuleConditionGroup => {

@@ -16,7 +16,8 @@ public sealed class LeLøginScreenRuntimeResolver
 	{
 		var assetMap = assets.ToDictionary(asset => asset.Id, _assetIdComparer);
 
-		foreach (var rule in rules.Where(r => r.Enabled).OrderBy(r => r.Priority))
+		// Ties break on id so the winner does not depend on the order the database returns rows in.
+		foreach (var rule in rules.Where(r => r.Enabled).OrderBy(r => r.Priority).ThenBy(r => r.Id, StringComparer.Ordinal))
 		{
 			if (!LoginRuleConditionEvaluator.TryEvaluate(rule.Condition, context, out var matches) || !matches)
 				continue;

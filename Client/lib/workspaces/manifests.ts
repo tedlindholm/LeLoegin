@@ -227,15 +227,6 @@ const createAssetModalManifest = {
 	element: () => import('./create-asset-modal.element.js')
 };
 
-const imageUploadPreviewManifest = {
-	type: 'fileUploadPreview',
-	alias: 'LeLøgin.FileUploadPreview.Image',
-	name: 'Login Screen Image Upload Preview',
-	weight: 100,
-	element: () => import('./image-upload-preview.element.js'),
-	forMimeTypes: ['image/*']
-} as unknown as UmbExtensionManifest;
-
 const assetGroupCollectionRepositoryManifest: UmbExtensionManifest = {
 	type: 'repository',
 	alias: 'LeLøgin.Repository.AssetGroupCollection',
@@ -275,7 +266,6 @@ export const manifests = [
 	rootWorkspaceManifest,
 	logoPickerModalManifest,
 	createAssetModalManifest,
-	imageUploadPreviewManifest,
 	assetRootWorkspaceManifest,
 	assetGroupWorkspaceManifest,
 	assetGroupBackgroundWorkspaceManifest,

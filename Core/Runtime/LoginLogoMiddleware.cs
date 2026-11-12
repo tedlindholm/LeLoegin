@@ -36,7 +36,8 @@ public sealed class LeLøginLogoMiddleware(RequestDelegate next)
 	{
 		// StartsWithSegments is segment-aware, so each candidate matches its own exact endpoint
 		// (not its prefix). We check all configured logo endpoints.
-		if (!LogoPaths.Any(path => context.Request.Path.StartsWithSegments(path, StringComparison.OrdinalIgnoreCase)))
+		var isReadRequest = HttpMethods.IsGet(context.Request.Method) || HttpMethods.IsHead(context.Request.Method);
+		if (!isReadRequest || !LogoPaths.Any(path => context.Request.Path.StartsWithSegments(path, StringComparison.OrdinalIgnoreCase)))
 		{
 			await next(context);
 			return;
@@ -93,10 +94,26 @@ public sealed class LeLøginLogoMiddleware(RequestDelegate next)
 				contentType = "application/octet-stream";
 			}
 
-			context.Response.ContentType = contentType;
-			ImageResponseHeaders.Apply(context.Response);
-			await using var stream = assetManager.FileSystem.OpenFile(logoAsset.StoragePath);
-			await stream.CopyToAsync(context.Response.Body);
+			Stream stream;
+			try
+			{
+				stream = assetManager.FileSystem.OpenFile(logoAsset.StoragePath);
+			}
+			catch (FileNotFoundException)
+			{
+				// Deleted between the existence check and the read: show Umbraco's default instead of an error.
+				await next(context);
+				return;
+			}
+
+			await using (stream)
+			{
+				context.Response.ContentType = contentType;
+				ImageResponseHeaders.Apply(context.Response);
+				// The URL has no query string and depends on the rule that wins; nothing may cache it.
+				context.Response.Headers.CacheControl = "no-store";
+				await stream.CopyToAsync(context.Response.Body, context.RequestAborted);
+			}
 		}
 		catch (UnauthorizedAccessException)
 		{

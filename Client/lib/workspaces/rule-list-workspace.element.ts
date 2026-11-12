@@ -1,6 +1,7 @@
 import '@umbraco-cms/backoffice/components';
 import { UmbElementMixin } from '@umbraco-cms/backoffice/element-api';
 import { escapeHTML } from '@umbraco-cms/backoffice/utils';
+import { umbConfirmModal } from '@umbraco-cms/backoffice/modal';
 import styles from './rule-list-workspace.element.css?inline';
 import type { LoginRule } from '../models/index.js';
 import {
@@ -88,7 +89,10 @@ export class LeLøginScreenRuleListWorkspace extends UmbElementMixin(HTMLElement
 		shadow.adoptedStyleSheets = [sheet];
 
 		this.observe(this.#workspaceContext.rules, (rules) => {
-			this.#rules = [...(rules ?? [])].sort((a, b) => a.priority - b.priority);
+			// Same order as the server: priority, then id, so the list shows which rule wins a tie.
+			this.#rules = [...(rules ?? [])].sort(
+				(a, b) => a.priority - b.priority || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
+			);
 			this.#render();
 		});
 		this.observe(this.#workspaceContext.isLoading, (loading) => {
@@ -161,7 +165,7 @@ export class LeLøginScreenRuleListWorkspace extends UmbElementMixin(HTMLElement
 			const message = document.createElement('p');
 			message.className = 'empty-state';
 			message.style.color = 'var(--uui-color-danger)';
-			message.textContent = 'Failed to load rules. Check browser console for details.';
+			message.textContent = this.localize.term('loginScreen_rulesLoadFailed');
 			this.#listBox.replaceChildren(message);
 			return;
 		}
@@ -263,8 +267,26 @@ export class LeLøginScreenRuleListWorkspace extends UmbElementMixin(HTMLElement
 		const btn = target.closest<HTMLElement>('.delete-btn[data-id]');
 		if (btn === null) return;
 		const id = btn.dataset.id;
-		if (id !== undefined) void this.#workspaceContext.delete(id);
+		if (id !== undefined) void this.#confirmAndDelete(id);
 	};
+
+	async #confirmAndDelete(id: string) {
+		const name = this.#rules.find((rule) => rule.id === id)?.name ?? '';
+		try {
+			// The modal renders string content as HTML, so the rule name is escaped.
+			await umbConfirmModal(this, {
+				headline: this.localize.term('actions_delete'),
+				content: this.localize.term('loginScreen_ruleTreeDeleteMessage', escapeHTML(name)),
+				color: 'danger',
+				confirmLabel: this.localize.term('general_delete')
+			});
+		} catch {
+			// Cancelled.
+			return;
+		}
+
+		await this.#workspaceContext.delete(id);
+	}
 
 	#onDragStart(event: DragEvent, handle: HTMLElement) {
 		const id = handle.dataset.id;

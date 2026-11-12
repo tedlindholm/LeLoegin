@@ -18,6 +18,8 @@ import {
 	LOGIN_SCREEN_ASSET_ENTITY_TYPE,
 	LOGIN_SCREEN_ASSET_ROOT_ENTITY_TYPE
 } from '../tree/types.js';
+import { LatestLoad } from '../utils/latest-load.js';
+import { requestStructureReload } from '../utils/request-structure-reload.js';
 
 const LOADING_STATE_UNIQUE = 'loginScreenAssetWorkspaceLoading';
 
@@ -55,6 +57,7 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 	#isNew = new UmbBooleanState(false);
 	#createUnderParent = new UmbObjectState<UmbEntityModel | undefined>(undefined);
 	#draft: LoginImageAsset | null = null;
+	#loads = new LatestLoad();
 	#localize = new UmbLocalizationController(this);
 
 	readonly assets = this.#assets.asObservable();
@@ -147,12 +150,22 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 	async loadAsset(assetId: string) {
 		this.#isLoading.setValue(true);
 		if (!this.loading.getStates().some((state) => state.unique === LOADING_STATE_UNIQUE)) {
-			this.loading.addState({ unique: LOADING_STATE_UNIQUE, message: 'Loading asset' });
+			this.loading.addState({
+				unique: LOADING_STATE_UNIQUE,
+				message: this.#localize.term('loginScreen_loadingAsset')
+			});
 		}
 		this.#unique.setValue(assetId);
+		const isLatest = this.#loads.begin();
+		// Drop the previous asset's draft before fetching. If this load fails or is overtaken by a
+		// newer one, Save then has nothing to write, rather than the previous asset's values under this id.
+		this.#currentAsset.setValue(null);
+		this.#name.setValue('');
+		this.#draft = null;
 
 		try {
 			const { data, error } = await this.#repository.requestByUnique(assetId);
+			if (!isLatest()) return { data: undefined, error: undefined };
 			if (error) {
 				console.error('[LeLøginScreen] Failed to load asset', error);
 				return { data: undefined, error };
@@ -163,8 +176,11 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 			this.#draft = data === undefined || data === null ? null : this.#cloneAsset(data);
 			return { data, error: undefined };
 		} finally {
-			this.#isLoading.setValue(false);
-			this.loading.removeState(LOADING_STATE_UNIQUE);
+			// A superseded load leaves the loading state to the newer one.
+			if (isLatest()) {
+				this.#isLoading.setValue(false);
+				this.loading.removeState(LOADING_STATE_UNIQUE);
+			}
 		}
 	}
 
@@ -222,6 +238,8 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 		}
 
 		await this.#notify('positive', this.#localize.term('loginScreen_assetSaved'));
+		// Show a renamed asset under its new name in the tree and the asset lists.
+		await requestStructureReload(this, assetId, LOGIN_SCREEN_ASSET_ENTITY_TYPE);
 		return true;
 	}
 

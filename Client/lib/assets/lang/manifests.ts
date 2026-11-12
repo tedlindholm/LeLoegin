@@ -35,21 +35,11 @@ const localisationManifests = [
 		type: 'localization',
 		alias: 'LeLøgin.Localization.Nb_NO',
 		weight: -110,
-		name: 'Norska',
+		name: 'Norsk',
 		meta: {
 			culture: 'nb-no'
 		},
 		js: () => import('./nb-no.js')
-	},
-	{
-		type: 'localization',
-		alias: 'LeLøgin.Localization.Fi',
-		weight: -110,
-		name: 'Suomi',
-		meta: {
-			culture: 'fi'
-		},
-		js: () => import('./fi.js')
 	}
 ] satisfies ReadonlyArray<ManifestLocalization>;
 

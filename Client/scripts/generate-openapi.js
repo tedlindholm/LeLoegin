@@ -43,7 +43,9 @@ const applyPostGenerationTypeFixes = async () => {
 	}
 };
 
-const shouldAllowInsecureLocalTls = /^https:\/\/localhost(?::\d+)?\//.test(openApiUrl);
+const parsedOpenApiUrl = new URL(openApiUrl);
+const shouldAllowInsecureLocalTls =
+	parsedOpenApiUrl.protocol === 'https:' && parsedOpenApiUrl.hostname === 'localhost';
 if (shouldAllowInsecureLocalTls) {
 	// Ignore self-signed certificates for local development only.
 	process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
@@ -55,6 +57,7 @@ fetch(openApiUrl)
 	.then(async (response) => {
 		if (!response.ok) {
 			console.error(chalk.red(`ERROR: ${response.status} ${response.statusText}`));
+			process.exitCode = 1;
 			return;
 		}
 
@@ -68,7 +71,9 @@ fetch(openApiUrl)
 					bundle: true,
 					exportFromIndex: true,
 					throwOnError: true,
-					baseUrl: openApiUrl.replace(/\/umbraco\/openapi\/.*$/, '')
+					baseUrl: openApiUrl.includes('/umbraco/openapi/')
+						? openApiUrl.slice(0, openApiUrl.indexOf('/umbraco/openapi/'))
+						: openApiUrl
 				},
 				{
 					name: '@hey-api/sdk',
@@ -84,4 +89,5 @@ fetch(openApiUrl)
 	})
 	.catch((error) => {
 		console.error(`ERROR: ${chalk.red(error.message)}`);
+		process.exitCode = 1;
 	});

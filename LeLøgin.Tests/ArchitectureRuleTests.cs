@@ -76,6 +76,32 @@ public sealed class ArchitectureRuleTests
 			Assert.Contains(fragment, sampleViolation, StringComparison.Ordinal));
 	}
 
+	/// <summary>
+	/// Le Løgin does not use Newtonsoft.Json (decided 11 November 2026, AGENTS.md Key Rule 19):
+	/// System.Text.Json is what Umbraco and ASP.NET use. Covers source files and the shipped
+	/// project files, so neither a <c>using</c> nor a package reference can slip back in.
+	/// </summary>
+	[Fact]
+	public void Production_Code_And_Projects_Never_Use_Newtonsoft()
+	{
+		var repositoryRoot = FindRepositoryRoot();
+		var projectFiles = new[]
+		{
+			Path.Combine(repositoryRoot, "LeLøgin.csproj"),
+			Path.Combine(repositoryRoot, "LeLøgin.AzureBlob", "LeLøgin.AzureBlob.csproj"),
+			Path.Combine(repositoryRoot, "Directory.Build.props"),
+		};
+
+		var violations = ProductionSourceFiles(repositoryRoot)
+			.Concat(projectFiles)
+			.Where(file => File.ReadAllText(file).Contains("Newtonsoft", StringComparison.OrdinalIgnoreCase))
+			.Select(file => Path.GetRelativePath(repositoryRoot, file))
+			.ToList();
+
+		Assert.All(projectFiles, file => Assert.True(File.Exists(file), $"Expected project file {file}."));
+		Assert.Empty(violations);
+	}
+
 	private static IEnumerable<string> ProductionSourceFiles(string repositoryRoot) =>
 		ProductionDirectories
 			.Select(directory => Path.Combine(repositoryRoot, directory))

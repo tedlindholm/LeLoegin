@@ -98,7 +98,6 @@ Management routes (backoffice authentication and the Le Løgin permission):
 /umbraco/le-løgin/api/v{version}/rules/{id}
 /umbraco/le-løgin/api/v{version}/rules/{id}/preview
 /umbraco/le-løgin/api/v{version}/rules/condition-metadata
-/umbraco/le-løgin/api/v{version}/settings
 ```
 
 Public routes (pre-auth, read-only):
@@ -114,7 +113,7 @@ Public routes (pre-auth, read-only):
 LeLøgin.Core.Api
 LeLøgin.Core.Api.Assets
 LeLøgin.Core.Api.Runtime
-LeLøgin.Core.Api.Settings
+LeLøgin.Core.Api.Rules
 LeLøgin.Core.Models
 LeLøgin.Core.Storage
 ```
@@ -174,14 +173,14 @@ Client/lib/
 | Layer                  | Technology             | Notes                                                                                                                                     |
 | ---------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | **Browser / frontend** | Pure TypeScript + Vite | Le Løgin is written without Lit. All elements use `UmbElementMixin(HTMLElement)` with manual DOM (innerHTML + hydration). Do not use `html` tagged templates, `@customElement` decorators, `UmbLitElement`, or any Lit API |
-| **Server / backend**   | C# / .NET 10           | Razor Class Library, Umbraco Management API conventions, JsonFlatFileDataStore for persistence                                            |
+| **Server / backend**   | C# / .NET 10           | Razor Class Library, Umbraco Management API conventions, Umbraco database via NPoco migrations                                          |
 
 ## Key Rules
 
 ### Frontend
 
 1. **Pure TypeScript only** — do not introduce React, Preact, Vue, Lit, or other client frameworks. Umbraco's backoffice uses Lit internally, but **Le Løgin is written without Lit**. All elements extend `UmbElementMixin(HTMLElement)` with manual DOM rendering (innerHTML + hydration). Do not use `html` tagged templates, `@customElement` decorators, or `UmbLitElement`
-2. **Do not manipulate Umbraco's login screen DOM directly** — do not query or mutate shadow roots owned by `umb-auth`, `umb-auth-layout`, or any other Umbraco login component. Use Umbraco's published extension mechanisms instead: `localization` extensions for text, CSS custom properties (`--umb-login-image`, etc.) for visual overrides, and `appEntryPoint` for runtime wiring
+2. **Do not manipulate Umbraco's login screen DOM directly** — on the real login page, do not query or mutate shadow roots owned by `umb-auth`, `umb-auth-layout`, or any other Umbraco login component. Use Umbraco's published extension mechanisms instead: `localization` extensions for text, CSS custom properties (`--umb-login-image`, etc.) for visual overrides, and `appEntryPoint` for runtime wiring. The backoffice preview is not covered by this rule: it renders its own `umb-auth-view` and may adjust and read it (`Client/lib/auth-view/*`, `asset-workspace.element.ts`, `asset-workspace.helpers.ts`)
 3. **Use Umbraco UI (UUI) components** — all UI must use [Umbraco UI library](https://uui.umbraco.com/) ([source](https://github.com/umbraco/Umbraco.UI), [docs](https://docs.umbraco.com/umbraco-cms/customizing/ui-library)) `uui-*` web components. Do not create custom equivalents when a UUI component exists. When building UI, consult the [Umbraco UI API docs](https://apidocs.umbraco.com/v17/ui/?path=/docs/generic-components-body-layout--docs) for available components and usage patterns
 4. **Do not use raw `fetch()`** for backoffice API calls — use the generated OpenAPI client with `UMB_AUTH_CONTEXT`
 5. **Do not use `any` or `as` casts** in TypeScript. Prefer precise types, generics, narrowing, type guards, and `satisfies`
@@ -203,18 +202,20 @@ Client/lib/
 15. **Test-driven development (TDD)** — write tests first, then production code. Every feature starts with a failing test
 16. **Ask before coding** — always confirm the plan with the user and get explicit permission before writing or modifying code
 17. **Never use Git without explicit approval** — do not run any Git commands (`git commit`, `git push`, `git checkout`, `git reset`, etc.) unless the user has explicitly asked for it or given the go-ahead
+18. **No regular expressions** — wherever it can be avoided, do not use `Regex` in C# or regular expressions in TypeScript/JavaScript; use plain string operations (`StartsWith`, `IndexOf`, `Split`, `includes`, `URL`, small parsers) instead. This covers production code, tests (including `toMatch(/…/)` and `toThrow(/…/)`) and build scripts. Generated files are exempt. Where no reasonable plain-string version exists, say why in a comment
+19. **No Newtonsoft.Json** — use System.Text.Json, as Umbraco and ASP.NET do. Do not add a `Newtonsoft` package reference, `using`, attribute or converter to production code. Enforced by `ArchitectureRuleTests` in LeLøgin.Tests
 
 ## Build and Validation
 
 ```bash
-# Client
-cd /Users/ted/Repos/Login/Client && pnpm build
+# Client (dotnet build runs this with the package version and output directory)
+cd /Users/ted/Repos/LeLøgin/Client && pnpm build 18.0.0-rc.1 ../obj/v18/Debug/net10.0/client/wwwroot/App_Plugins/le-løgin
 
 # Backend
-cd /Users/ted/Repos/Login && dotnet build
+cd /Users/ted/Repos/LeLøgin && dotnet build
 
 # Tests
-cd /Users/ted/Repos/Login/Client && pnpm test:unit
+cd /Users/ted/Repos/LeLøgin/Client && pnpm test:unit
 ```
 
 ## Reference Documents
@@ -235,6 +236,6 @@ cd /Users/ted/Repos/Login/Client && pnpm test:unit
 - Overview and Assets surfaces are implemented and in active use
 - Asset management follows `data source → repository → workspace context → element`
 - Runtime logic is implemented and fetches `/umbraco/le-løgin/api/v1/runtime/active`
-- Localisations currently ship for `en`, `da`, `sv`, `fi`, and `nb-no`
+- Localisations currently ship for `en`, `da`, `sv`, and `nb-no` (only languages Umbraco ships a backoffice translation for; enforced by `lib/assets/lang/manifests.test.ts`)
 - Rules and rule preview are implemented
 - Le Løgin should not add a duplicate fallback image settings UI when Umbraco already provides one

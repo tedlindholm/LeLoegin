@@ -28,6 +28,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="LeLøgin.AzureBlob.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- PrivateAssets="all": build-time only. The host supplies the storage provider that matches
          its Umbraco major. Versions come from Directory.Build.props. -->
     <!-- The storage provider's dependency range starts at its own major's 0 patch.

@@ -1,6 +1,5 @@
 import '@umbraco-cms/backoffice/collection';
 import { UmbElementMixin } from '@umbraco-cms/backoffice/element-api';
-import { escapeHTML } from '@umbraco-cms/backoffice/utils';
 import styles from './asset-group-workspace.element.css?inline';
 import {
 	UMB_LOGIN_SCREEN_ASSET_GROUP_WORKSPACE_CONTEXT,
@@ -29,8 +28,8 @@ export class LeLøginScreenAssetGroupWorkspace extends UmbElementMixin(HTMLEleme
 
 	override connectedCallback() {
 		super.connectedCallback();
-		if (this.#editor === undefined) {
-			const shadow = this.shadowRoot!;
+		const shadow = this.shadowRoot;
+		if (this.#editor === undefined && shadow !== null) {
 			shadow.innerHTML = /* html */ `
 				<umb-workspace-editor alias="LeLøgin.Workspace.AssetGroup" enforceNoFooter>
 					<div id="actions" slot="action-menu">
@@ -39,7 +38,11 @@ export class LeLøginScreenAssetGroupWorkspace extends UmbElementMixin(HTMLEleme
 					<umb-collection alias="${COLLECTION_ALIAS}"></umb-collection>
 				</umb-workspace-editor>
 			`;
-			this.#editor = shadow.querySelector('umb-workspace-editor') as HTMLElement;
+			const editor = shadow.querySelector('umb-workspace-editor');
+			if (!(editor instanceof HTMLElement)) {
+				throw new Error('Asset group workspace template is missing its workspace editor.');
+			}
+			this.#editor = editor;
 			this.#updateHeadline();
 			this.#updateUploadButton();
 		}
@@ -48,17 +51,18 @@ export class LeLøginScreenAssetGroupWorkspace extends UmbElementMixin(HTMLEleme
 	#updateHeadline() {
 		if (this.#editor === undefined) return;
 		const name = this.#ctx?.getName() ?? '';
-		this.#editor.setAttribute('headline', escapeHTML(name));
+		// setAttribute and textContent take plain text; escaping here would show entities literally.
+		this.#editor.setAttribute('headline', name);
 		this.#updateUploadButton();
 	}
 
 	#updateUploadButton() {
 		const btn = this.shadowRoot?.getElementById('upload-btn');
 		if (btn === null || btn === undefined || this.#ctx === undefined) return;
-		const uploadLabel = escapeHTML(this.localize.term('general_upload') || 'Upload');
+		const uploadLabel = this.localize.term('general_upload');
 		btn.setAttribute('label', uploadLabel);
 		btn.textContent = uploadLabel;
-		btn.setAttribute('href', escapeHTML(this.#ctx.getUploadPath()));
+		btn.setAttribute('href', this.#ctx.getUploadPath());
 	}
 }
 

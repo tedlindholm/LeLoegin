@@ -154,12 +154,14 @@ describe('asset tree data source — successful reads', () => {
 		expect(result.data?.total).toBe(2);
 	});
 
-	it('resolves an asset to its owning group', async () => {
+	it('resolves an asset to its owning group followed by the asset itself', async () => {
+		// Umbraco's workspace breadcrumb expects the item itself last and drops it, so returning
+		// only the group would leave the group out of the breadcrumb.
 		const config = buildDataSourceConfig(createOpenSource(success(asset('logo-1', 'logo'))));
 
 		const result = await config.getAncestorsOf(ancestorsArgs('logo-1'));
 
-		expect(result.data?.map((item) => item.id)).toEqual([LOGO_GROUP_ID]);
+		expect(result.data?.map((item) => item.id)).toEqual([LOGO_GROUP_ID, 'logo-1']);
 	});
 });
 
@@ -176,14 +178,16 @@ describe('asset tree data source — leaf caching', () => {
 		expect(source.callCount).toBe(1);
 	});
 
-	it('reuses cached leaves for later group expansions', async () => {
+	it('fetches fresh leaves for each later expansion, so a reload after a change shows it', async () => {
+		// Umbraco reloads a group's children after a delete or rename; serving a cached list then
+		// would keep the deleted or renamed asset in the tree.
 		const source = createOpenSource(success(asset('bg-1', 'background')));
 		const config = buildDataSourceConfig(source);
 
 		await config.getChildrenOf(childrenArgs(BACKGROUND_GROUP_ID));
-		await config.getChildrenOf(childrenArgs(LOGO_GROUP_ID));
+		await config.getChildrenOf(childrenArgs(BACKGROUND_GROUP_ID));
 
-		expect(source.callCount).toBe(1);
+		expect(source.callCount).toBe(2);
 	});
 
 	it('refetches when the root is reloaded', async () => {

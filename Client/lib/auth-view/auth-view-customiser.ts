@@ -28,6 +28,8 @@ export interface LoginAuthViewCustomisation {
 	imageWidth?: number;
 	/** Natural pixel height of the uncropped image. See {@link imageWidth}. */
 	imageHeight?: number;
+	/** Localised note shown under the disabled sign-in providers in preview mode. */
+	previewNote?: string;
 }
 
 const PREVIEW_PROVIDER_STYLE_ID = 'le-løgin-preview-style';
@@ -189,7 +191,7 @@ const disableInteractiveElements = (root: ParentNode) => {
 	});
 };
 
-const ensurePreviewProviders = (shadowRoot: ShadowRoot) => {
+const ensurePreviewProviders = (shadowRoot: ShadowRoot, noteText: string) => {
 	const providers = shadowRoot.getElementById('providers');
 	if (!(providers instanceof HTMLElement)) {
 		return;
@@ -205,9 +207,9 @@ const ensurePreviewProviders = (shadowRoot: ShadowRoot) => {
 	if (!(previewNote instanceof HTMLElement)) {
 		previewNote = document.createElement('div');
 		previewNote.id = PREVIEW_PROVIDER_NOTE_ID;
-		previewNote.textContent = 'Preview only';
 		providers.insertAdjacentElement('afterend', previewNote);
 	}
+	previewNote.textContent = noteText;
 };
 
 // Crop simulation that mirrors runtime's ImageSharp `cc=` + center/cover output
@@ -260,7 +262,7 @@ const applyPreviewMode = (
 	customisation: LoginAuthViewCustomisation
 ) => {
 	setPreviewHostLayout(authView, shadowRoot, customisation.previewHeight ?? '100%');
-	ensurePreviewProviders(shadowRoot);
+	ensurePreviewProviders(shadowRoot, customisation.previewNote ?? '');
 	applyCropPreview(shadowRoot, toCropPreviewInputs(customisation));
 	// Defensive: `#graphic`'s own overflow:hidden already clips the preview wrapper.
 	// clip-path on the host is a belt-and-braces guard in case any future Umbraco

@@ -69,7 +69,7 @@ describe('mapApiLoginAsset', () => {
 				createdAt: '2026-05-15T17:00:00Z',
 				updatedAt: '2026-05-15T17:00:00Z'
 			})
-		).toThrow(/width/);
+		).toThrow('width');
 	});
 });
 

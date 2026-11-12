@@ -9,6 +9,7 @@ import type {
 	LoginRuleField
 } from './rule-condition.js';
 import {
+	changeConditionField,
 	isLoginRuleConditionOperator,
 	isLoginRuleField,
 	normaliseValuesForOperator
@@ -365,14 +366,8 @@ export class LeLøginScreenConditionEditor extends UmbElementMixin(HTMLElement) 
 			if (!isSelectElement(el)) return;
 			const newField = el.value;
 			if (!isLoginRuleField(newField)) return;
-			condition.field = newField;
-			if (this.#metadata !== null)
-				condition.values = normaliseValuesForOperator(
-					condition.operator,
-					condition.field,
-					condition.values,
-					this.#metadata
-				);
+			if (this.#metadata === null) return;
+			Object.assign(condition, changeConditionField(condition, newField, this.#metadata));
 			this.#render();
 			this.#emitChange();
 		} else if (el.classList.contains('operator-select')) {

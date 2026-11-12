@@ -4,6 +4,15 @@ import { UmbContextToken } from '@umbraco-cms/backoffice/context-api';
 import { UmbArrayState, UmbBooleanState } from '@umbraco-cms/backoffice/observable-api';
 import type { LoginImageAsset, LoginImageAssetKind } from '../models/index.js';
 import { LeLøginScreenAssetRepository } from './asset.repository.js';
+import {
+	UMB_ACTION_EVENT_CONTEXT,
+	type UmbActionEventContext
+} from '@umbraco-cms/backoffice/action';
+import {
+	UmbEntityActionEvent,
+	UmbRequestReloadStructureForEntityEvent
+} from '@umbraco-cms/backoffice/entity-action';
+import { LOGIN_SCREEN_ASSET_ENTITY_TYPE } from '../tree/types.js';
 
 export const UMB_LOGIN_SCREEN_ASSET_WORKSPACE_CONTEXT =
 	new UmbContextToken<LeLøginScreenAssetWorkspaceContext>(
@@ -27,10 +36,43 @@ export class LeLøginScreenAssetWorkspaceContext extends UmbContextBase {
 	readonly isLoading = this.#isLoading.asObservable();
 	readonly loadError = this.#loadError.asObservable();
 
+	#actionEvents: UmbActionEventContext | undefined;
+
 	constructor(host: UmbControllerHost) {
 		super(host, UMB_LOGIN_SCREEN_ASSET_WORKSPACE_CONTEXT);
 		this.#repository = new LeLøginScreenAssetRepository(this);
+
+		// Umbraco's entity actions (delete on a card) and Le Løgin's own saves announce changes
+		// through the action event context; reload so the cards never show a stale list.
+		this.consumeContext(UMB_ACTION_EVENT_CONTEXT, (actionEvents) => {
+			this.#actionEvents?.removeEventListener(
+				UmbRequestReloadStructureForEntityEvent.TYPE,
+				this.#onStructureChanged
+			);
+			this.#actionEvents = actionEvents;
+			this.#actionEvents?.addEventListener(
+				UmbRequestReloadStructureForEntityEvent.TYPE,
+				this.#onStructureChanged
+			);
+		});
 	}
+
+	override destroy() {
+		this.#actionEvents?.removeEventListener(
+			UmbRequestReloadStructureForEntityEvent.TYPE,
+			this.#onStructureChanged
+		);
+		super.destroy();
+	}
+
+	#onStructureChanged = (event: Event) => {
+		if (
+			event instanceof UmbEntityActionEvent &&
+			event.getEntityType() === LOGIN_SCREEN_ASSET_ENTITY_TYPE
+		) {
+			void this.load();
+		}
+	};
 
 	/**
 	 * Loads all login screen assets into the workspace context state.

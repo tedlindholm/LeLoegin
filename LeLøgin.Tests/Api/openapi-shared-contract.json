@@ -9,8 +9,7 @@
     "/umbraco/le-løgin/api/v1/rules/condition-metadata",
     "/umbraco/le-løgin/api/v1/rules/{id}",
     "/umbraco/le-løgin/api/v1/rules/{id}/preview",
-    "/umbraco/le-løgin/api/v1/runtime/active",
-    "/umbraco/le-løgin/api/v1/settings"
+    "/umbraco/le-løgin/api/v1/runtime/active"
   ],
   "conditionValueOneOf": [
     {
@@ -135,11 +134,6 @@
         "id",
         "name",
         "priority"
-      ]
-    },
-    "LoginSettings": {
-      "properties": [
-        "publicEndpointCacheSeconds"
       ]
     },
     "SaveRuleRequest": {

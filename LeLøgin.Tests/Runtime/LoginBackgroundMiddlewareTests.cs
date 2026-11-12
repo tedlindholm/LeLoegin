@@ -68,6 +68,8 @@ public sealed class LeLøginBackgroundMiddlewareTests
 
 		Assert.Equal(StatusCodes.Status302Found, context.Response.StatusCode);
 		Assert.Equal("/login-screen/runtime-image-guid.jpg", context.Response.Headers.Location);
+		// Rules and random picks change the target per request; no cache may reuse a redirect.
+		Assert.Equal("no-store", context.Response.Headers.CacheControl);
 	}
 
 	[Fact]

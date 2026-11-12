@@ -13,7 +13,6 @@ public sealed class FakeLeLøginScreenStore : ILeLøginScreenStore
 {
 	private readonly ConcurrentDictionary<string, LoginImageAsset> _assets = new(StringComparer.OrdinalIgnoreCase);
 	private readonly ConcurrentDictionary<string, LoginRule> _rules = new(StringComparer.OrdinalIgnoreCase);
-	private LoginSettings _settings = new();
 
 	public Task<IReadOnlyList<LoginImageAsset>> GetAllAssetsAsync() =>
 		Task.FromResult<IReadOnlyList<LoginImageAsset>>(_assets.Values.ToList());
@@ -51,14 +50,6 @@ public sealed class FakeLeLøginScreenStore : ILeLøginScreenStore
 	public Task<bool> DeleteRuleAsync(string id) =>
 		Task.FromResult(_rules.TryRemove(id, out _));
 
-	public Task<LoginSettings> GetSettingsAsync() => Task.FromResult(_settings);
-
-	public Task UpdateSettingsAsync(LoginSettings settings)
-	{
-		_settings = settings;
-		return Task.CompletedTask;
-	}
-
 	// --- test seeding helpers ---
 
 	public FakeLeLøginScreenStore WithAsset(LoginImageAsset asset)
@@ -73,9 +64,4 @@ public sealed class FakeLeLøginScreenStore : ILeLøginScreenStore
 		return this;
 	}
 
-	public FakeLeLøginScreenStore WithSettings(LoginSettings settings)
-	{
-		_settings = settings;
-		return this;
-	}
 }

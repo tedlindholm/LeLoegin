@@ -116,37 +116,6 @@ public sealed class LeLøginScreenStore : ILeLøginScreenStore
 		return true;
 	}
 
-	public async Task<LoginSettings> GetSettingsAsync()
-	{
-		using var scope = _scopeProvider.CreateScope();
-		var dto = await scope.Database.SingleOrDefaultByIdAsync<LeLoginSettingsDto>(LeLoginSettingsDto.SingletonId);
-		scope.Complete();
-		return dto is null
-			? new LoginSettings()
-			: new LoginSettings { PublicEndpointCacheSeconds = dto.PublicEndpointCacheSeconds };
-	}
-
-	public async Task UpdateSettingsAsync(LoginSettings settings)
-	{
-		ArgumentNullException.ThrowIfNull(settings);
-		using var scope = _scopeProvider.CreateScope();
-		var existing = await scope.Database.SingleOrDefaultByIdAsync<LeLoginSettingsDto>(LeLoginSettingsDto.SingletonId);
-		var dto = new LeLoginSettingsDto
-		{
-			Id = LeLoginSettingsDto.SingletonId,
-			PublicEndpointCacheSeconds = settings.PublicEndpointCacheSeconds
-		};
-		if (existing is null)
-		{
-			await scope.Database.InsertAsync(dto);
-		}
-		else
-		{
-			await scope.Database.UpdateAsync(dto);
-		}
-		scope.Complete();
-	}
-
 	private static LoginImageAsset MapToDomain(LeLoginAssetDto dto) => new()
 	{
 		Id = dto.Id,

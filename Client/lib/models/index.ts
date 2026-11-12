@@ -39,10 +39,6 @@ export interface LoginImageAsset {
 	updatedAt: string;
 }
 
-export interface LoginSettings {
-	publicEndpointCacheSeconds: number;
-}
-
 export interface ActiveLeLøginScreenResponse {
 	imageUrl: string;
 	assetId: string;

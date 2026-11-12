@@ -1,9 +1,13 @@
+using Dazinator.Extensions.FileProviders.PrependBasePath;
 using LeLøgin.Core;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.IO;
 using Umbraco.Cms.Web.Common.ApplicationBuilder;
+using Umbraco.Extensions;
 using Umbraco.StorageProviders.AzureBlob.IO;
 
 namespace LeLøgin.AzureBlob;
@@ -80,15 +84,16 @@ public static class AzureBlobLoginFileSystemsExtensions
         Action<AzureBlobFileSystemOptions>? configureAssets,
         Action<AzureBlobFileSystemOptions>? configurePublish)
     {
+        // Configuration binds before these callbacks run, so only fill in a path it left empty.
         builder.AddAzureBlobFileSystem(AssetsFileSystemName, options =>
         {
-            options.VirtualPath = DefaultAssetsVirtualPath;
+            if (string.IsNullOrEmpty(options.VirtualPath)) options.VirtualPath = DefaultAssetsVirtualPath;
             configureAssets?.Invoke(options);
         });
 
         builder.AddAzureBlobFileSystem(PublishFileSystemName, options =>
         {
-            options.VirtualPath = DefaultPublishVirtualPath;
+            if (string.IsNullOrEmpty(options.VirtualPath)) options.VirtualPath = DefaultPublishVirtualPath;
             configurePublish?.Invoke(options);
         });
 
@@ -98,39 +103,57 @@ public static class AzureBlobLoginFileSystemsExtensions
         builder.SetLoginPublishFileSystem(sp =>
             sp.GetRequiredService<IAzureBlobFileSystemProvider>().GetFileSystem(PublishFileSystemName));
 
-        // Mount the publish file system as static files at its configured VirtualPath.
-        // The publish FS's IFileSystem.GetUrl() returns a relative URL beneath that path
-        // (e.g. /le-login/publish/<guid>.jpg); with the physical default that path lives under
-        // wwwroot and is served by Umbraco's default UseStaticFiles. With blob storage there
-        // is no wwwroot mapping, so we register a second static-files middleware pointing at
-        // the blob's IFileProvider for that virtual path. Asset FS is NOT mounted — it's
-        // private (AssetController.Preview streams via OpenFile, never returns a URL).
+        // Make the publish file system part of the web root at its VirtualPath, as Umbraco's
+        // UseUmbracoMediaFileProvider does for media on blob storage. Its GetUrl() returns URLs
+        // beneath that path (e.g. /le-login/publish/<guid>.jpg). Once mounted, Umbraco's own
+        // static-files middleware serves those URLs, and ImageSharp's WebRootImageProvider can
+        // apply the focal-point and zoom crop in their query string. Both read the web root's file
+        // provider when the pipeline is built, after every filter has run, so mounting here is in
+        // time. The asset file system is NOT mounted: it is private (thumbnails and previews are
+        // streamed by authenticated endpoints, never linked).
         builder.Services.Configure<UmbracoPipelineOptions>(pipelineOptions =>
         {
             pipelineOptions.AddFilter(new UmbracoPipelineFilter(PipelineFilterName)
             {
                 PreRouting = app =>
                 {
-                    var blobProvider = app.ApplicationServices.GetRequiredService<IAzureBlobFileSystemProvider>();
-                    var publishFileSystem = blobProvider.GetFileSystem(PublishFileSystemName);
-                    if (publishFileSystem is not IFileProviderFactory factory)
-                    {
-                        return;
-                    }
+                    var publishFileSystem = app.ApplicationServices
+                        .GetRequiredService<IAzureBlobFileSystemProvider>()
+                        .GetFileSystem(PublishFileSystemName);
+                    var publishOptions = app.ApplicationServices
+                        .GetRequiredService<IOptionsMonitor<AzureBlobFileSystemOptions>>()
+                        .Get(PublishFileSystemName);
 
-                    var optionsMonitor = app.ApplicationServices.GetRequiredService<IOptionsMonitor<AzureBlobFileSystemOptions>>();
-                    var publishOptions = optionsMonitor.Get(PublishFileSystemName);
-                    var requestPath = (publishOptions.VirtualPath ?? DefaultPublishVirtualPath).TrimEnd('/');
-
-                    app.UseStaticFiles(new StaticFileOptions
-                    {
-                        FileProvider = factory.Create(),
-                        RequestPath = requestPath
-                    });
+                    MountOnWebRoot(
+                        app.ApplicationServices.GetRequiredService<IWebHostEnvironment>(),
+                        publishFileSystem,
+                        publishOptions.VirtualPath ?? DefaultPublishVirtualPath);
                 }
             });
         });
 
         return builder;
+    }
+
+    /// <summary>
+    /// Adds <paramref name="fileSystem"/> to the web root under <paramref name="virtualPath"/>,
+    /// the way Umbraco's <c>UseUmbracoMediaFileProvider</c> adds media. Uses Umbraco's
+    /// <see cref="FileSystemExtensions.TryCreateFileProvider"/> and the
+    /// <see cref="PrependBasePathFileProvider"/> Umbraco uses to mount <c>/App_Plugins</c>.
+    /// Umbraco's media variant of that provider only differs in handling special characters in
+    /// file names, which published <c>&lt;guid&gt;.jpg</c> names never contain.
+    /// </summary>
+    /// <returns><c>false</c> when the file system cannot provide an <see cref="IFileProvider"/>.</returns>
+    internal static bool MountOnWebRoot(IWebHostEnvironment environment, IFileSystem fileSystem, string virtualPath)
+    {
+        if (!fileSystem.TryCreateFileProvider(out var fileProvider))
+        {
+            return false;
+        }
+
+        environment.WebRootFileProvider = new CompositeFileProvider(
+            environment.WebRootFileProvider,
+            new PrependBasePathFileProvider(virtualPath.TrimEnd('/'), fileProvider));
+        return true;
     }
 }

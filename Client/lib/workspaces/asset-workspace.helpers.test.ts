@@ -4,6 +4,12 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { computeFocalPointFromDrag } from './focal-point-drag.js';
 
+/** Whether `later` appears somewhere after `earlier` in `text`. */
+const appearsInOrder = (text: string, earlier: string, later: string): boolean => {
+	const start = text.indexOf(earlier);
+	return start >= 0 && text.indexOf(later, start + earlier.length) >= 0;
+};
+
 const currentDirectory = dirname(fileURLToPath(import.meta.url));
 const helperFilePath = resolve(currentDirectory, 'asset-workspace.helpers.ts');
 
@@ -116,8 +122,10 @@ describe('asset workspace helper rendering', () => {
 		expect(source).toContain('id="asset-logo-picker-button"');
 		expect(source).toContain('id="asset-zoom-in"');
 		expect(source).toContain('id="asset-zoom-out"');
-		expect(source).toMatch(/<uui-action-bar[\s\S]*<uui-button id="asset-logo-picker-button"/);
-		expect(source).toMatch(/<uui-action-bar[\s\S]*<uui-button id="asset-zoom-out"/);
+		expect(
+			appearsInOrder(source, '<uui-action-bar', '<uui-button id="asset-logo-picker-button"')
+		).toBe(true);
+		expect(appearsInOrder(source, '<uui-action-bar', '<uui-button id="asset-zoom-out"')).toBe(true);
 		expect(source).not.toContain('<button id="asset-logo-picker-button"');
 		expect(source).not.toContain('<button id="asset-zoom-');
 		expect(source).not.toContain('renderWorkspaceBodyMarkup');

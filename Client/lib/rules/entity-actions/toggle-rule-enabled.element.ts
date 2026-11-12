@@ -6,13 +6,14 @@ import type { LoginRule } from '../../models/index.js';
 import { UMB_LOGIN_SCREEN_RULE_EDITOR_WORKSPACE_CONTEXT } from '../../workspaces/rule-editor-workspace.context.js';
 import { UMB_LOGIN_SCREEN_RULE_WORKSPACE_CONTEXT } from '../rule-workspace.context.js';
 import type { LeLøginScreenToggleRuleEnabledEntityAction } from './toggle-rule-enabled-entity-action.js';
+import { LeLøginScreenRuleRepository } from '../rule.repository.js';
 
 export class LeLøginScreenToggleRuleEnabledElement extends UmbElementMixin(HTMLElement) {
 	#api: LeLøginScreenToggleRuleEnabledEntityAction | undefined;
 	#unique: string | null = null;
 	#enabled: boolean | null = null;
 	#rules: Array<LoginRule> = [];
-	#menuItem: HTMLElement & { label?: string };
+	#menuItem: HTMLElement;
 	#icon: Element;
 
 	manifest?: ManifestEntityAction;
@@ -27,6 +28,8 @@ export class LeLøginScreenToggleRuleEnabledElement extends UmbElementMixin(HTML
 		if (match !== undefined) {
 			this.#enabled = match.enabled;
 			this.#update();
+		} else {
+			void this.#loadEnabled();
 		}
 	}
 
@@ -38,8 +41,13 @@ export class LeLøginScreenToggleRuleEnabledElement extends UmbElementMixin(HTML
 		super();
 		const shadow = this.attachShadow({ mode: 'open' });
 		shadow.innerHTML = `<uui-menu-item><umb-icon slot="icon" name="icon-check"></umb-icon></uui-menu-item>`;
-		this.#menuItem = shadow.querySelector('uui-menu-item') as HTMLElement & { label?: string };
-		this.#icon = shadow.querySelector('umb-icon')!;
+		const menuItem = shadow.querySelector('uui-menu-item');
+		const icon = shadow.querySelector('umb-icon');
+		if (!(menuItem instanceof HTMLElement) || icon === null) {
+			throw new Error('Toggle rule menu item template is missing its menu item or icon.');
+		}
+		this.#menuItem = menuItem;
+		this.#icon = icon;
 
 		this.#menuItem.addEventListener('click-label', (e) => {
 			e.stopPropagation();
@@ -52,7 +60,7 @@ export class LeLøginScreenToggleRuleEnabledElement extends UmbElementMixin(HTML
 		this.consumeContext(UMB_LOGIN_SCREEN_RULE_EDITOR_WORKSPACE_CONTEXT, (ctx) => {
 			if (!ctx) return;
 			this.observe(ctx.currentRule, (rule) => {
-				if (rule != null) {
+				if (rule !== null && rule !== undefined) {
 					this.#enabled = rule.enabled;
 					this.#update();
 				}
@@ -74,6 +82,19 @@ export class LeLøginScreenToggleRuleEnabledElement extends UmbElementMixin(HTML
 
 	override connectedCallback() {
 		super.connectedCallback();
+		this.#update();
+	}
+
+	/**
+	 * In the sidebar tree neither the rule list nor the rule editor is in scope, so the rule's
+	 * current state is read from the server to show the right icon.
+	 */
+	async #loadEnabled() {
+		const unique = this.#unique;
+		if (unique === null || this.#enabled !== null) return;
+		const { data } = await new LeLøginScreenRuleRepository(this).requestByUnique(unique);
+		if (data === undefined || unique !== this.#unique || this.#enabled !== null) return;
+		this.#enabled = data.enabled;
 		this.#update();
 	}
 

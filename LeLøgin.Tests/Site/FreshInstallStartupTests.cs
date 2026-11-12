@@ -91,7 +91,7 @@ public sealed class FreshInstallStartupTests
 
 			await using var installerScope = installerSite.Services.CreateAsyncScope();
 			var store = installerScope.ServiceProvider.GetRequiredService<ILeLøginScreenStore>();
-			Assert.NotNull(await store.GetSettingsAsync());
+			Assert.Empty(await store.GetAllRulesAsync());
 		}
 
 		await using var runningSite = new FreshInstallSite(
@@ -144,7 +144,11 @@ public sealed class FreshInstallStartupTests
 			?? throw new InvalidOperationException("The OpenAPI document has no paths.");
 		Assert.Contains(
 			paths.Select(path => path.Key),
-			path => path.Contains("/le-l", StringComparison.Ordinal) && path.Contains("/settings", StringComparison.Ordinal));
+			path => path.Contains("/le-l", StringComparison.Ordinal) && path.Contains("/rules", StringComparison.Ordinal));
+		// The unused settings endpoint was removed on 11 November 2026.
+		Assert.DoesNotContain(
+			paths.Select(path => path.Key),
+			path => path.Contains("/le-l", StringComparison.Ordinal) && path.EndsWith("/settings", StringComparison.Ordinal));
 
 	}
 

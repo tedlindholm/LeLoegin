@@ -82,8 +82,18 @@ builder.CreateUmbracoBuilder()
 }
 ```
 
-`VirtualPath` defaults to `/le-login/assets` and `/le-login/publish` respectively; the consumer
-configure callbacks can override either (`options.VirtualPath = "/..."`).
+`VirtualPath` defaults to `/le-login/assets` and `/le-login/publish` respectively. Set it in
+either section of `appsettings.json` (`"VirtualPath": "/..."`), or override it in the consumer
+configure callbacks (`options.VirtualPath = "/..."`), which run after configuration.
 
 You can point both sections at the same container with different `VirtualPath`s,
 or use separate containers — that's a deployment choice.
+
+## How published images are served
+
+The publish container is added to the website's web root under its `VirtualPath`, the same way
+Umbraco adds media stored in blob storage (`UseUmbracoMediaFileProvider`). Umbraco's static files
+then serve the published images, and ImageSharp applies the focal-point and zoom crop that Le
+Løgin adds to their URLs. No extra package is needed: the adapter uses Umbraco's
+`TryCreateFileProvider` and the `PrependBasePathFileProvider` Umbraco itself ships and uses for
+`/App_Plugins`.

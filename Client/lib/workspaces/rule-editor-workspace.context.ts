@@ -24,6 +24,11 @@ import {
 	LOGIN_SCREEN_RULE_LIST_ENTITY_TYPE
 } from '../rules/entity-types.js';
 import { LeLøginScreenRuleRepository } from '../rules/rule.repository.js';
+import { LatestLoad } from '../utils/latest-load.js';
+import {
+	requestChildrenReload,
+	requestStructureReload
+} from '../utils/request-structure-reload.js';
 
 const LOGIN_SCREEN_RULE_WORKSPACE_ALIAS = 'LeLøgin.Workspace.Rule';
 
@@ -74,6 +79,7 @@ export class LeLøginScreenRuleEditorWorkspaceContext extends UmbContextBase {
 	#isNew = new UmbBooleanState(false);
 	#createUnderParent = new UmbObjectState<UmbEntityModel | undefined>(undefined);
 	#draft: LoginRuleDraft | null = null;
+	#loads = new LatestLoad();
 	#localize = new UmbLocalizationController(this);
 
 	readonly currentRule = this.#currentRule.asObservable();
@@ -187,11 +193,21 @@ export class LeLøginScreenRuleEditorWorkspaceContext extends UmbContextBase {
 	async loadRule(ruleId: string) {
 		this.#isLoading.setValue(true);
 		if (!this.loading.getStates().some((s) => s.unique === 'loading')) {
-			this.loading.addState({ unique: 'loading', message: 'Loading rule' });
+			this.loading.addState({
+				unique: 'loading',
+				message: this.#localize.term('loginScreen_loadingRule')
+			});
 		}
 		this.#unique.setValue(ruleId);
+		const isLatest = this.#loads.begin();
+		// Drop the previous rule's draft before fetching. If this load fails or is overtaken by a
+		// newer one, Save then has nothing to write, rather than the previous rule's values under this id.
+		this.#currentRule.setValue(null);
+		this.#name.setValue('');
+		this.#draft = null;
 		try {
 			const { data, error } = await this.#ruleRepository.requestByUnique(ruleId);
+			if (!isLatest()) return { data: undefined, error: undefined };
 			if (error) {
 				console.error('[LeLøginScreen] Failed to load rule', error);
 				return { data: undefined, error };
@@ -202,9 +218,23 @@ export class LeLøginScreenRuleEditorWorkspaceContext extends UmbContextBase {
 			this.#name.setValue(draft?.name ?? '');
 			return { data: draft, error: undefined };
 		} finally {
-			this.#isLoading.setValue(false);
-			this.loading.removeState('loading');
+			// A superseded load leaves the loading state to the newer one.
+			if (isLatest()) {
+				this.#isLoading.setValue(false);
+				this.loading.removeState('loading');
+			}
 		}
+	}
+
+	/**
+	 * Reflects an enabled flag that was saved outside the editor (the Enable/Disable action)
+	 * without saving, or discarding, the draft's other unsaved edits.
+	 */
+	applySavedEnabled(ruleId: string, enabled: boolean) {
+		if (this.#unique.getValue() !== ruleId) return;
+		const current = this.#currentRule.getValue();
+		if (current !== null) this.#currentRule.setValue({ ...current, enabled });
+		if (this.#draft !== null) this.#draft = { ...this.#draft, enabled };
 	}
 
 	updateDraft(update: Partial<LoginRuleDraft>) {
@@ -230,6 +260,10 @@ export class LeLøginScreenRuleEditorWorkspaceContext extends UmbContextBase {
 			'positive',
 			this.#localize.term(wasNew ? 'loginScreen_ruleCreated' : 'loginScreen_ruleSaved')
 		);
+		// Show the new rule, or the renamed one, in the sidebar tree.
+		if (wasNew) await requestChildrenReload(this, null, LOGIN_SCREEN_RULE_LIST_ENTITY_TYPE);
+		else if (data.id !== undefined)
+			await requestStructureReload(this, data.id, LOGIN_SCREEN_RULE_ENTITY_TYPE);
 		return true;
 	}
 

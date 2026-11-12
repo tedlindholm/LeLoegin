@@ -87,6 +87,12 @@ const GROUP_ENTITY_TYPE = {
 	logo: LOGIN_SCREEN_ASSET_GROUP_LOGO_ENTITY_TYPE
 } as const;
 
+/** The tree group that holds assets of a kind, so callers can ask Umbraco to reload it. */
+export const assetGroupEntity = (kind: LoginImageAssetKind) => ({
+	unique: GROUP_ID[kind],
+	entityType: GROUP_ENTITY_TYPE[kind]
+});
+
 export const toTreeItemModel = (item: AssetTreeServerItem): LeLøginScreenAnyAssetTreeItemModel => {
 	if (item.isGroup) {
 		return {
@@ -101,7 +107,7 @@ export const toTreeItemModel = (item: AssetTreeServerItem): LeLøginScreenAnyAss
 	}
 	return {
 		unique: item.id,
-		parent: { unique: null, entityType: LOGIN_SCREEN_ASSET_ROOT_ENTITY_TYPE },
+		parent: { unique: GROUP_ID[item.assetKind], entityType: GROUP_ENTITY_TYPE[item.assetKind] },
 		name: item.name,
 		entityType: LOGIN_SCREEN_ASSET_ENTITY_TYPE,
 		hasChildren: false,
@@ -116,39 +122,30 @@ interface AssetTreeLeafResult {
 }
 
 interface AssetTreeLeafProvider {
-	clear: () => void;
 	fetch: () => Promise<AssetTreeLeafResult>;
 }
 
+/**
+ * Handlers that run together (expanding both groups, resolving ancestors) share one request
+ * while it is in flight. Nothing is kept afterwards: Umbraco reloads a group's children after a
+ * delete or rename, and a cached list would still show the old asset.
+ */
 const createLeafProvider = (assetSource: AssetItemsSource): AssetTreeLeafProvider => {
-	let leafCache: AssetTreeLeafServerItem[] | undefined;
-	let fetchPromise: Promise<AssetTreeLeafResult> | undefined;
+	let inFlight: Promise<AssetTreeLeafResult> | undefined;
 
-	const fetchLeaves = async (): Promise<AssetTreeLeafResult> => {
-		if (leafCache !== undefined) return { leaves: leafCache };
-		if (fetchPromise) return fetchPromise;
-		fetchPromise = (async () => {
-			const { data, error } = await assetSource.requestItems();
-			if (error) {
-				// Drop the shared promise so the next caller retries. Callers already awaiting it
-				// still receive this error; without the reset a single transient failure would be
-				// replayed to every later expansion until the whole tree is reloaded.
-				fetchPromise = undefined;
-				return { error };
+	const fetchLeaves = (): Promise<AssetTreeLeafResult> => {
+		inFlight ??= (async () => {
+			try {
+				const { data, error } = await assetSource.requestItems();
+				return error ? { error } : { leaves: (data ?? []).map(toLeafServerItem) };
+			} finally {
+				inFlight = undefined;
 			}
-			leafCache = (data ?? []).map(toLeafServerItem);
-			return { leaves: leafCache };
 		})();
-		return fetchPromise;
+		return inFlight;
 	};
 
-	return {
-		clear: () => {
-			leafCache = undefined;
-			fetchPromise = undefined;
-		},
-		fetch: fetchLeaves
-	};
+	return { fetch: fetchLeaves };
 };
 
 /**
@@ -178,7 +175,6 @@ const itemsResult = (items: AssetTreeServerItem[]): AssetTreeItemsResult => ({
 const createGetRootItems =
 	(leafProvider: AssetTreeLeafProvider) =>
 	async (_args: UmbTreeRootItemsRequestArgs): Promise<AssetTreeItemsResult> => {
-		leafProvider.clear();
 		const { error } = await leafProvider.fetch();
 		if (error) return { error };
 		return itemsResult([toGroupServerItem('background'), toGroupServerItem('logo')]);
@@ -204,11 +200,11 @@ const createGetAncestorsOf =
 		if (error) return { error };
 		const asset = (leaves ?? []).find((leaf) => leaf.id === args.treeItem.unique);
 		if (asset === undefined) return { data: [] };
-		return { data: [toGroupServerItem(asset.assetKind)] };
+		// Umbraco expects the item itself last; its workspace breadcrumb drops that last entry.
+		return { data: [toGroupServerItem(asset.assetKind), asset] };
 	};
 
 export const buildDataSourceConfig = (assetSource: AssetItemsSource) => {
-	// Shared across the handlers within one tree refresh cycle to avoid duplicate API calls.
 	const leafProvider = createLeafProvider(assetSource);
 	return {
 		getRootItems: createGetRootItems(leafProvider),

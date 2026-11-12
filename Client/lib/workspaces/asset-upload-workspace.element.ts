@@ -8,8 +8,7 @@ import {
 	type LeLøginScreenAssetUploadWorkspaceContext
 } from './asset-upload-workspace.context.js';
 import { cloneTemplate } from '../utils/template.js';
-import './image-upload-preview.element.js';
-import type { LoginScreenImageUploadPreviewElement } from './image-upload-preview.element.js';
+import { LoginScreenImageUploadPreviewElement } from './image-upload-preview.element.js';
 
 interface FileDropzoneElement extends HTMLElement {
 	browse(): void;
@@ -85,7 +84,7 @@ const isFileDropzoneEvent = (event: Event): event is Event & { detail: FileDropz
 	if (!('detail' in event)) {
 		return false;
 	}
-	const candidate = (event as CustomEvent).detail;
+	const candidate: unknown = event.detail;
 	return (
 		typeof candidate === 'object' &&
 		candidate !== null &&
@@ -128,7 +127,11 @@ export class LeLøginScreenAssetUploadWorkspace extends UmbElementMixin(HTMLElem
 				<div id="layout"></div>
 			</umb-entity-detail-workspace-editor>
 		`;
-		this.#layout = shadow.getElementById('layout') as HTMLElement;
+		const layout = shadow.getElementById('layout');
+		if (!(layout instanceof HTMLElement)) {
+			throw new Error('Asset upload workspace template is missing its layout.');
+		}
+		this.#layout = layout;
 
 		this.consumeContext(UMB_NOTIFICATION_CONTEXT, (ctx) => {
 			this.#notificationContext = ctx;
@@ -210,9 +213,10 @@ export class LeLøginScreenAssetUploadWorkspace extends UmbElementMixin(HTMLElem
 	}
 
 	#buildSelectedFileNode(file: File): HTMLElement {
-		const preview = document.createElement(
-			'login-screen-image-upload-preview'
-		) as LoginScreenImageUploadPreviewElement;
+		const preview = document.createElement('login-screen-image-upload-preview');
+		if (!(preview instanceof LoginScreenImageUploadPreviewElement)) {
+			throw new Error('Expected the login-screen-image-upload-preview custom element.');
+		}
 		preview.file = file;
 
 		const fragment = cloneTemplate(selectedFileTemplate, 'selected file');

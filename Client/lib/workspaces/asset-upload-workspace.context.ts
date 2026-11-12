@@ -19,6 +19,8 @@ import {
 	LOGIN_SCREEN_ASSET_UPLOAD_BACKGROUND_ENTITY_TYPE,
 	LOGIN_SCREEN_ASSET_UPLOAD_LOGO_ENTITY_TYPE
 } from '../tree/types.js';
+import { requestChildrenReload } from '../utils/request-structure-reload.js';
+import { assetGroupEntity } from '../tree/asset-tree.data-source.js';
 
 const buildAssetEditWorkspacePath = (assetId: string): string =>
 	`/umbraco/section/settings/workspace/login-screen-asset/edit/${encodeURIComponent(assetId)}`;
@@ -152,12 +154,17 @@ abstract class LeLøginScreenAssetUploadWorkspaceContextBase extends UmbContextB
 		this.#rejectMessage.setValue('');
 
 		if (file !== undefined && this.#name.getValue().length === 0) {
-			this.#name.setValue(file.name.replace(/\.[^.]+$/, ''));
+			// Default the name to the file name without its extension.
+			const extensionStart = file.name.lastIndexOf('.');
+			this.#name.setValue(extensionStart > 0 ? file.name.slice(0, extensionStart) : file.name);
 		}
 	}
 
 	setRejectMessage(message: string) {
 		this.#selectedFile.setValue(undefined);
+		// Clear first: the state only notifies on a change, so a second identical rejection
+		// would otherwise show no message.
+		this.#rejectMessage.setValue('');
 		this.#rejectMessage.setValue(message);
 	}
 
@@ -182,7 +189,11 @@ abstract class LeLøginScreenAssetUploadWorkspaceContextBase extends UmbContextB
 		}
 
 		await this.#notify('positive', this.#localize.term('loginScreen_uploadSuccess'));
-		window.location.href = buildAssetEditWorkspacePath(data.id);
+		const group = assetGroupEntity(this.#kind);
+		await requestChildrenReload(this, group.unique, group.entityType);
+		// Navigate within the backoffice, as Umbraco's router does, so the success notification
+		// above is not lost to a full page reload.
+		window.history.pushState({}, '', buildAssetEditWorkspacePath(data.id));
 		return true;
 	}
 

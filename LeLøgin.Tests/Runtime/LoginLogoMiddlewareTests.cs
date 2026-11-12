@@ -110,6 +110,27 @@ public sealed class LeLøginLogoMiddlewareTests : IDisposable
 		Assert.Equal("nosniff", context.Response.Headers.XContentTypeOptions);
 		// Opened directly, the logo is a document on the backoffice origin: it must not be able to run script.
 		Assert.Equal("default-src 'none'; style-src 'unsafe-inline'; sandbox", context.Response.Headers.ContentSecurityPolicy);
+		// The logo URL has no query string and depends on the rule that wins; nothing may cache it.
+		Assert.Equal("no-store", context.Response.Headers.CacheControl);
+	}
+
+	[Fact]
+	public async Task Falls_Through_For_Methods_Other_Than_Get_And_Head()
+	{
+		await WriteLogoFileAsync("logo-asset.svg", "<svg xmlns=\"http://www.w3.org/2000/svg\"/>");
+		var store = CreateStore(ConfigWithLogo);
+		var nextCalled = false;
+		var middleware = new LeLøginLogoMiddleware(_ =>
+		{
+			nextCalled = true;
+			return Task.CompletedTask;
+		});
+		var context = BuildContext(LogoUrl);
+		context.Request.Method = HttpMethods.Post;
+
+		await InvokeAsync(middleware, context, store);
+
+		Assert.True(nextCalled);
 	}
 
 	[Fact]
@@ -315,6 +336,7 @@ public sealed class LeLøginLogoMiddlewareTests : IDisposable
 	private static DefaultHttpContext BuildContext(string path)
 	{
 		var context = new DefaultHttpContext();
+		context.Request.Method = HttpMethods.Get;
 		context.Request.Path = path;
 		context.Request.Host = new HostString("localhost");
 		return context;
