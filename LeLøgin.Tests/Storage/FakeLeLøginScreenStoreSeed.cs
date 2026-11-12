@@ -62,7 +62,6 @@ internal static class FakeLeLøginScreenStoreSeed
 				AssetIds = [rule.AssetId]
 			});
 		}
-		// A "settings" object in older fixtures is ignored: the setting was removed.
 		return store;
 	}
 

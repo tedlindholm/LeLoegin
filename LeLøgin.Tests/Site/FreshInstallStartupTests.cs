@@ -145,7 +145,6 @@ public sealed class FreshInstallStartupTests
 		Assert.Contains(
 			paths.Select(path => path.Key),
 			path => path.Contains("/le-l", StringComparison.Ordinal) && path.Contains("/rules", StringComparison.Ordinal));
-		// The unused settings endpoint was removed on 11 November 2026.
 		Assert.DoesNotContain(
 			paths.Select(path => path.Key),
 			path => path.Contains("/le-l", StringComparison.Ordinal) && path.EndsWith("/settings", StringComparison.Ordinal));
