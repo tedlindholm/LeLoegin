@@ -74,9 +74,18 @@ export class LeLøginScreenAssetGroupWorkspaceContext extends UmbContextBase {
 
 	getName() {
 		const kind = this.#kind.getValue();
-		if (kind === 'background') return this.#localize.term('loginScreen_assetsWelcomeImages');
-		if (kind === 'logo') return this.#localize.term('loginScreen_assetsLogos');
-		return '';
+		switch (kind) {
+			case 'background':
+				return this.#localize.term('loginScreen_assetsWelcomeImages');
+			case 'logo':
+				return this.#localize.term('loginScreen_assetsLogos');
+			case undefined:
+				return '';
+			default: {
+				const unhandledKind: never = kind;
+				throw new Error(`Le Løgin cannot name the asset group '${String(unhandledKind)}'.`);
+			}
+		}
 	}
 
 	getUploadPath(): string {

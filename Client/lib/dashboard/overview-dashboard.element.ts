@@ -101,50 +101,50 @@ export class LeLøginScreenOverviewDashboard extends UmbElementMixin(HTMLElement
 		} else {
 			this.#previewBox.removeAttribute('headline');
 		}
-		if (this.#state === 'loading') {
-			this.#previewBox.replaceChildren(document.createElement('uui-loader-circle'));
-			this.#syncAuthPreview();
-			return;
+		switch (this.#state) {
+			case 'loading':
+				this.#previewBox.replaceChildren(document.createElement('uui-loader-circle'));
+				break;
+			case 'empty':
+				this.#previewBox.replaceChildren(this.#createEmptyState());
+				break;
+			case 'error': {
+				const message = document.createElement('p');
+				message.className = 'empty-state';
+				message.textContent = this.localize.term('loginScreen_activeImageLoadFailed');
+				this.#previewBox.replaceChildren(message);
+				break;
+			}
+			case 'loaded':
+				if (this.#activeImage === undefined) {
+					this.#previewBox.replaceChildren();
+				} else {
+					this.#previewBox.replaceChildren(cloneTemplate(previewShellTemplate, 'preview shell'));
+				}
+				break;
+			default: {
+				const unhandledState: never = this.#state;
+				throw new Error(`Le Løgin cannot render the overview state '${String(unhandledState)}'.`);
+			}
 		}
-
-		if (this.#state === 'empty') {
-			const wrapper = document.createElement('div');
-			wrapper.className = 'empty-state';
-
-			const message = document.createElement('p');
-			message.textContent = this.localize.term('loginScreen_noActiveImage');
-			wrapper.append(message);
-
-			const action = document.createElement('uui-button');
-			action.setAttribute('look', 'primary');
-			action.setAttribute('color', 'default');
-			action.setAttribute('href', LOGIN_SCREEN_RULE_LIST_WORKSPACE_PATH);
-			action.setAttribute('label', this.localize.term('loginScreen_goToRules'));
-			wrapper.append(action);
-
-			this.#previewBox.replaceChildren(wrapper);
-			this.#syncAuthPreview();
-			return;
-		}
-
-		if (this.#state === 'error') {
-			const message = document.createElement('p');
-			message.className = 'empty-state';
-			message.textContent = this.localize.term('loginScreen_activeImageLoadFailed');
-			this.#previewBox.replaceChildren(message);
-			this.#syncAuthPreview();
-			return;
-		}
-
-		if (this.#activeImage === undefined) {
-			this.#previewBox.replaceChildren();
-			this.#syncAuthPreview();
-			return;
-		}
-
-		const previewShell = cloneTemplate(previewShellTemplate, 'preview shell');
-		this.#previewBox.replaceChildren(previewShell);
 		this.#syncAuthPreview();
+	}
+
+	#createEmptyState(): HTMLElement {
+		const wrapper = document.createElement('div');
+		wrapper.className = 'empty-state';
+
+		const message = document.createElement('p');
+		message.textContent = this.localize.term('loginScreen_noActiveImage');
+		wrapper.append(message);
+
+		const action = document.createElement('uui-button');
+		action.setAttribute('look', 'primary');
+		action.setAttribute('color', 'default');
+		action.setAttribute('href', LOGIN_SCREEN_RULE_LIST_WORKSPACE_PATH);
+		action.setAttribute('label', this.localize.term('loginScreen_goToRules'));
+		wrapper.append(action);
+		return wrapper;
 	}
 
 	async #loadActiveState() {

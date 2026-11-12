@@ -37,4 +37,12 @@ describe('overview dashboard chrome', () => {
 		expect(source).toContain('LOGIN_SCREEN_RULE_LIST_WORKSPACE_PATH');
 		expect(source).toContain('loginScreen_goToRules');
 	});
+
+	it('renders each overview state from one exhaustive switch', async () => {
+		const source = await readFile(dashboardElementFilePath, 'utf8');
+
+		expect(source).toContain('switch (this.#state) {');
+		expect(source).toContain('const unhandledState: never = this.#state;');
+		expect(source).not.toContain("if (this.#state === '");
+	});
 });
