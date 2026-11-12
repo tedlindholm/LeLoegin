@@ -21,6 +21,7 @@ import {
 import { LatestLoad } from '../utils/latest-load.js';
 import { requestStructureReload } from '../utils/request-structure-reload.js';
 import { toAssetSaveRequest, type AssetSaveRequest } from './asset-save-request.js';
+import { assetTextLimitViolation } from './asset-text-limits.js';
 
 const LOADING_STATE_UNIQUE = 'loginScreenAssetWorkspaceLoading';
 
@@ -257,8 +258,8 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 	}
 
 	/**
-	 * Saves the draft, showing a notification for the outcome. Refuses a blank name. On success,
-	 * reloads the tree so a rename shows.
+	 * Saves the draft, showing a notification for the outcome. Refuses a blank name or text
+	 * longer than the API allows. On success, reloads the tree so a rename shows.
 	 *
 	 * @returns True when the asset was saved.
 	 */
@@ -270,6 +271,12 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 
 		if (this.#draft.name.trim().length === 0) {
 			await this.#notify('danger', this.#localize.term('loginScreen_assetNameRequired'));
+			return false;
+		}
+
+		const overLimit = assetTextLimitViolation(this.#draft);
+		if (overLimit !== undefined) {
+			await this.#notify('danger', this.#localize.term(overLimit.term, overLimit.maximum));
 			return false;
 		}
 

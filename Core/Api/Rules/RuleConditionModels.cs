@@ -119,25 +119,22 @@ public readonly record struct LoginRuleConditionValue
 /// API model for a single editable Le Løgin rule condition.
 /// </summary>
 /// <param name="Id">Client-side identifier of the condition. Not stored; regenerated from the rule id when read back.</param>
-/// <param name="Field">The field to compare.</param>
-/// <param name="Operator">How the field is compared with <paramref name="Values"/>.</param>
+/// <param name="Field">The field to compare. Must be present in JSON; a missing value is rejected rather than read as <see cref="LoginRuleField.Weekday"/>.</param>
+/// <param name="Operator">How the field is compared with <paramref name="Values"/>. Must be present in JSON; a missing value is rejected rather than read as <see cref="LoginRuleConditionOperator.Is"/>.</param>
 /// <param name="Values">One value for <c>is</c>/<c>isNot</c>, two bounds for <c>between</c>/<c>notBetween</c>, one or more for <c>in</c>/<c>notIn</c>. Months are numbers; weekdays are text.</param>
 public sealed record LoginRuleConditionModel(
 	[Required] string Id,
-	[property: JsonRequired]
-	[Required] LoginRuleField Field,
-	[property: JsonRequired]
-	[Required] LoginRuleConditionOperator Operator,
+	[property: JsonRequired] LoginRuleField Field,
+	[property: JsonRequired] LoginRuleConditionOperator Operator,
 	[Required] IReadOnlyList<LoginRuleConditionValue> Values);
 
 /// <summary>
 /// API model for an editable Le Løgin rule condition group.
 /// </summary>
-/// <param name="Operator">Whether all or any of the conditions must match.</param>
+/// <param name="Operator">Whether all or any of the conditions must match. Must be present in JSON; a missing value is rejected rather than read as <see cref="LoginRuleConditionGroupOperator.All"/>.</param>
 /// <param name="Conditions">The conditions in the group.</param>
 public sealed record LoginRuleConditionGroupModel(
-	[property: JsonRequired]
-	[Required] LoginRuleConditionGroupOperator Operator,
+	[property: JsonRequired] LoginRuleConditionGroupOperator Operator,
 	[Required] IReadOnlyList<LoginRuleConditionModel> Conditions);
 
 /// <summary>

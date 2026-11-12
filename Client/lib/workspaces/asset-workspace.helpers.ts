@@ -1,12 +1,17 @@
 import type { LoginImageAsset } from '../models/index.ts';
 import { isBackgroundLoginImageAsset, isLogoLoginImageAsset } from '../models/index.ts';
 import { cloneTemplate } from '../utils/template.js';
+import { ASSET_GREETING_MAX_LENGTH } from './asset-text-limits.js';
 import { buildZoomControls } from './asset-zoom-controls.js';
 
 /** A `uui-input` as the asset workspace reads and writes it. */
 export interface LeLøginScreenTextInputElement extends HTMLElement {
 	/** The input's current text. */
 	value: string;
+	/** Maximum length `uui-input` validates. It does not stop further typing. */
+	maxlength?: number;
+	/** Message `uui-input` shows when `value` is longer than `maxlength`. */
+	maxlengthMessage?: string;
 }
 
 /** One option in a UUI select control. */
@@ -20,7 +25,7 @@ export interface SelectOption {
 }
 
 interface LeLøginScreenLocaliser {
-	term(key: string, placeholders?: Array<string>): string;
+	term(key: string, ...tokens: Array<string | number>): string;
 }
 
 interface AssetWorkspaceBodyArgs {
@@ -229,6 +234,11 @@ const buildGreetingField = (
 		'greeting input'
 	);
 	input.setAttribute('label', localize.term('loginScreen_greetingText'));
+	input.maxlength = ASSET_GREETING_MAX_LENGTH;
+	input.maxlengthMessage = localize.term(
+		'loginScreen_greetingTextTooLong',
+		ASSET_GREETING_MAX_LENGTH
+	);
 	input.value = greetingText;
 	return control;
 };

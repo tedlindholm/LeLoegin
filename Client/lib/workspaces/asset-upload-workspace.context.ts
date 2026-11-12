@@ -22,6 +22,7 @@ import {
 import { requestChildrenReload } from '../utils/request-structure-reload.js';
 import { setStringStateAlways } from '../utils/repeat-state.js';
 import { assetGroupEntity } from '../tree/asset-tree.data-source.js';
+import { assetTextLimitViolation } from './asset-text-limits.js';
 
 const buildAssetEditWorkspacePath = (assetId: string): string =>
 	`/umbraco/section/settings/workspace/login-screen-asset/edit/${encodeURIComponent(assetId)}`;
@@ -209,7 +210,8 @@ abstract class LeLøginScreenAssetUploadWorkspaceContextBase extends UmbContextB
 
 	/**
 	 * Uploads the chosen file under the entered name, showing a notification for the outcome.
-	 * On success, reloads the asset group in the tree and navigates to the new asset's workspace.
+	 * Refuses a blank name or a name longer than the API allows. On success, reloads the asset
+	 * group in the tree and navigates to the new asset's workspace.
 	 *
 	 * @returns True when the asset was uploaded.
 	 */
@@ -224,6 +226,12 @@ abstract class LeLøginScreenAssetUploadWorkspaceContextBase extends UmbContextB
 
 		if (name.length === 0) {
 			await this.#notify('danger', this.#localize.term('loginScreen_assetNameRequired'));
+			return false;
+		}
+
+		const overLimit = assetTextLimitViolation({ name });
+		if (overLimit !== undefined) {
+			await this.#notify('danger', this.#localize.term(overLimit.term, overLimit.maximum));
 			return false;
 		}
 
