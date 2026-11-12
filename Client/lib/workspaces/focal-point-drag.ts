@@ -5,16 +5,25 @@
  * Vitest without dragging in transitive dependencies that fail under Node's ESM loader.
  */
 
+/** A normalised focal point: 0 is the left or top edge of the image, 1 the right or bottom. */
 export interface FocalPointLike {
+	/** Horizontal position, 0–1. */
 	left: number;
+	/** Vertical position, 0–1. */
 	top: number;
 }
 
+/** Arguments to {@link computeFocalPointFromDrag}. */
 export interface ComputeFocalPointFromDragArgs {
+	/** Natural pixel dimensions of the source image. */
 	image: { width: number; height: number };
+	/** Pixel dimensions of the visible preview container. */
 	container: { width: number; height: number };
+	/** Focal point at the moment the drag started. */
 	startFocalPoint: FocalPointLike;
+	/** Horizontal drag delta in container pixels since the drag started. */
 	deltaX: number;
+	/** Vertical drag delta in container pixels since the drag started. */
 	deltaY: number;
 	/**
 	 * Zoom factor currently applied to the preview (≥ 1).
@@ -57,32 +66,12 @@ export function computeFocalPointFromDrag({
 	deltaY,
 	zoom
 }: ComputeFocalPointFromDragArgs): FocalPointLike {
-	if (image.width <= 0 || image.height <= 0 || container.width <= 0 || container.height <= 0) {
+	// Reject empty sizes and non-finite deltas so NaN can never propagate into the focal point.
+	if (!hasArea(image) || !hasArea(container) || !Number.isFinite(deltaX + deltaY)) {
 		return startFocalPoint;
 	}
-
-	// Reject non-finite deltas/zoom so NaN can never propagate into the focal point.
-	if (!Number.isFinite(deltaX) || !Number.isFinite(deltaY)) {
-		return startFocalPoint;
-	}
-	const z = Number.isFinite(zoom) ? Math.max(1, zoom as number) : 1;
-
-	const imageAspect = image.width / image.height;
-	const containerAspect = container.width / container.height;
-
-	let scaledWidth: number;
-	let scaledHeight: number;
-	if (imageAspect > containerAspect) {
-		scaledHeight = container.height;
-		scaledWidth = container.height * imageAspect;
-	} else {
-		scaledWidth = container.width;
-		scaledHeight = container.width / imageAspect;
-	}
-
-	// Multiply by zoom so that axes with no overflow at zoom=1 become draggable once zoomed.
-	const overflowX = Math.max(0, scaledWidth * z - container.width);
-	const overflowY = Math.max(0, scaledHeight * z - container.height);
+	const z = zoom !== undefined && Number.isFinite(zoom) ? Math.max(1, zoom) : 1;
+	const scaled = coverScaledSize(image, container);
 
 	// When zoomed the focal point is constrained to [half, 1−half] so the crop
 	// window stays a symmetric 1/zoom × 1/zoom; clamping the drag output to the
@@ -90,18 +79,39 @@ export function computeFocalPointFromDrag({
 	// while the visible image stops moving). At zoom=1 there's no crop window so
 	// the rxy= focal-point hint can use the full [0, 1] range.
 	const half = 0.5 / z;
-	const [minBound, maxBound] = z > 1 ? [half, 1 - half] : [0, 1];
+	const bounds = z > 1 ? { min: half, max: 1 - half } : { min: 0, max: 1 };
 
-	const left =
-		overflowX > 0
-			? clamp(startFocalPoint.left - deltaX / overflowX, minBound, maxBound)
-			: startFocalPoint.left;
-	const top =
-		overflowY > 0
-			? clamp(startFocalPoint.top - deltaY / overflowY, minBound, maxBound)
-			: startFocalPoint.top;
+	// Multiply by zoom so that axes with no overflow at zoom=1 become draggable once zoomed.
+	return {
+		left: dragAxis(startFocalPoint.left, deltaX, scaled.width * z - container.width, bounds),
+		top: dragAxis(startFocalPoint.top, deltaY, scaled.height * z - container.height, bounds)
+	};
+}
 
-	return { left, top };
+interface Size {
+	width: number;
+	height: number;
+}
+
+const hasArea = (size: Size) => size.width > 0 && size.height > 0;
+
+/** Size of the image once `background-size: cover` has scaled it to fill the container. */
+function coverScaledSize(image: Size, container: Size): Size {
+	const imageAspect = image.width / image.height;
+	return imageAspect > container.width / container.height
+		? { width: container.height * imageAspect, height: container.height }
+		: { width: container.width, height: container.width / imageAspect };
+}
+
+/** Moves one focal-point axis by a drag delta; an axis with no overflow cannot move. */
+function dragAxis(
+	start: number,
+	delta: number,
+	overflow: number,
+	bounds: { min: number; max: number }
+): number {
+	if (overflow <= 0) return start;
+	return clamp(start - delta / overflow, bounds.min, bounds.max);
 }
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));

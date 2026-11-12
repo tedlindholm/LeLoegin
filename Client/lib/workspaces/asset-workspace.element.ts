@@ -3,16 +3,8 @@ import '@umbraco-cms/backoffice/workspace';
 import { UmbElementMixin } from '@umbraco-cms/backoffice/element-api';
 import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
 import styles from './asset-workspace.element.css?inline';
-import {
-	normaliseOptionalInputValue,
-	buildWorkspaceBody,
-	measureGreetingPosition,
-	computeFocalPointFromDrag,
-	ZOOM_MIN,
-	ZOOM_MAX
-} from './asset-workspace.helpers.js';
-
-const ZOOM_STEP = 1.1;
+import { normaliseOptionalInputValue, buildWorkspaceBody } from './asset-workspace.helpers.js';
+import { ZOOM_MIN, ZOOM_MAX } from './asset-zoom-controls.js';
 import {
 	applyAuthViewCustomisation,
 	observeAuthViewCustomisation
@@ -25,6 +17,14 @@ import {
 	type LeLøginScreenAssetEditorWorkspaceContext
 } from './asset-editor-workspace.context.js';
 import { LOGO_PICKER_MODAL_TOKEN } from './logo-picker-modal.token.js';
+import { LeLøginBackgroundDragController } from './background-drag.controller.js';
+import {
+	buildAssetPreviewCustomisation,
+	measureGreetingPosition,
+	observeAuthPreviewLayout
+} from './asset-preview.helpers.js';
+
+const ZOOM_STEP = 1.1;
 
 interface ValueElement extends HTMLElement {
 	value: string;
@@ -33,14 +33,6 @@ interface ValueElement extends HTMLElement {
 const isHtmlElement = (value: Element | null): value is HTMLElement => value instanceof HTMLElement;
 const isValueElement = (value: Element | null): value is ValueElement =>
 	value instanceof HTMLElement && value.localName === 'uui-input';
-
-// Spreadable optional field — collapses the noisy `...(x === undefined ? {} : { foo: x })`
-// pattern at the call site so the customisation object reads like a flat record.
-const optional = <K extends string, V>(key: K, value: V | undefined): Partial<Record<K, V>> => {
-	const field: Partial<Record<K, V>> = {};
-	if (value !== undefined) field[key] = value;
-	return field;
-};
 
 function getRequiredById(root: ShadowRoot, id: string): HTMLElement {
 	const element = root.getElementById(id);
@@ -54,6 +46,11 @@ function getEventTargetElement(event: Event): Element | null {
 	return event.target instanceof Element ? event.target : null;
 }
 
+/**
+ * Asset edit workspace. A logo shows as a plain image; a background shows in a login-style
+ * preview where the user drags to set the focal point, zooms, edits the greeting and picks a
+ * logo. Changes go to the asset editor workspace context's draft.
+ */
 export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 	#workspaceContext: LeLøginScreenAssetEditorWorkspaceContext | undefined;
 	#asset: LoginImageAsset | null = null;
@@ -68,8 +65,7 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 	#draftFocalPoint: FocalPoint | undefined;
 	#draftZoom = 1;
 	#layout: HTMLElement;
-	#authPreviewGraphic: HTMLElement | undefined;
-	#backgroundDragCleanup: (() => void) | undefined;
+	#backgroundDrag: LeLøginBackgroundDragController | undefined;
 	// Re-render when a thumbnail arrives: the preview image and the login-preview background both use it.
 	#thumbnails = new LeLøginAssetThumbnailController(this, () => this.#render());
 
@@ -87,36 +83,38 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 		`;
 		this.#layout = getRequiredById(shadow, 'layout');
 
-		this.#layout.addEventListener('click', (e) => {
-			const target = getEventTargetElement(e);
-			if (target === null) {
-				return;
-			}
-			if (target.closest('#asset-logo-picker-button') !== null) {
-				void this.#openLogoPicker();
-				return;
-			}
-			if (target.closest('#asset-zoom-in') !== null) {
-				this.#applyZoomDelta(ZOOM_STEP);
-				return;
-			}
-			if (target.closest('#asset-zoom-out') !== null) {
-				this.#applyZoomDelta(1 / ZOOM_STEP);
-				return;
-			}
-		});
-		this.#layout.addEventListener('input', (e) => {
-			const target = getEventTargetElement(e);
-			if (target?.closest('#asset-greeting-inline') === null || !isValueElement(target)) return;
-			const value = target.value;
-			this.#draftGreetingTextValue = value;
-			this.#workspaceContext?.updateDraft({ greetingText: normaliseOptionalInputValue(value) });
-			this.#syncAuthPreview();
-		});
+		this.#layout.addEventListener('click', this.#onLayoutClick);
+		this.#layout.addEventListener('input', this.#onLayoutInput);
 		this.consumeContext(UMB_LOGIN_SCREEN_ASSET_EDITOR_WORKSPACE_CONTEXT, (ctx) => {
 			if (ctx !== undefined) this.#setupWorkspaceObservers(ctx);
 		});
 	}
+
+	#onLayoutClick = (e: Event) => {
+		const button = getEventTargetElement(e)?.closest(
+			'#asset-logo-picker-button, #asset-zoom-in, #asset-zoom-out'
+		);
+		switch (button?.id) {
+			case 'asset-logo-picker-button':
+				void this.#openLogoPicker();
+				break;
+			case 'asset-zoom-in':
+				this.#applyZoomDelta(ZOOM_STEP);
+				break;
+			case 'asset-zoom-out':
+				this.#applyZoomDelta(1 / ZOOM_STEP);
+				break;
+		}
+	};
+
+	#onLayoutInput = (e: Event) => {
+		const target = getEventTargetElement(e);
+		if (target?.closest('#asset-greeting-inline') === null || !isValueElement(target)) return;
+		const value = target.value;
+		this.#draftGreetingTextValue = value;
+		this.#workspaceContext?.updateDraft({ greetingText: normaliseOptionalInputValue(value) });
+		this.#syncAuthPreview();
+	};
 
 	#setupWorkspaceObservers(ctx: LeLøginScreenAssetEditorWorkspaceContext) {
 		this.#workspaceContext = ctx;
@@ -139,11 +137,13 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 		});
 	}
 
+	/** Renders the workspace when the element is attached. */
 	override connectedCallback() {
 		super.connectedCallback();
 		this.#render();
 	}
 
+	/** Stops watching the preview layout and detaches the background drag controller. */
 	override disconnectedCallback() {
 		this.#disposeAuthPreviewObserver();
 		this.#detachBackgroundDrag();
@@ -152,7 +152,7 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 
 	#render() {
 		const previewUrl =
-			this.#asset?.id !== undefined ? this.#thumbnailUrl(this.#asset.id) : undefined;
+			this.#asset?.id !== undefined ? this.#thumbnails.peek(this.#asset.id) : undefined;
 		this.#layout.replaceChildren(
 			...buildWorkspaceBody({
 				localize: this.localize,
@@ -179,18 +179,8 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 
 	#updateZoomButtonStates() {
 		const root = this.shadowRoot;
-		if (root === null || root === undefined) return;
-		this.#applyDisabled(root.querySelector('#asset-zoom-in'), this.#draftZoom >= ZOOM_MAX);
-		this.#applyDisabled(root.querySelector('#asset-zoom-out'), this.#draftZoom <= ZOOM_MIN);
-	}
-
-	#applyDisabled(element: Element | null, disabled: boolean) {
-		if (!(element instanceof HTMLElement)) return;
-		if (disabled) {
-			element.setAttribute('disabled', '');
-		} else {
-			element.removeAttribute('disabled');
-		}
+		root?.querySelector('#asset-zoom-in')?.toggleAttribute('disabled', this.#draftZoom >= ZOOM_MAX);
+		root?.querySelector('#asset-zoom-out')?.toggleAttribute('disabled', this.#draftZoom <= ZOOM_MIN);
 	}
 
 	async #openLogoPicker() {
@@ -227,7 +217,10 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 			this.#stopObservingAuthPreview = observeAuthViewCustomisation(authPreview, () =>
 				this.#authPreviewCustomisation()
 			);
-			this.#observeAuthPreviewMutations(authPreview);
+			this.#authPreviewMutationCleanup = observeAuthPreviewLayout(authPreview, () => {
+				this.#positionGreetingOverlay();
+				this.#syncBackgroundDragTarget();
+			});
 		} else {
 			applyAuthViewCustomisation(authPreview, this.#authPreviewCustomisation());
 		}
@@ -250,100 +243,29 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 			this.#detachBackgroundDrag();
 			return;
 		}
-		if (shell === this.#authPreviewGraphic) return;
+		if (shell === this.#backgroundDrag?.shell) return;
 		this.#detachBackgroundDrag();
-		this.#attachBackgroundDrag(shell);
+		this.#backgroundDrag = new LeLøginBackgroundDragController(shell, {
+			imageSize: () => ({ width: this.#asset?.width ?? 0, height: this.#asset?.height ?? 0 }),
+			measureContainer: () => this.#measurePreviewFrame(shell),
+			focalPoint: () => this.#draftFocalPoint,
+			zoom: () => this.#draftZoom,
+			onFocalPointChange: (focalPoint) => this.#applyDraggedFocalPoint(focalPoint),
+			onZoom: (zoomIn) => this.#applyZoomDelta(zoomIn ? ZOOM_STEP : 1 / ZOOM_STEP)
+		});
 	}
 
-	#attachBackgroundDrag(shell: HTMLElement) {
-		this.#authPreviewGraphic = shell;
-		shell.style.cursor = 'grab';
-		shell.style.touchAction = 'none';
-
-		let startFocalPoint: FocalPoint | null = null;
-		let startClientX = 0;
-		let startClientY = 0;
-		let containerSize = { width: 0, height: 0 };
-		let activePointerId: number | null = null;
-
-		const imageSize = () =>
-			this.#asset !== null
-				? { width: this.#asset.width, height: this.#asset.height }
-				: { width: 0, height: 0 };
-
-		const measureContainer = () => {
-			// Prefer the auth-view's #graphic rect (matches the visible image frame),
-			// fall back to the shell itself if the auth-view hasn't laid out yet.
-			const graphic = this.#authPreview?.shadowRoot?.getElementById('graphic');
-			const rect = (graphic instanceof HTMLElement ? graphic : shell).getBoundingClientRect();
-			return { width: rect.width, height: rect.height };
-		};
-
-		const onPointerDown = (event: PointerEvent) => {
-			if (event.button !== 0) return;
-			containerSize = measureContainer();
-			startFocalPoint = { ...(this.#draftFocalPoint ?? { left: 0.5, top: 0.5 }) };
-			startClientX = event.clientX;
-			startClientY = event.clientY;
-			activePointerId = event.pointerId;
-			shell.setPointerCapture(event.pointerId);
-			shell.style.cursor = 'grabbing';
-			event.preventDefault();
-		};
-
-		const onPointerMove = (event: PointerEvent) => {
-			if (activePointerId !== event.pointerId || startFocalPoint === null) return;
-			const next = computeFocalPointFromDrag({
-				image: imageSize(),
-				container: containerSize,
-				startFocalPoint,
-				deltaX: event.clientX - startClientX,
-				deltaY: event.clientY - startClientY,
-				zoom: this.#draftZoom
-			});
-			this.#applyDraggedFocalPoint(next);
-		};
-
-		const onPointerEnd = (event: PointerEvent) => {
-			if (activePointerId !== event.pointerId) return;
-			if (shell.hasPointerCapture(event.pointerId)) {
-				shell.releasePointerCapture(event.pointerId);
-			}
-			activePointerId = null;
-			startFocalPoint = null;
-			shell.style.cursor = 'grab';
-		};
-
-		const onWheel = (event: WheelEvent) => {
-			// ctrlKey is set both for actual Ctrl+wheel and for Mac touchpad pinch gestures
-			// (the browser translates pinch into wheel events with ctrlKey=true). Plain
-			// two-finger scrolling has ctrlKey=false and must pass through to the page.
-			if (!event.ctrlKey) return;
-			event.preventDefault();
-			this.#applyZoomDelta(event.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP);
-		};
-
-		shell.addEventListener('pointerdown', onPointerDown);
-		shell.addEventListener('pointermove', onPointerMove);
-		shell.addEventListener('pointerup', onPointerEnd);
-		shell.addEventListener('pointercancel', onPointerEnd);
-		shell.addEventListener('wheel', onWheel, { passive: false });
-
-		this.#backgroundDragCleanup = () => {
-			shell.removeEventListener('pointerdown', onPointerDown);
-			shell.removeEventListener('pointermove', onPointerMove);
-			shell.removeEventListener('pointerup', onPointerEnd);
-			shell.removeEventListener('pointercancel', onPointerEnd);
-			shell.removeEventListener('wheel', onWheel);
-			shell.style.cursor = '';
-			shell.style.touchAction = '';
-		};
+	#measurePreviewFrame(shell: HTMLElement) {
+		// Prefer the auth-view's #graphic rect (matches the visible image frame),
+		// fall back to the shell itself if the auth-view hasn't laid out yet.
+		const graphic = this.#authPreview?.shadowRoot?.getElementById('graphic');
+		const rect = (graphic instanceof HTMLElement ? graphic : shell).getBoundingClientRect();
+		return { width: rect.width, height: rect.height };
 	}
 
 	#detachBackgroundDrag() {
-		this.#backgroundDragCleanup?.();
-		this.#backgroundDragCleanup = undefined;
-		this.#authPreviewGraphic = undefined;
+		this.#backgroundDrag?.dispose();
+		this.#backgroundDrag = undefined;
 	}
 
 	#applyDraggedFocalPoint(focalPoint: FocalPoint) {
@@ -369,57 +291,20 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 	}
 
 	#authPreviewCustomisation() {
-		if (!this.#isBackgroundAssetLoaded() || this.#assetId === undefined) {
-			return {
-				mode: 'preview' as const,
-				previewHeight: '100%',
-				previewNote: this.localize.term('loginScreen_previewOnly')
-			};
-		}
-		// Image dimensions feed the crop+cover simulation in auth-view-customiser so the
-		// editor previews the exact pixels ImageSharp.Web will produce at runtime. Missing
-		// dimensions (legacy assets) leave the preview in the simpler fp%+cover fallback.
-		return {
-			...optional('imageUrl', this.#thumbnailUrl(this.#assetId)),
-			...optional('greetingText', normaliseOptionalInputValue(this.#currentGreetingText())),
-			...optional('logoUrl', this.#selectedLogoPreviewUrl()),
-			...optional('focalPoint', this.#draftFocalPoint),
-			...optional('zoom', this.#draftZoom > 1 ? this.#draftZoom : undefined),
-			...optional('imageWidth', this.#asset?.width),
-			...optional('imageHeight', this.#asset?.height),
-			hideGreeting: true,
-			mode: 'preview' as const,
-			previewHeight: '100%',
-			previewNote: this.localize.term('loginScreen_previewOnly')
-		};
-	}
-
-	#observeAuthPreviewMutations(authPreview: HTMLElement) {
-		if (authPreview.shadowRoot === null) return;
-		let rafHandle: number | undefined;
-		const observer = new MutationObserver(() => {
-			if (rafHandle !== undefined) cancelAnimationFrame(rafHandle);
-			rafHandle = requestAnimationFrame(() => {
-				rafHandle = undefined;
-				this.#positionGreetingOverlay();
-				this.#syncBackgroundDragTarget();
-			});
-		});
-		// Don't watch 'style' mutations: applyCropPreview writes background-position
-		// on every pointer-move during a drag, and watching style here turned each
-		// move into a forced-layout re-positioning pass (the overlays themselves
-		// then set CSS vars, which fed the loop). Host size changes are picked up
-		// by the ResizeObserver inside observeAuthViewCustomisation instead.
-		observer.observe(authPreview.shadowRoot, {
-			childList: true,
-			subtree: true,
-			attributes: true,
-			attributeFilter: ['src', 'hidden', 'class']
-		});
-		this.#authPreviewMutationCleanup = () => {
-			observer.disconnect();
-			if (rafHandle !== undefined) cancelAnimationFrame(rafHandle);
-		};
+		return buildAssetPreviewCustomisation(
+			this.#isBackgroundAssetLoaded() && this.#assetId !== undefined
+				? {
+						imageUrl: this.#thumbnails.peek(this.#assetId),
+						greetingText: normaliseOptionalInputValue(this.#currentGreetingText()),
+						logoUrl: this.#selectedLogoPreviewUrl(),
+						focalPoint: this.#draftFocalPoint,
+						zoom: this.#draftZoom,
+						imageWidth: this.#asset?.width,
+						imageHeight: this.#asset?.height
+					}
+				: undefined,
+			this.localize.term('loginScreen_previewOnly')
+		);
 	}
 
 	#disposeAuthPreviewObserver() {
@@ -427,10 +312,6 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 		this.#stopObservingAuthPreview = undefined;
 		this.#authPreviewMutationCleanup?.();
 		this.#authPreviewMutationCleanup = undefined;
-	}
-
-	#thumbnailUrl(assetId: string): string | undefined {
-		return this.#thumbnails.peek(assetId);
 	}
 
 	#applyAssetDraft(asset: LoginImageAsset | null) {
@@ -456,7 +337,7 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 	#selectedLogoPreviewUrl() {
 		const id = this.#selectedLogoAssetId();
 		if (id.length === 0) return undefined;
-		return this.#thumbnailUrl(id);
+		return this.#thumbnails.peek(id);
 	}
 }
 

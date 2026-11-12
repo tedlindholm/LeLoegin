@@ -20,11 +20,13 @@ import {
 } from '../tree/types.js';
 import { LatestLoad } from '../utils/latest-load.js';
 import { requestStructureReload } from '../utils/request-structure-reload.js';
+import { toAssetSaveRequest, type AssetSaveRequest } from './asset-save-request.js';
 
 const LOADING_STATE_UNIQUE = 'loginScreenAssetWorkspaceLoading';
 
 const LOGIN_SCREEN_ASSET_WORKSPACE_ALIAS = 'LeLøgin.Workspace.Asset';
 
+/** Context token for the asset editor workspace; matches only a workspace context for a login-screen asset. */
 export const UMB_LOGIN_SCREEN_ASSET_EDITOR_WORKSPACE_CONTEXT = new UmbContextToken<
 	UmbWorkspaceContext,
 	LeLøginScreenAssetEditorWorkspaceContext
@@ -36,15 +38,21 @@ export const UMB_LOGIN_SCREEN_ASSET_EDITOR_WORKSPACE_CONTEXT = new UmbContextTok
 );
 
 /**
- * Routable workspace context for editing a single login screen asset.
+ * Routable workspace context for editing a single login screen asset. Serves the `edit/:unique`
+ * route, loads the asset into an editable draft and saves it back, notifying the user and
+ * reloading the tree on success.
  */
 export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
+	/** Alias of the workspace manifest this context belongs to. */
 	readonly workspaceAlias = LOGIN_SCREEN_ASSET_WORKSPACE_ALIAS;
+	/** Workspace routes; serves `edit/:unique`. */
 	readonly routes = new UmbWorkspaceRouteManager(this);
 	// Marker the umb-entity-detail-workspace-editor uses to claim this context.
 	// eslint-disable-next-line @typescript-eslint/naming-convention
 	readonly IS_ENTITY_DETAIL_WORKSPACE_CONTEXT = true;
+	/** Loading states the workspace editor shows; holds one entry while an asset loads. */
 	readonly loading = new UmbStateManager(this);
+	/** Forbidden states the workspace editor reads; Le Løgin adds none. */
 	readonly forbidden = new UmbStateManager(this);
 
 	#repository: LeLøginScreenAssetRepository;
@@ -60,13 +68,21 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 	#loads = new LatestLoad();
 	#localize = new UmbLocalizationController(this);
 
+	/** Every asset, used to offer logos to a background. */
 	readonly assets = this.#assets.asObservable();
+	/** The asset as last loaded or saved, or `null` while loading or when not found. */
 	readonly currentAsset = this.#currentAsset.asObservable();
+	/** Same as `currentAsset`; the name Umbraco's workspace editor observes. */
 	readonly data = this.#currentAsset.asObservable();
+	/** True while an asset load is in flight. */
 	readonly isLoading = this.#isLoading.asObservable();
+	/** The draft's name, shown in the workspace header. */
 	readonly name = this.#name.asObservable();
+	/** Id of the asset being edited. */
 	readonly unique = this.#unique.asObservable();
+	/** Always the login-screen asset entity type. */
 	readonly entityType = this.#entityType.asObservable();
+	/** Always false: assets are created by upload, not in this workspace. */
 	readonly isNew = this.#isNew.asObservable();
 	// eslint-disable-next-line @typescript-eslint/naming-convention
 	readonly _internal_createUnderParent = this.#createUnderParent.asObservable();
@@ -79,6 +95,11 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 		(parent) => parent?.entityType
 	);
 
+	/**
+	 * Provides the context, an entity context that follows the edited asset, and the edit route.
+	 *
+	 * @param host - The workspace's controller host.
+	 */
 	constructor(host: UmbControllerHost) {
 		super(host, UMB_LOGIN_SCREEN_ASSET_EDITOR_WORKSPACE_CONTEXT);
 		this.#repository = new LeLøginScreenAssetRepository(this);
@@ -115,26 +136,40 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 		]);
 	}
 
+	/** @returns The login-screen asset entity type. */
 	getEntityType() {
 		return LOGIN_SCREEN_ASSET_ENTITY_TYPE;
 	}
 
+	/** @returns Id of the asset being edited, or `undefined` before a route has matched. */
 	getUnique() {
 		return this.#unique.getValue();
 	}
 
+	/** @returns The draft's current name. */
 	getName(): string {
 		return this.#name.getValue();
 	}
 
+	/**
+	 * Renames the draft; nothing is saved until submit.
+	 *
+	 * @param name - The new name.
+	 */
 	setName(name: string) {
 		this.updateDraft({ name });
 	}
 
+	/** @returns Always false: this workspace only edits existing assets. */
 	getIsNew(): boolean {
 		return this.#isNew.getValue();
 	}
 
+	/**
+	 * Loads every asset into `assets`. Errors are logged and returned, not thrown.
+	 *
+	 * @returns The assets, or the repository error.
+	 */
 	async loadAssets() {
 		const { data, error } = await this.#repository.requestItems();
 		if (error) {
@@ -147,6 +182,13 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 		return { data: assets, error: undefined };
 	}
 
+	/**
+	 * Loads one asset and makes it the draft. Clears the previous draft first, and ignores the
+	 * result when a newer load has started since. Errors are logged and returned, not thrown.
+	 *
+	 * @param assetId - Id of the asset to load.
+	 * @returns The asset, the repository error, or neither when the load was overtaken.
+	 */
 	async loadAsset(assetId: string) {
 		this.#isLoading.setValue(true);
 		if (!this.loading.getStates().some((state) => state.unique === LOADING_STATE_UNIQUE)) {
@@ -184,6 +226,12 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 		}
 	}
 
+	/**
+	 * Merges changes into the draft; does nothing before an asset has loaded. For `focalPoint` and
+	 * `zoom`, `undefined` leaves the value alone and `null` clears it.
+	 *
+	 * @param update - The fields to change.
+	 */
 	updateDraft(update: {
 		name?: string;
 		altText?: string;
@@ -209,6 +257,12 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 		}
 	}
 
+	/**
+	 * Saves the draft, showing a notification for the outcome. Refuses a blank name. On success,
+	 * reloads the tree so a rename shows.
+	 *
+	 * @returns True when the asset was saved.
+	 */
 	async requestSubmit() {
 		const assetId = this.#unique.getValue();
 		if (assetId === undefined || this.#draft === null) {
@@ -220,17 +274,7 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 			return false;
 		}
 
-		// PUT is replace: send the complete state. Background-only fields are nulled for
-		// logo assets, matching what the server would force them to anyway.
-		const isBackground = this.#draft.kind === 'background';
-		const { data, error } = await this.saveAsset(assetId, {
-			name: this.#draft.name,
-			altText: this.#draft.altText ?? null,
-			greetingText: isBackground ? (this.#draft.greetingText ?? null) : null,
-			logoAssetId: isBackground ? (this.#draft.logoAssetId ?? null) : null,
-			focalPoint: isBackground ? (this.#draft.focalPoint ?? null) : null,
-			zoom: isBackground ? (this.#draft.zoom ?? null) : null
-		});
+		const { data, error } = await this.saveAsset(assetId, toAssetSaveRequest(this.#draft));
 
 		if (error || data === undefined) {
 			await this.#notify('danger', this.#localize.term('loginScreen_assetSaveFailed'));
@@ -248,17 +292,15 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 		notificationContext?.peek(color, { data: { message } });
 	}
 
-	async saveAsset(
-		assetId: string,
-		update: {
-			name: string;
-			altText: string | null;
-			greetingText: string | null;
-			logoAssetId: string | null;
-			focalPoint: FocalPoint | null;
-			zoom: number | null;
-		}
-	) {
+	/**
+	 * Sends a save and, on success, makes the saved asset the current asset and draft and updates
+	 * it in `assets`. Errors are logged and returned, not thrown.
+	 *
+	 * @param assetId - Id of the asset to save.
+	 * @param update - The full save body.
+	 * @returns The saved asset, or the repository error.
+	 */
+	async saveAsset(assetId: string, update: AssetSaveRequest	) {
 		const { data, error } = await this.#repository.update(assetId, update);
 		if (error) {
 			console.error('[LeLøginScreen] Failed to save asset', error);
@@ -277,6 +319,12 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 		return { data, error: undefined };
 	}
 
+	/**
+	 * Fetches an asset's preview image. Errors are logged and returned, not thrown.
+	 *
+	 * @param assetId - Id of the asset.
+	 * @returns The preview data, or the repository error.
+	 */
 	async loadAssetPreview(assetId: string) {
 		const { data, error } = await this.#repository.requestPreview(assetId);
 		if (error) {

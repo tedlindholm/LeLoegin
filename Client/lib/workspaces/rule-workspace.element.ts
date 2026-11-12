@@ -7,23 +7,24 @@ import type { UmbModalRouteBuilder } from '@umbraco-cms/backoffice/router';
 import { UMB_WORKSPACE_MODAL } from '@umbraco-cms/backoffice/workspace';
 import styles from './rule-workspace.element.css?inline';
 import '../rules/condition-editor.element.js';
-import type { ConditionMetadata, LoginRuleConditionGroup } from '../rules/rule-condition.js';
+import type { ConditionMetadata } from '../rules/rule-condition.js';
 import type { LoginImageAsset } from '../models/index.js';
 import { LOGIN_SCREEN_ASSET_ENTITY_TYPE } from '../tree/types.js';
 import {
 	UMB_LOGIN_SCREEN_RULE_EDITOR_WORKSPACE_CONTEXT,
-	type LoginRuleDraft,
 	type LeLøginScreenRuleEditorWorkspaceContext
 } from './rule-editor-workspace.context.js';
+import type { LoginRuleDraft } from './rule-draft.js';
+import {
+	getRequiredById,
+	isConditionChangeEvent,
+	isConditionEditorElement,
+	isHtmlElement,
+	isHtmlImageElement,
+	queryRequired
+} from './rule-workspace.helpers.js';
 import { cloneTemplate } from '../utils/template.js';
 import { LeLøginAssetThumbnailController } from '../assets/asset-thumbnail.controller.js';
-
-interface ConditionEditorElement extends HTMLElement {
-	conditionMetadata: ConditionMetadata | null;
-	conditionGroup: LoginRuleConditionGroup;
-}
-
-type ElementGuard<T extends Element> = (value: Element | null) => value is T;
 
 const loadingTemplate = document.createElement('template');
 loadingTemplate.innerHTML = /* html */ `<uui-box><uui-loader-circle></uui-loader-circle></uui-box>`;
@@ -67,61 +68,11 @@ assetCardTemplate.innerHTML = /* html */ `
 	</uui-card-media>
 `;
 
-const isHtmlElement = (value: Element | null): value is HTMLElement => value instanceof HTMLElement;
-const isHtmlImageElement = (value: Element | null): value is HTMLImageElement =>
-	value instanceof HTMLImageElement;
-const isConditionEditorElement = (value: Element | null): value is ConditionEditorElement =>
-	value instanceof HTMLElement && value.localName === 'login-screen-condition-editor';
-
-function getRequiredById<T extends Element>(
-	root: ParentNode,
-	id: string,
-	guard: ElementGuard<T>,
-	description: string
-): T {
-	const element = root.querySelector(`#${id}`);
-	if (!guard(element)) {
-		throw new Error(`Expected ${description} with id "${id}".`);
-	}
-	return element;
-}
-
-function queryRequired<T extends Element>(
-	root: ParentNode,
-	selector: string,
-	guard: ElementGuard<T>,
-	description: string
-): T {
-	const element = root.querySelector(selector);
-	if (!guard(element)) {
-		throw new Error(`Expected ${description} for selector "${selector}".`);
-	}
-	return element;
-}
-
-function hasProperty<K extends string>(
-	value: object,
-	key: K
-): value is object & Record<K, unknown> {
-	return key in value;
-}
-
-function isConditionGroup(value: unknown): value is LoginRuleConditionGroup {
-	if (typeof value !== 'object' || value === null) {
-		return false;
-	}
-
-	if (!hasProperty(value, 'operator') || !hasProperty(value, 'conditions')) {
-		return false;
-	}
-
-	return (value.operator === 'all' || value.operator === 'any') && Array.isArray(value.conditions);
-}
-
-function isConditionChangeEvent(event: Event): event is CustomEvent<LoginRuleConditionGroup> {
-	return event instanceof CustomEvent && isConditionGroup(event.detail);
-}
-
+/**
+ * Rule edit workspace: selectable cards for the images the rule can show and the condition
+ * editor. Changes go to the rule editor workspace context's draft; an asset card's name opens
+ * the asset in a workspace modal.
+ */
 export class LeLøginScreenRuleWorkspace extends UmbElementMixin(HTMLElement) {
 	#workspaceContext: LeLøginScreenRuleEditorWorkspaceContext | undefined;
 	#draft: LoginRuleDraft | null = null;
@@ -158,32 +109,36 @@ export class LeLøginScreenRuleWorkspace extends UmbElementMixin(HTMLElement) {
 			});
 
 		this.consumeContext(UMB_LOGIN_SCREEN_RULE_EDITOR_WORKSPACE_CONTEXT, (ctx) => {
-			if (ctx === undefined) return;
-			this.#workspaceContext = ctx;
-			this.observe(ctx.currentRule, (draft) => {
-				this.#draft = draft;
-				this.#render();
-			});
-			this.observe(ctx.assets, (assets) => {
-				this.#assets = assets ?? [];
-				this.#render();
-			});
-			this.observe(ctx.conditionMetadata, (meta) => {
-				this.#conditionMetadata = meta ?? null;
-				this.#render();
-			});
-			this.observe(ctx.isLoading, (loading) => {
-				this.#isLoading = loading;
-				this.#render();
-			});
-			this.observe(ctx.name, (name) => {
-				if (this.#draft !== null && this.#draft.name !== name) {
-					this.#draft = { ...this.#draft, name };
-				}
-			});
+			if (ctx !== undefined) this.#observeWorkspace(ctx);
 		});
 	}
 
+	#observeWorkspace(ctx: LeLøginScreenRuleEditorWorkspaceContext) {
+		this.#workspaceContext = ctx;
+		this.observe(ctx.currentRule, (draft) => {
+			this.#draft = draft;
+			this.#render();
+		});
+		this.observe(ctx.assets, (assets) => {
+			this.#assets = assets ?? [];
+			this.#render();
+		});
+		this.observe(ctx.conditionMetadata, (meta) => {
+			this.#conditionMetadata = meta ?? null;
+			this.#render();
+		});
+		this.observe(ctx.isLoading, (loading) => {
+			this.#isLoading = loading;
+			this.#render();
+		});
+		this.observe(ctx.name, (name) => {
+			if (this.#draft !== null && this.#draft.name !== name) {
+				this.#draft = { ...this.#draft, name };
+			}
+		});
+	}
+
+	/** Renders the workspace when the element is attached. */
 	override connectedCallback() {
 		super.connectedCallback();
 		this.#render();

@@ -81,8 +81,7 @@ it('hydrates inline preview controls instead of the old right-hand form widgets'
 	expect(workspaceElementSource).toContain("closest('#asset-greeting-inline')");
 	expect(workspaceElementSource).toContain('umbOpenModal');
 	expect(workspaceElementSource).toContain('LOGO_PICKER_MODAL_TOKEN');
-	expect(workspaceElementSource).toContain("closest('#asset-logo-picker-button')");
-	expect(workspaceElementSource).toContain('hideGreeting: true');
+	expect(workspaceElementSource).toContain("case 'asset-logo-picker-button':");
 	expect(workspaceElementSource).not.toContain("querySelector('#asset-logo-asset')");
 });
 
@@ -116,4 +115,20 @@ it('registers the asset editor as a routable workspace', async () => {
 	expect(workspaceManifestSource).not.toContain(
 		"element: () => import('./asset-workspace.element.js')"
 	);
+});
+
+it('dispatches preview toolbar clicks with a switch on the button id', async () => {
+	const { workspaceElementSource } = await readWorkspaceSources();
+
+	expect(workspaceElementSource).toContain('switch (button?.id) {');
+	expect(workspaceElementSource).toContain("case 'asset-zoom-in':");
+	expect(workspaceElementSource).toContain("case 'asset-zoom-out':");
+	expect(workspaceElementSource).not.toContain("target.closest('#asset-zoom-in')");
+});
+
+it('leaves background dragging to its own controller', async () => {
+	const { workspaceElementSource } = await readWorkspaceSources();
+
+	expect(workspaceElementSource).toContain('new LeLøginBackgroundDragController(');
+	expect(workspaceElementSource).not.toContain("addEventListener('pointerdown'");
 });

@@ -29,6 +29,10 @@ function getRequiredById<T extends Element>(
 	return element;
 }
 
+/**
+ * Le Løgin root workspace: hosts the Overview dashboard, with a rule selector in the footer
+ * actions for previewing a chosen rule instead of the active screen.
+ */
 export class LeLøginScreenRootWorkspace extends UmbElementMixin(HTMLElement) {
 	#ruleRepository = new LeLøginScreenRuleRepository(this);
 	#rules: Array<LoginRule> = [];
@@ -62,25 +66,12 @@ export class LeLøginScreenRootWorkspace extends UmbElementMixin(HTMLElement) {
 			</umb-workspace-editor>
 		`;
 
-		this.#ruleMenu = getRequiredById(shadow, 'rule-menu', isHtmlElement, 'rule menu');
-		this.#selectorButton = getRequiredById(
-			shadow,
-			'rule-selector-button',
-			isHtmlElement,
-			'rule selector button'
-		);
-		this.#selectorLabel = getRequiredById(
-			shadow,
-			'rule-selector-label',
-			isHtmlElement,
-			'rule selector label'
-		);
-		this.#expandSymbol = getRequiredById(
-			shadow,
-			'rule-expand',
-			isHtmlElement,
-			'rule expand symbol'
-		);
+		const byId = (id: string, description: string) =>
+			getRequiredById(shadow, id, isHtmlElement, description);
+		this.#ruleMenu = byId('rule-menu', 'rule menu');
+		this.#selectorButton = byId('rule-selector-button', 'rule selector button');
+		this.#selectorLabel = byId('rule-selector-label', 'rule selector label');
+		this.#expandSymbol = byId('rule-expand', 'rule expand symbol');
 
 		shadow
 			.getElementById('le-løgin-rule-popover')
@@ -88,6 +79,7 @@ export class LeLøginScreenRootWorkspace extends UmbElementMixin(HTMLElement) {
 		this.#ruleMenu.addEventListener('click', this.#onRuleSelect);
 	}
 
+	/** Renders and loads the rules for the selector each time the element is attached. */
 	override connectedCallback() {
 		super.connectedCallback();
 		this.#render();

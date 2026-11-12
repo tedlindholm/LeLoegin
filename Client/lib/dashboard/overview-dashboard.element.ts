@@ -14,8 +14,11 @@ import { LOGIN_SCREEN_RULE_LIST_WORKSPACE_PATH } from '../rules/entity-types.js'
 
 type LeLøginScreenOverviewState = 'loading' | 'loaded' | 'empty' | 'error';
 
+/** The rule picked in the Overview picker, whose screen the dashboard previews. */
 export interface LeLøginScreenPreviewContext {
+	/** The rule id passed to the rule preview endpoint. */
 	readonly id: string;
+	/** The rule name, shown as the preview box headline. */
 	readonly name: string;
 }
 
@@ -43,8 +46,9 @@ const cropFocalPoint = (activeImage: ActiveLeLøginScreenResponse | undefined) =
 	activeImage?.zoom !== undefined && activeImage.zoom > 1 ? undefined : activeImage?.focalPoint;
 
 /**
- * Overview dashboard for the Login Screen section.
- * Shows the current active image preview.
+ * Overview dashboard for Le Løgin in Settings. Renders a login-style preview of either the
+ * currently active screen or, when {@link previewContext} is set, a chosen rule's screen.
+ * Shows an empty state linking to Rules when nothing resolves.
  */
 export class LeLøginScreenOverviewDashboard extends UmbElementMixin(HTMLElement) {
 	#repository = new LeLøginScreenActiveScreenRepository(this);
@@ -56,6 +60,10 @@ export class LeLøginScreenOverviewDashboard extends UmbElementMixin(HTMLElement
 	#previewContext: LeLøginScreenPreviewContext | undefined;
 	#previewBox: HTMLElement;
 
+	/**
+	 * Selects the rule to preview; `undefined` shows the active screen. A changed id refetches,
+	 * the same id only re-renders (for example to update the headline).
+	 */
 	set previewContext(value: LeLøginScreenPreviewContext | undefined) {
 		const previous = this.#previewContext;
 		this.#previewContext = value;
@@ -68,6 +76,7 @@ export class LeLøginScreenOverviewDashboard extends UmbElementMixin(HTMLElement
 		}
 	}
 
+	/** Attaches the shadow root, adopts the styles and creates the preview box. */
 	constructor() {
 		super();
 		const shadow = this.attachShadow({ mode: 'open' });
@@ -80,12 +89,14 @@ export class LeLøginScreenOverviewDashboard extends UmbElementMixin(HTMLElement
 		this.#previewBox = getRequiredById(shadow, 'preview-box');
 	}
 
+	/** Renders the loading state and starts fetching the screen to preview. */
 	override connectedCallback() {
 		super.connectedCallback();
 		this.#render();
 		void this.#loadActiveState();
 	}
 
+	/** Stops observing the auth view preview. */
 	override disconnectedCallback() {
 		this.#disposeAuthPreviewObserver();
 		super.disconnectedCallback();
@@ -231,4 +242,5 @@ export class LeLøginScreenOverviewDashboard extends UmbElementMixin(HTMLElement
 
 customElements.define('login-screen-overview-dashboard', LeLøginScreenOverviewDashboard);
 
+/** Default export loaded by the `LeLøgin.Dashboard.Overview` manifest. */
 export default LeLøginScreenOverviewDashboard;

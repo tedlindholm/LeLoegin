@@ -5,12 +5,30 @@ import {
 	mapApiLoginRule,
 	mapApiActiveLeLøginScreenResponse,
 	parseActiveLeLøginScreenResponse,
+	toConditionMetadata,
 	toSaveRuleRequest
 } from './api-adapters.js';
+
+const apiLogoAsset = {
+	id: 'asset-2',
+	name: 'Logo',
+	kind: 'logo',
+	altText: null,
+	greetingText: null,
+	logoAssetId: null,
+	storagePath: '/tmp/logo.svg',
+	publicPath: null,
+	width: 640,
+	height: 480,
+	zoom: 1,
+	createdAt: '2026-05-15T17:00:00Z',
+	updatedAt: '2026-05-15T17:00:00Z'
+} satisfies Parameters<typeof mapApiLoginAsset>[0];
 
 describe('mapApiLoginAsset', () => {
 	it('maps login assets when the API returns lower-case asset kinds', () => {
 		const asset = mapApiLoginAsset({
+			...apiLogoAsset,
 			id: 'asset-1',
 			name: 'Welcome background',
 			kind: 'background',
@@ -20,10 +38,7 @@ describe('mapApiLoginAsset', () => {
 			storagePath: '/tmp/background.jpg',
 			publicPath: '/login-screen/active.jpg',
 			width: 1920,
-			height: 1080,
-			zoom: 1,
-			createdAt: '2026-05-15T17:00:00Z',
-			updatedAt: '2026-05-15T17:00:00Z'
+			height: 1080
 		});
 
 		expect(asset.kind).toBe('background');
@@ -32,44 +47,14 @@ describe('mapApiLoginAsset', () => {
 	// The contract types integers as ["integer", "string"] because the server's JSON options
 	// allow reading numbers from strings; the adapter must coerce so the domain stays numeric.
 	it('coerces numeric strings for width and height as the contract permits', () => {
-		const asset = mapApiLoginAsset({
-			id: 'asset-2',
-			name: 'Numeric strings',
-			kind: 'logo',
-			altText: null,
-			greetingText: null,
-			logoAssetId: null,
-			storagePath: '/tmp/logo.svg',
-			publicPath: null,
-			width: '640',
-			height: '480',
-			zoom: 1,
-			createdAt: '2026-05-15T17:00:00Z',
-			updatedAt: '2026-05-15T17:00:00Z'
-		});
+		const asset = mapApiLoginAsset({ ...apiLogoAsset, width: '640', height: '480' });
 
 		expect(asset.width).toBe(640);
 		expect(asset.height).toBe(480);
 	});
 
 	it('rejects a width that is not a finite integer-like value', () => {
-		expect(() =>
-			mapApiLoginAsset({
-				id: 'asset-3',
-				name: 'Corrupted',
-				kind: 'logo',
-				altText: null,
-				greetingText: null,
-				logoAssetId: null,
-				storagePath: '/tmp/logo.svg',
-				publicPath: null,
-				width: 'not-a-number',
-				height: 480,
-				zoom: 1,
-				createdAt: '2026-05-15T17:00:00Z',
-				updatedAt: '2026-05-15T17:00:00Z'
-			})
-		).toThrow('width');
+		expect(() => mapApiLoginAsset({ ...apiLogoAsset, width: 'not-a-number' })).toThrow('width');
 	});
 });
 
@@ -160,6 +145,9 @@ describe('mapApiLoginRule', () => {
 		});
 	});
 
+});
+
+describe('mapApiLoginRule with several images', () => {
 	it('maps a rule holding multiple images (shown at random when it matches)', () => {
 		const rule = mapApiLoginRule({
 			id: 'rule-multi',
@@ -194,5 +182,19 @@ describe('toSaveRuleRequest', () => {
 
 		expect(request.assetIds).toEqual(['asset-a', 'asset-b']);
 		expect(request.condition.operator).toBe('all');
+	});
+});
+
+describe('toConditionMetadata', () => {
+	it.each(['single', 'set', 'range'] as const)('accepts the %s operator arity', (arity) => {
+		const metadata = toConditionMetadata({ operators: { is: { arity } }, fields: {} });
+
+		expect(metadata.operators.get('is')).toEqual({ arity });
+	});
+
+	it('rejects an operator arity it does not know', () => {
+		expect(() => toConditionMetadata({ operators: { is: { arity: 'pair' } }, fields: {} })).toThrow(
+			"unsupported operator arity 'pair'"
+		);
 	});
 });

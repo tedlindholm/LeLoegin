@@ -12,13 +12,14 @@ const appearsInOrder = (text: string, earlier: string, later: string): boolean =
 
 const currentDirectory = dirname(fileURLToPath(import.meta.url));
 const helperFilePath = resolve(currentDirectory, 'asset-workspace.helpers.ts');
+const zoomControlsFilePath = resolve(currentDirectory, 'asset-zoom-controls.ts');
+
+const wideImageOnTallContainer = {
+	image: { width: 2000, height: 1000 },
+	container: { width: 400, height: 400 }
+};
 
 describe('computeFocalPointFromDrag', () => {
-	const wideImageOnTallContainer = {
-		image: { width: 2000, height: 1000 },
-		container: { width: 400, height: 400 }
-	};
-
 	it('shifts focal point along the overflowing axis only', () => {
 		// image 2000x1000 cover-scaled to 400 height → 800x400, overflow 400px wide.
 		// startLeft 0.5 - 100/400 = 0.25.
@@ -43,6 +44,9 @@ describe('computeFocalPointFromDrag', () => {
 		expect(result.top).toBe(0.5);
 	});
 
+});
+
+describe('computeFocalPointFromDrag when zoomed', () => {
 	it('unlocks the Y axis for a wide image at zoom > 1', () => {
 		// image 2000x1000 cover-scaled to 800x400 in the container.
 		// At zoom=1 overflowY=0 (locked). At zoom=2: scaledHeight*2=800, overflowY=400.
@@ -70,7 +74,9 @@ describe('computeFocalPointFromDrag', () => {
 		});
 		expect(result.left).toBeCloseTo(0.5 - 100 / 1200, 5);
 	});
+});
 
+describe('computeFocalPointFromDrag with unusable input', () => {
 	it('returns the starting focal point when sizes are invalid', () => {
 		const start = { left: 0.25, top: 0.75 };
 		const result = computeFocalPointFromDrag({
@@ -112,7 +118,8 @@ describe('computeFocalPointFromDrag', () => {
 
 describe('asset workspace helper rendering', () => {
 	it('builds preview overlay controls and workspace body with DOM nodes', async () => {
-		const source = await readFile(helperFilePath, 'utf8');
+		const source =
+			(await readFile(helperFilePath, 'utf8')) + (await readFile(zoomControlsFilePath, 'utf8'));
 
 		expect(source).toContain('export const buildWorkspaceBody =');
 		expect(source).toContain('cloneTemplate(');

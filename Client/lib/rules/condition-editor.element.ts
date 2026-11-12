@@ -4,8 +4,8 @@ import type {
 	ConditionMetadata,
 	LoginRuleCondition,
 	LoginRuleConditionGroup,
-	LoginRuleConditionGroupOperator,
 	LoginRuleConditionOperator,
+	LoginRuleConditionValue,
 	LoginRuleField
 } from './rule-condition.js';
 import {
@@ -15,98 +15,27 @@ import {
 	normaliseValuesForOperator
 } from './rule-condition.js';
 import { cloneTemplate } from '../utils/template.js';
-
-interface SelectOption {
-	name: string;
-	value: string;
-	selected?: boolean;
-}
-
-interface SelectElement extends HTMLElement {
-	options: Array<SelectOption>;
-	value: string;
-}
-
-interface ValueElement extends HTMLElement {
-	value: string;
-}
-
-interface LabelElement extends HTMLElement {
-	label: string;
-}
-
-type ElementGuard<T extends Element> = (value: Element | null) => value is T;
-
-const conditionRowTemplate = document.createElement('template');
-conditionRowTemplate.innerHTML = /* html */ `
-	<div class="condition-row">
-		<uui-select class="field-select"></uui-select>
-		<uui-select class="operator-select"></uui-select>
-		<uui-input class="value-input"></uui-input>
-		<uui-button class="remove-btn" look="outline" compact></uui-button>
-	</div>
-`;
-
-// Creating UUI form controls via createElement throws NotSupportedError because
-// their constructor sets attributes synchronously, which the spec forbids on the
-// create-an-element path. Template instantiation creates the element with state
-// "undefined" without running the constructor; cloneTemplate's upgrade pass then
-// runs the constructor in upgrade context, where the attribute-list check doesn't
-// apply.
-const valueSelectTemplate = document.createElement('template');
-valueSelectTemplate.innerHTML = /* html */ `<uui-select></uui-select>`;
-
-const valueInputTemplate = document.createElement('template');
-valueInputTemplate.innerHTML = /* html */ `<uui-input></uui-input>`;
-
-const isHtmlElement = (value: Element | null): value is HTMLElement => value instanceof HTMLElement;
-// Tag-name guards: see asset-workspace.helpers.ts for the rationale. Property
-// existence checks are unreliable for both un-upgraded template clones and freshly
-// upgraded UUI elements with undefined initial properties.
-const isSelectElement = (value: Element | null): value is SelectElement =>
-	value instanceof HTMLElement && value.localName === 'uui-select';
-const isValueElement = (value: Element | null): value is ValueElement =>
-	value instanceof HTMLElement &&
-	(value.localName === 'uui-input' || value.localName === 'uui-select');
-const isLabelElement = (value: Element | null): value is LabelElement =>
-	value instanceof HTMLElement && value.localName === 'uui-button';
-const isConditionGroupOperator = (value: string): value is LoginRuleConditionGroupOperator =>
-	value === 'all' || value === 'any';
-
-function getRequiredById<T extends Element>(
-	root: ShadowRoot,
-	id: string,
-	guard: ElementGuard<T>,
-	description: string
-): T {
-	const element = root.getElementById(id);
-	if (!guard(element)) {
-		throw new Error(`Expected ${description} with id "${id}".`);
-	}
-	return element;
-}
-
-function queryRequired<T extends Element>(
-	root: ParentNode,
-	selector: string,
-	guard: ElementGuard<T>,
-	description: string
-): T {
-	const element = root.querySelector(selector);
-	if (!guard(element)) {
-		throw new Error(`Expected ${description} for selector "${selector}".`);
-	}
-	return element;
-}
-
-function getEventTargetElement(event: Event): Element | null {
-	return event.target instanceof Element ? event.target : null;
-}
-
-function parseIndex(value: string | undefined): number | undefined {
-	const index = Number.parseInt(value ?? '', 10);
-	return Number.isNaN(index) ? undefined : index;
-}
+import {
+	conditionControlRole,
+	conditionRowIndex,
+	conditionRowTemplate,
+	fieldOptions,
+	getEventTargetElement,
+	getRequiredById,
+	groupOperatorOptions,
+	isConditionGroupOperator,
+	isHtmlElement,
+	isLabelElement,
+	isSelectElement,
+	isValueElement,
+	operatorOptions,
+	queryRequired,
+	valueInputTemplate,
+	valueLabel,
+	valueSelectTemplate,
+	type SelectElement,
+	type ValueElement
+} from './condition-editor.helpers.js';
 
 /**
  * Fired when the condition group changes.
@@ -146,10 +75,20 @@ export class LeLøginScreenConditionEditor extends UmbElementMixin(HTMLElement) 
 	#conditionList: HTMLElement | undefined;
 	#groupSelect: SelectElement | undefined;
 
+	/**
+	 * Gets the server condition metadata, or `null` before it has been set.
+	 *
+	 * @returns The current metadata
+	 */
 	get conditionMetadata(): ConditionMetadata | null {
 		return this.#metadata;
 	}
 
+	/**
+	 * Sets the server condition metadata that drives operator and value controls, and re-renders.
+	 *
+	 * @param value - The condition metadata
+	 */
 	set conditionMetadata(value: ConditionMetadata) {
 		this.#metadata = value;
 		this.#render();
@@ -165,7 +104,8 @@ export class LeLøginScreenConditionEditor extends UmbElementMixin(HTMLElement) 
 	}
 
 	/**
-	 * Sets the condition group and re-renders.
+	 * Sets the condition group and re-renders. The value is deep-cloned, so later edits never
+	 * mutate the caller's object.
 	 *
 	 * @param value - The new condition group state
 	 */
@@ -185,58 +125,53 @@ export class LeLøginScreenConditionEditor extends UmbElementMixin(HTMLElement) 
 
 	override connectedCallback() {
 		super.connectedCallback();
-
-		if (this.#conditionList === undefined) {
-			const shadow = this.shadowRoot;
-			if (shadow === null) return;
-			shadow.innerHTML = /* html */ `
-				<div class="group-operator-row">
-					<uui-label for="group-operator-select">${this.localize.term('loginScreen_conditionMatchLabel')}</uui-label>
-					<uui-select id="group-operator-select"></uui-select>
-				</div>
-				<div id="condition-list" class="condition-list"></div>
-				<uui-action-bar>
-					<uui-button id="add-condition-btn" look="placeholder" label="${this.localize.term('loginScreen_addCondition')}">
-						${this.localize.term('loginScreen_addCondition')}
-					</uui-button>
-				</uui-action-bar>
-			`;
-
-			this.#conditionList = getRequiredById(
-				shadow,
-				'condition-list',
-				isHtmlElement,
-				'condition list'
-			);
-			this.#groupSelect = getRequiredById(
-				shadow,
-				'group-operator-select',
-				isSelectElement,
-				'group operator select'
-			);
-			const addConditionButton = getRequiredById(
-				shadow,
-				'add-condition-btn',
-				isHtmlElement,
-				'add condition button'
-			);
-
-			this.#groupSelect.addEventListener('change', () => {
-				const value = this.#groupSelect?.value;
-				if (value === undefined || !isConditionGroupOperator(value)) {
-					return;
-				}
-				this.#conditionGroup.operator = value;
-				this.#emitChange();
-			});
-
-			addConditionButton.addEventListener('click', () => this.#addCondition());
-			this.#conditionList.addEventListener('change', this.#onConditionChange);
-			this.#conditionList.addEventListener('input', this.#onConditionInput);
-			this.#conditionList.addEventListener('click', this.#onConditionClick);
-		}
-
+		const shadow = this.shadowRoot;
+		if (this.#conditionList === undefined && shadow !== null) this.#createShell(shadow);
 		this.#render();
+	}
+
+	#createShell(shadow: ShadowRoot) {
+		shadow.innerHTML = /* html */ `
+			<div class="group-operator-row">
+				<uui-label for="group-operator-select">${this.localize.term('loginScreen_conditionMatchLabel')}</uui-label>
+				<uui-select id="group-operator-select"></uui-select>
+			</div>
+			<div id="condition-list" class="condition-list"></div>
+			<uui-action-bar>
+				<uui-button id="add-condition-btn" look="placeholder" label="${this.localize.term('loginScreen_addCondition')}">
+					${this.localize.term('loginScreen_addCondition')}
+				</uui-button>
+			</uui-action-bar>
+		`;
+
+		const conditionList = getRequiredById(shadow, 'condition-list', isHtmlElement, 'condition list');
+		const groupSelect = getRequiredById(
+			shadow,
+			'group-operator-select',
+			isSelectElement,
+			'group operator select'
+		);
+		const addConditionButton = getRequiredById(
+			shadow,
+			'add-condition-btn',
+			isHtmlElement,
+			'add condition button'
+		);
+
+		groupSelect.addEventListener('change', () => this.#changeGroupOperator(groupSelect.value));
+		addConditionButton.addEventListener('click', () => this.#addCondition());
+		conditionList.addEventListener('change', this.#onConditionChange);
+		conditionList.addEventListener('input', this.#onConditionInput);
+		conditionList.addEventListener('click', this.#onConditionClick);
+
+		this.#conditionList = conditionList;
+		this.#groupSelect = groupSelect;
+	}
+
+	#changeGroupOperator(value: string) {
+		if (!isConditionGroupOperator(value)) return;
+		this.#conditionGroup.operator = value;
+		this.#emitChange();
 	}
 
 	// ──────────────────────────────────────────────────────────────────────────
@@ -251,7 +186,7 @@ export class LeLøginScreenConditionEditor extends UmbElementMixin(HTMLElement) 
 			return;
 		}
 
-		this.#groupSelect.options = this.#groupOperatorOptions();
+		this.#groupSelect.options = groupOperatorOptions(this.localize, this.#conditionGroup.operator);
 		this.#groupSelect.value = this.#conditionGroup.operator;
 
 		if (this.#conditionGroup.conditions.length === 0) {
@@ -288,7 +223,7 @@ export class LeLøginScreenConditionEditor extends UmbElementMixin(HTMLElement) 
 
 		const fieldSelect = queryRequired(row, '.field-select', isSelectElement, 'field select');
 		fieldSelect.dataset.index = indexText;
-		fieldSelect.options = this.#fieldOptions(condition.field);
+		fieldSelect.options = fieldOptions(this.localize, condition.field);
 		fieldSelect.value = condition.field;
 
 		const operatorSelect = queryRequired(
@@ -298,7 +233,12 @@ export class LeLøginScreenConditionEditor extends UmbElementMixin(HTMLElement) 
 			'operator select'
 		);
 		operatorSelect.dataset.index = indexText;
-		operatorSelect.options = this.#operatorOptions(condition.field, condition.operator);
+		operatorSelect.options = operatorOptions(
+			this.localize,
+			this.#metadata,
+			condition.field,
+			condition.operator
+		);
 		operatorSelect.value = condition.operator;
 
 		const placeholderValueInput = queryRequired(row, '.value-input', isHtmlElement, 'value input');
@@ -315,37 +255,43 @@ export class LeLøginScreenConditionEditor extends UmbElementMixin(HTMLElement) 
 
 	#buildValueControl(condition: LoginRuleCondition, indexText: string): HTMLElement {
 		const allowedValues = this.#metadata?.fields.get(condition.field)?.allowedValues;
-		if (allowedValues !== undefined && allowedValues.length > 0) {
-			const fragment = cloneTemplate(valueSelectTemplate, 'value select');
-			const select = fragment.firstElementChild;
-			if (!isSelectElement(select)) {
-				throw new Error('Expected UUI select for enumerated condition values.');
-			}
+		const control =
+			allowedValues !== undefined && allowedValues.length > 0
+				? this.#buildValueSelect(condition, allowedValues)
+				: this.#buildValueInput();
+		control.className = 'value-input';
+		control.dataset.role = 'value';
+		control.dataset.index = indexText;
+		control.value = condition.values[0]?.toString() ?? '';
+		return control;
+	}
 
-			select.className = 'value-input';
-			select.dataset.index = indexText;
-			select.options = [...allowedValues].map((value) => {
-				const valueText = value.toString();
-				return {
-					name: this.#valueLabel(condition.field, valueText),
-					value: valueText,
-					selected: valueText === condition.values[0]?.toString()
-				};
-			});
-			select.value = condition.values[0]?.toString() ?? '';
-			return select;
+	#buildValueSelect(
+		condition: LoginRuleCondition,
+		allowedValues: ReadonlyArray<LoginRuleConditionValue>
+	): SelectElement {
+		const select = cloneTemplate(valueSelectTemplate, 'value select').firstElementChild;
+		if (!isSelectElement(select)) {
+			throw new Error('Expected UUI select for enumerated condition values.');
 		}
+		const selectedText = condition.values[0]?.toString();
+		select.options = allowedValues.map((value) => {
+			const valueText = value.toString();
+			return {
+				name: valueLabel(this.localize, condition.field, valueText),
+				value: valueText,
+				selected: valueText === selectedText
+			};
+		});
+		return select;
+	}
 
-		const fragment = cloneTemplate(valueInputTemplate, 'value input');
-		const input = fragment.firstElementChild;
+	#buildValueInput(): ValueElement {
+		const input = cloneTemplate(valueInputTemplate, 'value input').firstElementChild;
 		if (!isValueElement(input)) {
 			throw new Error('Expected UUI input for free-text condition values.');
 		}
-
-		input.className = 'value-input';
-		input.dataset.index = indexText;
 		input.setAttribute('placeholder', this.localize.term('loginScreen_conditionValuePlaceholder'));
-		input.value = condition.values[0]?.toString() ?? '';
 		return input;
 	}
 
@@ -356,52 +302,25 @@ export class LeLøginScreenConditionEditor extends UmbElementMixin(HTMLElement) 
 	#onConditionChange = (e: Event) => {
 		const el = getEventTargetElement(e);
 		if (el === null) return;
-		const row = el.closest<HTMLElement>('.condition-row');
-		if (row === null) return;
-		const index = parseIndex(row.dataset.index);
-		if (index === undefined) return;
-		const condition = this.#conditionGroup.conditions[index];
+		const condition = this.#conditionFor(el);
 		if (condition === undefined) return;
-		if (el.classList.contains('field-select')) {
-			if (!isSelectElement(el)) return;
-			const newField = el.value;
-			if (!isLoginRuleField(newField)) return;
-			if (this.#metadata === null) return;
-			Object.assign(condition, changeConditionField(condition, newField, this.#metadata));
-			this.#render();
-			this.#emitChange();
-		} else if (el.classList.contains('operator-select')) {
-			if (!isSelectElement(el)) return;
-			const newOperator = el.value;
-			if (!isLoginRuleConditionOperator(newOperator)) return;
-			condition.operator = newOperator;
-			if (this.#metadata !== null)
-				condition.values = normaliseValuesForOperator(
-					condition.operator,
-					condition.field,
-					condition.values,
-					this.#metadata
-				);
-			this.#render();
-			this.#emitChange();
-		} else if (el.classList.contains('value-input')) {
-			if (!isValueElement(el)) return;
-			const rawValue = el.value;
-			const allowedValues = this.#metadata?.fields.get(condition.field)?.allowedValues;
-			const typed = allowedValues?.find((v) => v.toString() === rawValue) ?? rawValue;
-			condition.values = [typed];
-			this.#emitChange();
+		switch (conditionControlRole(el)) {
+			case 'field':
+				if (isSelectElement(el)) this.#changeField(condition, el.value);
+				break;
+			case 'operator':
+				if (isSelectElement(el)) this.#changeOperator(condition, el.value);
+				break;
+			case 'value':
+				if (isValueElement(el)) this.#changeValue(condition, el.value);
+				break;
 		}
 	};
 
 	#onConditionInput = (e: Event) => {
 		const el = getEventTargetElement(e);
-		if (el === null || !el.classList.contains('value-input') || !isValueElement(el)) return;
-		const row = el.closest<HTMLElement>('.condition-row');
-		if (row === null) return;
-		const index = parseIndex(row.dataset.index);
-		if (index === undefined) return;
-		const condition = this.#conditionGroup.conditions[index];
+		if (el === null || conditionControlRole(el) !== 'value' || !isValueElement(el)) return;
+		const condition = this.#conditionFor(el);
 		if (condition === undefined) return;
 		const value = el.value;
 		condition.values =
@@ -412,29 +331,44 @@ export class LeLøginScreenConditionEditor extends UmbElementMixin(HTMLElement) 
 	};
 
 	#onConditionClick = (e: Event) => {
-		const target = getEventTargetElement(e);
-		if (target === null) return;
-		const btn = target.closest<HTMLElement>('.remove-btn');
-		if (btn === null) return;
-		const row = btn.closest<HTMLElement>('.condition-row');
-		if (row === null) return;
-		const index = parseIndex(row.dataset.index);
+		const button = getEventTargetElement(e)?.closest<HTMLElement>('.remove-btn');
+		if (button === null || button === undefined) return;
+		const index = conditionRowIndex(button);
 		if (index !== undefined) this.#removeCondition(index);
 	};
 
-	#valueLabel(field: LoginRuleField, value: string): string {
-		if (field === 'weekday') {
-			const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-			const i = days.indexOf(value);
-			if (i !== -1) return this.localize.date(new Date(2023, 0, i + 1), { weekday: 'long' });
-		}
-		if (field === 'month') {
-			const monthNum = parseInt(value, 10);
-			if (monthNum >= 1 && monthNum <= 12)
-				return this.localize.date(new Date(2023, monthNum - 1, 1), { month: 'long' });
-		}
-		return value.charAt(0).toUpperCase() + value.slice(1);
+	#conditionFor(el: Element): LoginRuleCondition | undefined {
+		const index = conditionRowIndex(el);
+		return index === undefined ? undefined : this.#conditionGroup.conditions[index];
 	}
+
+	#changeField(condition: LoginRuleCondition, newField: string) {
+		if (!isLoginRuleField(newField) || this.#metadata === null) return;
+		Object.assign(condition, changeConditionField(condition, newField, this.#metadata));
+		this.#render();
+		this.#emitChange();
+	}
+
+	#changeOperator(condition: LoginRuleCondition, newOperator: string) {
+		if (!isLoginRuleConditionOperator(newOperator)) return;
+		condition.operator = newOperator;
+		if (this.#metadata !== null)
+			condition.values = normaliseValuesForOperator(
+				condition.operator,
+				condition.field,
+				condition.values,
+				this.#metadata
+			);
+		this.#render();
+		this.#emitChange();
+	}
+
+	#changeValue(condition: LoginRuleCondition, rawValue: string) {
+		const allowedValues = this.#metadata?.fields.get(condition.field)?.allowedValues;
+		condition.values = [allowedValues?.find((v) => v.toString() === rawValue) ?? rawValue];
+		this.#emitChange();
+	}
+
 
 	// ──────────────────────────────────────────────────────────────────────────
 	// Actions
@@ -480,89 +414,6 @@ export class LeLøginScreenConditionEditor extends UmbElementMixin(HTMLElement) 
 				composed: true
 			})
 		);
-	}
-
-	// ──────────────────────────────────────────────────────────────────────────
-	// Options
-	// ──────────────────────────────────────────────────────────────────────────
-
-	/**
-	 * Builds the group operator (all/any) options list.
-	 *
-	 * @returns Array of select options for the group operator
-	 */
-	#groupOperatorOptions(): Array<SelectOption> {
-		const current = this.#conditionGroup.operator;
-		return [
-			{
-				name: this.localize.term('loginScreen_conditionMatchAll'),
-				value: 'all',
-				selected: current === 'all'
-			},
-			{
-				name: this.localize.term('loginScreen_conditionMatchAny'),
-				value: 'any',
-				selected: current === 'any'
-			}
-		];
-	}
-
-	/**
-	 * Builds the field options list (weekday, month).
-	 *
-	 * @param selected - The currently selected field value
-	 * @returns Array of select options for the field
-	 */
-	#fieldOptions(selected: LoginRuleField): Array<SelectOption> {
-		return [
-			{
-				name: this.localize.term('loginScreen_fieldWeekday'),
-				value: 'weekday',
-				selected: selected === 'weekday'
-			},
-			{
-				name: this.localize.term('loginScreen_fieldMonth'),
-				value: 'month',
-				selected: selected === 'month'
-			}
-		];
-	}
-
-	/**
-	 * Builds the operator options list for a given field, derived from server metadata.
-	 *
-	 * @param field - The field whose allowed operators should be listed
-	 * @param selected - The currently selected operator value
-	 * @returns Array of select options for the operator
-	 */
-	#operatorOptions(
-		field: LoginRuleField,
-		selected: LoginRuleConditionOperator
-	): Array<SelectOption> {
-		const ops: ReadonlyArray<LoginRuleConditionOperator> = this.#metadata?.fields.get(field)
-			?.operators ?? ['is', 'isNot'];
-		return [...ops].map((op) => ({
-			name: this.#operatorLabel(op),
-			value: op,
-			selected: op === selected
-		}));
-	}
-
-	#operatorLabel(operator: LoginRuleConditionOperator): string {
-		switch (operator) {
-			case 'is':
-				return this.localize.term('loginScreen_operatorIs');
-			case 'isNot':
-				return this.localize.term('loginScreen_operatorIsNot');
-			case 'in':
-				return this.localize.term('loginScreen_operatorIn');
-			case 'notIn':
-				return this.localize.term('loginScreen_operatorNotIn');
-			case 'between':
-				return this.localize.term('loginScreen_operatorBetween');
-			case 'notBetween':
-				return this.localize.term('loginScreen_operatorNotBetween');
-		}
 	}
 }
 

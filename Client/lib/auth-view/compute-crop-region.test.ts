@@ -41,6 +41,9 @@ describe('computeCropRegion', () => {
 		});
 	});
 
+});
+
+describe('computeCropRegion when zoomed', () => {
 	it('returns a centred 1/zoom × 1/zoom window when the focal point is in the middle', () => {
 		expectClose(computeCropRegion({ left: 0.5, top: 0.5 }, 2), {
 			x1: 0.25,
