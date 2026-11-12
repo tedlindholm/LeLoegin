@@ -36,7 +36,7 @@ internal static class TestFileSystems
     internal static LeLøginPublishFileManager BlobLikePublishFileManager(string contentRootPath) =>
         new(new LiteralFilterFileSystem(PublishFileManager(contentRootPath).FileSystem));
 
-    private sealed class LiteralFilterFileSystem(IFileSystem inner) : IFileSystem
+    internal sealed class LiteralFilterFileSystem(IFileSystem inner) : IFileSystem
     {
         public bool CanAddPhysical => inner.CanAddPhysical;
         public IEnumerable<string> GetDirectories(string path) => inner.GetDirectories(path);

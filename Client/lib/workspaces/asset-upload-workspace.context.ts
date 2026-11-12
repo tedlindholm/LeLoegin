@@ -20,6 +20,7 @@ import {
 	LOGIN_SCREEN_ASSET_UPLOAD_LOGO_ENTITY_TYPE
 } from '../tree/types.js';
 import { requestChildrenReload } from '../utils/request-structure-reload.js';
+import { setStringStateAlways } from '../utils/repeat-state.js';
 import { assetGroupEntity } from '../tree/asset-tree.data-source.js';
 
 const buildAssetEditWorkspacePath = (assetId: string): string =>
@@ -162,10 +163,8 @@ abstract class LeLøginScreenAssetUploadWorkspaceContextBase extends UmbContextB
 
 	setRejectMessage(message: string) {
 		this.#selectedFile.setValue(undefined);
-		// Clear first: the state only notifies on a change, so a second identical rejection
-		// would otherwise show no message.
-		this.#rejectMessage.setValue('');
-		this.#rejectMessage.setValue(message);
+		// A second identical rejection must show its message again.
+		setStringStateAlways(this.#rejectMessage, message);
 	}
 
 	async requestSubmit(): Promise<boolean> {

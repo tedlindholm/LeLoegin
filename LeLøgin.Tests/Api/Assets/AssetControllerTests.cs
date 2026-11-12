@@ -398,6 +398,27 @@ public sealed class AssetControllerTests : IDisposable
 		Assert.True(unaffected.Enabled);
 	}
 
+	[Fact]
+	public async Task Delete_Can_Be_Retried_When_Removing_The_Database_Row_Fails()
+	{
+		var store = new FakeLeLøginScreenStore()
+			.WithAsset(Background("asset-deleted"))
+			.WithRule(Rule("rule-only-deleted", ["asset-deleted"]));
+		store.FailNextDeleteAssetWith(new IOException("The database connection dropped."));
+		var controller = CreateController(store);
+
+		await Assert.ThrowsAsync<IOException>(() => controller.Delete("asset-deleted"));
+
+		// Rules are updated before the row is removed, so the failed attempt has already taken the image out.
+		var afterFailure = await store.GetRuleAsync("rule-only-deleted");
+		Assert.Empty(afterFailure!.AssetIds);
+		Assert.NotNull(await store.GetAssetAsync("asset-deleted"));
+
+		// The image is still listed, so the retry finds it and completes the delete.
+		Assert.IsType<NoContentResult>(await controller.Delete("asset-deleted"));
+		Assert.Null(await store.GetAssetAsync("asset-deleted"));
+	}
+
 	private static LoginImageAsset Background(string id) => new()
 	{
 		Id = id,

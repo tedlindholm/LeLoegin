@@ -1,4 +1,5 @@
 import '@umbraco-cms/backoffice/workspace';
+import { isLinkInEventPath } from './rule-card-click.js';
 import '@umbraco-cms/backoffice/components';
 import { UmbElementMixin } from '@umbraco-cms/backoffice/element-api';
 import { UmbModalRouteRegistrationController } from '@umbraco-cms/backoffice/router';
@@ -346,7 +347,7 @@ export class LeLøginScreenRuleWorkspace extends UmbElementMixin(HTMLElement) {
 
 		// The card's name is a link that opens the asset; following it must not change the rule.
 		// UUI's own selection ignores link clicks the same way.
-		if (event.composedPath().some((node) => node instanceof HTMLAnchorElement)) {
+		if (isLinkInEventPath(event.composedPath())) {
 			return;
 		}
 
