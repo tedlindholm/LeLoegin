@@ -123,10 +123,12 @@ public readonly record struct LoginRuleConditionValue
 /// <param name="Operator">How the field is compared with <paramref name="Values"/>.</param>
 /// <param name="Values">One value for <c>is</c>/<c>isNot</c>, two bounds for <c>between</c>/<c>notBetween</c>, one or more for <c>in</c>/<c>notIn</c>. Months are numbers; weekdays are text.</param>
 public sealed record LoginRuleConditionModel(
-	[property: Required] string Id,
-	[property: Required] LoginRuleField Field,
-	[property: Required] LoginRuleConditionOperator Operator,
-	[property: Required] IReadOnlyList<LoginRuleConditionValue> Values);
+	[Required] string Id,
+	[property: JsonRequired]
+	[Required] LoginRuleField Field,
+	[property: JsonRequired]
+	[Required] LoginRuleConditionOperator Operator,
+	[Required] IReadOnlyList<LoginRuleConditionValue> Values);
 
 /// <summary>
 /// API model for an editable Le Løgin rule condition group.
@@ -134,8 +136,9 @@ public sealed record LoginRuleConditionModel(
 /// <param name="Operator">Whether all or any of the conditions must match.</param>
 /// <param name="Conditions">The conditions in the group.</param>
 public sealed record LoginRuleConditionGroupModel(
-	[property: Required] LoginRuleConditionGroupOperator Operator,
-	[property: Required] IReadOnlyList<LoginRuleConditionModel> Conditions);
+	[property: JsonRequired]
+	[Required] LoginRuleConditionGroupOperator Operator,
+	[Required] IReadOnlyList<LoginRuleConditionModel> Conditions);
 
 /// <summary>
 /// API model returned for a stored rule.

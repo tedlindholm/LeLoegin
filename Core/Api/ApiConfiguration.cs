@@ -1,4 +1,7 @@
+using System.ComponentModel.DataAnnotations;
+using System.Reflection;
 using System.Text.Json.Nodes;
+using LeLøgin.Core.Api.Assets;
 using System.Text.Json.Serialization.Metadata;
 using LeLøgin.Core.Api.Rules;
 using LeLøgin.Core.Models;
@@ -14,14 +17,18 @@ namespace LeLøgin.Core.Api;
 public static partial class ApiConfiguration
 {
 	/// <summary>
-	/// Describes the models whose custom <see cref="System.Text.Json.Serialization.JsonConverter"/>s
-	/// hide their wire shape from the generator. Anything else is left untouched.
+	/// Describes models whose custom converters or constructor annotations the generators cannot read.
+	/// Anything else is left untouched.
 	/// </summary>
 	internal static void ApplySchemaOverride(OpenApiSchema schema, JsonTypeInfo typeInfo)
 	{
 		var type = typeInfo.Type;
 
-		if (type == typeof(LoginImageAssetKind))
+		if (type == typeof(AssetUpdateRequest))
+		{
+			ApplyAssetUpdateLengths(schema);
+		}
+		else if (type == typeof(LoginImageAssetKind))
 		{
 			ApplyStringEnum(schema, "background", "logo");
 		}
@@ -45,6 +52,23 @@ public static partial class ApiConfiguration
 			// type == typeof(LoginRuleConditionValue) and this override never fires: `values`
 			// then ships as a bare array with no items, and no build or startup breaks to say so.
 			schema.Items = CreateStringOrIntegerSchema();
+		}
+	}
+
+	// Both generators read property annotations, but MVC requires these on record constructor parameters.
+	private static void ApplyAssetUpdateLengths(OpenApiSchema schema)
+	{
+		if (schema.Properties is null) return;
+
+		foreach (var parameter in typeof(AssetUpdateRequest).GetConstructors().Single().GetParameters())
+		{
+			if (parameter.GetCustomAttribute<MaxLengthAttribute>() is not { } maximum) continue;
+			var property = schema.Properties.FirstOrDefault(property =>
+				string.Equals(property.Key, parameter.Name, StringComparison.OrdinalIgnoreCase));
+			if (property.Value is OpenApiSchema propertySchema)
+			{
+				propertySchema.MaxLength = maximum.Length;
+			}
 		}
 	}
 

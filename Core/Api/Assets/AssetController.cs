@@ -401,10 +401,10 @@ public class AssetController(
 /// <param name="FocalPoint">Focal point of a background, clamped to 0–1; ignored for logos.</param>
 /// <param name="Zoom">Zoom factor of a background, clamped to 1–10; <see langword="null"/> or non-finite means 1.</param>
 public sealed record AssetUpdateRequest(
-	[property: MaxLength(200)] string? Name,
-	[property: MaxLength(500)] string? AltText,
-	[property: MaxLength(500)] string? GreetingText,
-	[property: MaxLength(50)] string? LogoAssetId,
+	[MaxLength(200)] string? Name,
+	[MaxLength(500)] string? AltText,
+	[MaxLength(500)] string? GreetingText,
+	[MaxLength(50)] string? LogoAssetId,
 	FocalPoint? FocalPoint,
 	double? Zoom);
 

@@ -20,7 +20,7 @@ public sealed class AssetUploadHttpTests
     public async Task Upload_Rejects_An_Oversized_Request_Before_Reading_The_Whole_Body(bool chunked, bool oversizedFile)
     {
         using var fixture = new UploadTestContext();
-        await using var app = UploadTestHost.Create(fixture);
+        await using var app = ManagementTestHost.Create(fixture);
         long bytesRead = 0;
         app.Use(async (context, next) =>
         {
@@ -49,7 +49,7 @@ public sealed class AssetUploadHttpTests
     public async Task Upload_Bounds_An_Oversized_Body_Already_Being_Sent(bool chunked)
     {
         using var fixture = new UploadTestContext();
-        await using var app = UploadTestHost.Create(fixture);
+        await using var app = ManagementTestHost.Create(fixture);
         long bytesRead = 0;
         var completed = new TaskCompletionSource<int>();
         app.Use(async (context, next) =>
@@ -85,7 +85,7 @@ public sealed class AssetUploadHttpTests
     public async Task Upload_Accepts_A_Ten_MiB_Image_With_Multipart_Overhead(bool chunked)
     {
         using var fixture = new UploadTestContext();
-        await using var app = UploadTestHost.Create(fixture);
+        await using var app = ManagementTestHost.Create(fixture);
         app.MapControllers().AllowAnonymous();
         await app.StartAsync();
         using var client = new HttpClient { BaseAddress = new Uri(app.Urls.Single()) };
@@ -110,7 +110,7 @@ public sealed class AssetUploadHttpTests
     public async Task Upload_Returns_400_Over_Http_For_Invalid_Image_Content(bool chunked, bool truncatedPng)
     {
         using var fixture = new UploadTestContext();
-        await using var app = UploadTestHost.Create(fixture);
+        await using var app = ManagementTestHost.Create(fixture);
         app.MapControllers().AllowAnonymous();
         await app.StartAsync();
         using var client = new HttpClient { BaseAddress = new Uri(app.Urls.Single()) };
@@ -130,7 +130,7 @@ public sealed class AssetUploadHttpTests
     public async Task Upload_Rejects_A_File_One_Byte_Over_The_Limit(bool chunked)
     {
         using var fixture = new UploadTestContext();
-        await using var app = UploadTestHost.Create(fixture);
+        await using var app = ManagementTestHost.Create(fixture);
         app.MapControllers().AllowAnonymous();
         await app.StartAsync();
         using var client = new HttpClient { BaseAddress = new Uri(app.Urls.Single()) };
@@ -152,7 +152,7 @@ public sealed class AssetUploadHttpTests
     public async Task Upload_Enforces_The_Exact_Total_Request_Boundary(bool chunked, int length, HttpStatusCode expected)
     {
         using var fixture = new UploadTestContext();
-        await using var app = UploadTestHost.Create(fixture);
+        await using var app = ManagementTestHost.Create(fixture);
         app.MapControllers().AllowAnonymous();
         await app.StartAsync();
         using var client = new HttpClient { BaseAddress = new Uri(app.Urls.Single()) };
@@ -184,7 +184,7 @@ public sealed class AssetUploadHttpTests
     public async Task Upload_Rejects_Missing_Required_Fields(bool chunked, string missingField)
     {
         using var fixture = new UploadTestContext();
-        await using var app = UploadTestHost.Create(fixture);
+        await using var app = ManagementTestHost.Create(fixture);
         app.MapControllers().AllowAnonymous();
         await app.StartAsync();
         using var client = new HttpClient { BaseAddress = new Uri(app.Urls.Single()) };
@@ -208,7 +208,7 @@ public sealed class AssetUploadHttpTests
     public async Task Upload_Rejects_Malformed_Or_Truncated_Multipart(bool chunked, bool brokenHeaders)
     {
         using var fixture = new UploadTestContext();
-        await using var app = UploadTestHost.Create(fixture);
+        await using var app = ManagementTestHost.Create(fixture);
         app.MapControllers().AllowAnonymous();
         await app.StartAsync();
         using var client = new HttpClient { BaseAddress = new Uri(app.Urls.Single()) };
@@ -233,7 +233,7 @@ public sealed class AssetUploadHttpTests
         var blockedDirectory = Path.Combine(assetRoot, "assets");
         // A file at the directory path makes the real filesystem's upload write fail.
         await File.WriteAllTextAsync(blockedDirectory, "Storage is blocked.");
-        await using var app = UploadTestHost.Create(fixture);
+        await using var app = ManagementTestHost.Create(fixture);
         app.MapControllers().AllowAnonymous();
         await app.StartAsync();
         using var client = new HttpClient { BaseAddress = new Uri(app.Urls.Single()) };

@@ -40,7 +40,13 @@
         "logoAssetId",
         "name",
         "zoom"
-      ]
+      ],
+      "maxLengths": {
+        "altText": 500,
+        "greetingText": 500,
+        "logoAssetId": 50,
+        "name": 200
+      }
     },
     "ConditionFieldMetadata": {
       "properties": [
@@ -94,6 +100,10 @@
       "properties": [
         "conditions",
         "operator"
+      ],
+      "required": [
+        "conditions",
+        "operator"
       ]
     },
     "LoginRuleConditionGroupOperator": {
@@ -104,6 +114,12 @@
     },
     "LoginRuleConditionModel": {
       "properties": [
+        "field",
+        "id",
+        "operator",
+        "values"
+      ],
+      "required": [
         "field",
         "id",
         "operator",

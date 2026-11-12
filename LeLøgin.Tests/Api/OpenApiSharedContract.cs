@@ -7,7 +7,8 @@ namespace LeLøgin.Tests.Api;
 
 /// <summary>
 /// The part of the OpenAPI document both Umbraco generators must describe the same way.
-/// Nullability spelling, numeric string unions, and <c>required</c> membership stay out of it.
+/// Nullability spelling and numeric string unions stay out of it.
+/// Required condition fields are pinned because moving record validation attributes can change their schemas.
 /// </summary>
 internal static class OpenApiSharedContract
 {
@@ -54,6 +55,23 @@ internal static class OpenApiSharedContract
 			{
 				var names = properties.Select(property => JsonValue.Create(property.Key) as JsonNode).OrderBy(name => name!.GetValue<string>(), StringComparer.Ordinal);
 				entry["properties"] = new JsonArray(names.ToArray());
+				if (schema.Key == "AssetUpdateRequest")
+				{
+					entry["maxLengths"] = new JsonObject(properties
+						.Where(property => property.Value?["maxLength"] is not null)
+						.OrderBy(property => property.Key, StringComparer.Ordinal)
+						.Select(property => new KeyValuePair<string, JsonNode?>(
+							property.Key, property.Value!["maxLength"]!.DeepClone())));
+				}
+			}
+
+			if (schema.Key is "LoginRuleConditionModel" or "LoginRuleConditionGroupModel")
+			{
+				var required = schema.Value["required"]?.AsArray() ?? new JsonArray();
+				entry["required"] = new JsonArray(required
+					.Select(value => value!.GetValue<string>())
+					.OrderBy(value => value, StringComparer.Ordinal)
+					.Select(value => JsonValue.Create(value) as JsonNode).ToArray());
 			}
 
 			contractSchemas[schema.Key] = entry;
