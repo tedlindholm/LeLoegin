@@ -328,6 +328,92 @@ public sealed class RuleControllerTests : IDisposable
 		Assert.Equal(400, Assert.IsType<LoginRuleResponseModel>(created.Value).Priority);
 	}
 
+	[Fact]
+	public void GetConditionMetadata_Only_Advertises_Supported_Operators()
+	{
+		var controller = CreateController(CreateStore(TwoBackgroundsAndOneLogo));
+
+		var result = Assert.IsType<OkObjectResult>(controller.GetConditionMetadata());
+		var metadata = Assert.IsType<ConditionMetadataResponse>(result.Value);
+
+		Assert.Equal(["is", "isNot"], metadata.Operators.Keys.OrderBy(k => k, StringComparer.Ordinal).ToArray());
+	}
+
+	[Fact]
+	public async Task Create_Rejects_Condition_With_Invalid_Weekday_Value()
+	{
+		var store = CreateStore(TwoBackgroundsAndOneLogo);
+		var controller = CreateController(store);
+		var request = new SaveRuleRequest
+		{
+			Name = "Bad weekday",
+			Enabled = true,
+			Priority = 0,
+			Condition = new LoginRuleConditionGroupModel(
+				LoginRuleConditionGroupOperator.All,
+				[new LoginRuleConditionModel("c1", LoginRuleField.Weekday, LoginRuleConditionOperator.Is, [LoginRuleConditionValue.FromText("funday")])]),
+			AssetIds = ["asset-a"]
+		};
+
+		await controller.Create(request);
+
+		Assert.True(controller.ModelState.ContainsKey(nameof(SaveRuleRequest.Condition)));
+		Assert.Empty(await store.GetAllRulesAsync());
+	}
+
+	[Theory]
+	[InlineData(0)]
+	[InlineData(13)]
+	public async Task Create_Rejects_Condition_With_Invalid_Month_Value(int month)
+	{
+		var store = CreateStore(TwoBackgroundsAndOneLogo);
+		var controller = CreateController(store);
+		var request = new SaveRuleRequest
+		{
+			Name = "Bad month",
+			Enabled = true,
+			Priority = 0,
+			Condition = new LoginRuleConditionGroupModel(
+				LoginRuleConditionGroupOperator.All,
+				[new LoginRuleConditionModel("c1", LoginRuleField.Month, LoginRuleConditionOperator.Is, [LoginRuleConditionValue.FromNumber(month)])]),
+			AssetIds = ["asset-a"]
+		};
+
+		await controller.Create(request);
+
+		Assert.True(controller.ModelState.ContainsKey(nameof(SaveRuleRequest.Condition)));
+		Assert.Empty(await store.GetAllRulesAsync());
+	}
+
+	[Theory]
+	[InlineData(LoginRuleConditionOperator.In)]
+	[InlineData(LoginRuleConditionOperator.NotIn)]
+	[InlineData(LoginRuleConditionOperator.Between)]
+	[InlineData(LoginRuleConditionOperator.NotBetween)]
+	public async Task Create_Rejects_Condition_With_Operator_Not_In_Metadata(LoginRuleConditionOperator op)
+	{
+		var store = CreateStore(TwoBackgroundsAndOneLogo);
+		var controller = CreateController(store);
+		LoginRuleConditionValue[] values = op is LoginRuleConditionOperator.Between or LoginRuleConditionOperator.NotBetween
+			? [LoginRuleConditionValue.FromNumber(1), LoginRuleConditionValue.FromNumber(6)]
+			: [LoginRuleConditionValue.FromNumber(1)];
+		var request = new SaveRuleRequest
+		{
+			Name = "Unsupported operator",
+			Enabled = true,
+			Priority = 0,
+			Condition = new LoginRuleConditionGroupModel(
+				LoginRuleConditionGroupOperator.All,
+				[new LoginRuleConditionModel("c1", LoginRuleField.Month, op, values)]),
+			AssetIds = ["asset-a"]
+		};
+
+		await controller.Create(request);
+
+		Assert.True(controller.ModelState.ContainsKey(nameof(SaveRuleRequest.Condition)));
+		Assert.Empty(await store.GetAllRulesAsync());
+	}
+
 	private const string TwoBackgroundsAndOneLogo = """
 		{
 		  "assets": [

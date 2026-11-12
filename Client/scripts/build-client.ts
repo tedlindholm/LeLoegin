@@ -1,6 +1,6 @@
-import { copyFile, mkdir, mkdtemp, readdir, rename, rm, stat } from 'node:fs/promises';
+import { copyFile, mkdir, mkdtemp, readFile, readdir, rename, rm, stat } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { build } from 'vite';
 import { createClientConfig } from '../vite.config.ts';
@@ -35,6 +35,7 @@ if (!version || !isPackageVersion(version) || !outputDirectory) {
 }
 
 const destination = resolve(outputDirectory);
+await assertSafeOutputDirectory(destination);
 await mkdir(dirname(destination), { recursive: true });
 const staging = await mkdtemp(join(tmpdir(), 'lelogin-build-'));
 try {
@@ -81,4 +82,66 @@ async function removeFilesNotIn(published: Set<string>) {
 			await rm(path, { force: true });
 		}
 	}
+}
+
+function isInsideDirectory(parent: string, child: string) {
+	const rel = relative(parent, child);
+	return rel === '' || (!rel.startsWith('..') && !rel.startsWith('/'));
+}
+
+function isEnoentError(error: unknown) {
+	return typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT';
+}
+
+async function readDirectoryIfExists(directory: string): Promise<Array<string> | undefined> {
+	try {
+		return await readdir(directory);
+	} catch (error) {
+		if (isEnoentError(error)) return undefined;
+		throw error;
+	}
+}
+
+async function hasLeLoginManifest(directory: string) {
+	try {
+		const raw = await readFile(join(directory, 'umbraco-package.json'), 'utf8');
+		return isLeLoginManifest(JSON.parse(raw));
+	} catch {
+		return false;
+	}
+}
+
+async function assertSafeOutputDirectory(directory: string) {
+	const clientRoot = resolve(import.meta.dirname, '..');
+	if (isInsideDirectory(clientRoot, directory)) {
+		throw new Error('Refusing to build into the Client source directory.');
+	}
+
+	const entries = await readDirectoryIfExists(directory);
+	if (!entries || entries.length === 0) return;
+
+	if (!entries.includes('umbraco-package.json')) {
+		throw new Error(
+			'Refusing to build into a non-empty directory that does not contain a Le Løgin umbraco-package.json.'
+		);
+	}
+
+	if (!(await hasLeLoginManifest(directory))) {
+		throw new Error(
+			'Refusing to build into a non-empty directory whose umbraco-package.json does not belong to Le Løgin.'
+		);
+	}
+}
+
+function isLeLoginManifest(manifest: unknown): boolean {
+	if (typeof manifest !== 'object' || manifest === null) return false;
+	if ('id' in manifest && manifest.id === 'le-løgin') return true;
+	if ('name' in manifest && manifest.name === 'Le Løgin') return true;
+	if ('extensions' in manifest && Array.isArray(manifest.extensions)) {
+		return manifest.extensions.some((ext: unknown) => {
+			if (typeof ext !== 'object' || ext === null || !('js' in ext)) return false;
+			return typeof ext.js === 'string' && ext.js.startsWith('/App_Plugins/le-løgin/');
+		});
+	}
+	return false;
 }

@@ -169,3 +169,27 @@ it('leaves published files untouched when the build arguments are invalid', asyn
 		'{"version":"previous"}'
 	);
 });
+
+it('refuses a non-empty output directory without a Le Løgin manifest and leaves files intact', async () => {
+	const directory = await temporaryDirectory();
+	await writeFile(join(directory, 'README.md'), 'do not delete');
+	await expect(buildClient('18.0.0-rc.1', directory)).rejects.toThrow(
+		'Refusing to build into a non-empty directory'
+	);
+	expect(await readFile(join(directory, 'README.md'), 'utf8')).toBe('do not delete');
+
+	await writeFile(join(directory, 'umbraco-package.json'), '{"id":"other-package","name":"Other"}');
+	await expect(buildClient('18.0.0-rc.1', directory)).rejects.toThrow(
+		'Refusing to build into a non-empty directory'
+	);
+	expect(await readFile(join(directory, 'README.md'), 'utf8')).toBe('do not delete');
+
+	const publicDirectory = join(clientDirectory, 'public');
+	const publicManifest = await readFile(join(publicDirectory, 'umbraco-package.json'), 'utf8');
+	await expect(buildClient('18.0.0-rc.1', publicDirectory)).rejects.toThrow(
+		'Refusing to build into the Client source directory'
+	);
+	expect(await readFile(join(publicDirectory, 'umbraco-package.json'), 'utf8')).toBe(
+		publicManifest
+	);
+}, 60_000);

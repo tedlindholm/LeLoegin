@@ -168,6 +168,40 @@ public sealed class AssetControllerTests : IDisposable
 	}
 
 	[Fact]
+	public async Task Upload_Returns_BadRequest_When_Image_Exceeds_Pixel_Limit()
+	{
+		WriteConfig("""
+		{
+		  "assets": [],
+		  "settings": {
+		    "publicEndpointCacheSeconds": 300
+		  },
+		  "rules": []
+		}
+		""");
+
+		var store = CreateStore();
+		var controller = CreateController(store);
+
+		await using var stream = new MemoryStream();
+		using (var oversized = new Image<Rgba32>(6000, 5000, Color.CornflowerBlue.ToPixel<Rgba32>()))
+		{
+			await oversized.SaveAsPngAsync(stream);
+		}
+		stream.Position = 0;
+
+		var request = new UploadAssetRequest
+		{
+			File = new FormFile(stream, 0, stream.Length, "file", "huge.png"),
+			Name = "Huge Image",
+			Kind = LoginImageAssetKind.Background
+		};
+
+		var result = await controller.Upload(request);
+		Assert.IsType<BadRequestObjectResult>(result);
+	}
+
+	[Fact]
 	public async Task Preview_Returns_NotFound_When_Relative_StoragePath_Escapes_Asset_Root()
 	{
 		WriteConfig("""

@@ -16,7 +16,6 @@ public sealed class PublicEndpointTests
 {
 	private static readonly string[] AllowedPublicRoutes =
 	[
-		"runtime/active",
 		ApiBase.GreetingModuleActionRoute,
 	];
 
@@ -30,6 +29,17 @@ public sealed class PublicEndpointTests
 			.ToList();
 
 		Assert.Equal(AllowedPublicRoutes.Order(StringComparer.Ordinal), publicRoutes);
+	}
+
+	[Fact]
+	public void ActiveScreen_Requires_Backoffice_Authentication()
+	{
+		var owner = Assert.Single(
+			ControllerTypes(),
+			type => ActionRoutes(type).Contains("runtime/active"));
+
+		Assert.True(owner.IsAssignableTo(typeof(ApiControllerBase)));
+		Assert.NotEmpty(typeof(ApiControllerBase).GetCustomAttributes<AuthorizeAttribute>());
 	}
 
 	[Fact]

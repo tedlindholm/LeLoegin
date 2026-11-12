@@ -76,7 +76,7 @@ Modern Umbraco development heavily leverages standard ASP.NET Core architectural
 - The current implemented backend scope is:
   - asset upload / list / get / update / delete, plus authenticated preview and thumbnail streams
   - rules create / list / get / update / delete, condition metadata and rule preview
-  - public `runtime/active` (used by the backoffice preview) and `runtime/greeting.js` (used by the login page)
+  - authenticated `runtime/active` (used by the backoffice preview) and public `runtime/greeting.js` (used by the login page)
   - login background and logo middleware at Umbraco's own graphics URLs, served with `Cache-Control: no-store`
-  - the package-managed Le Løgin user group and the `LeLøgin.Manage` permission policy
+  - one-time provisioning of the `leløgin` user group (created when missing; existing groups are not overwritten on restart) and the `LeLøgin.Manage` permission policy
   - `POST assets/{id}/publish` remains but always returns 400; a catch-all rule replaces the old fallback image

@@ -3,6 +3,7 @@ import {
 	umbLocalizationRegistry,
 	type ManifestLocalization
 } from '@umbraco-cms/backoffice/localization';
+import { loadWithTimeout } from './login-greeting-loader.js';
 
 /**
  * The login-page entry, loaded by the package's Razor login shell.
@@ -20,7 +21,7 @@ const {
 
 if (greetingModulePath && culture) {
 	try {
-		const greetingModule = await import(greetingModulePath);
+		const greetingModule = await loadWithTimeout(() => import(greetingModulePath));
 
 		// Only Le Løgin's own manifest. Umbraco's slim login controller registers its core
 		// manifests once after umb-auth connects; pre-registering them duplicates aliases.

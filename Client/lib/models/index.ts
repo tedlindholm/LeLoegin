@@ -57,7 +57,7 @@ export interface LoginImageAsset {
 	updatedAt: string;
 }
 
-/** The login-screen configuration currently resolved by the public `runtime/active` endpoint. */
+/** The login-screen configuration currently resolved by the `runtime/active` endpoint. */
 export interface ActiveLeLøginScreenResponse {
 	/** URL of the resolved background image. */
 	imageUrl: string;

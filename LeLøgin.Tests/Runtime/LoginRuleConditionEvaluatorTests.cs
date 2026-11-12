@@ -142,6 +142,9 @@ public sealed class LoginRuleConditionEvaluatorTests
 	[InlineData("false", true)]
 	[InlineData("""{"unsupported":[1,2]}""", false)]
 	[InlineData("""{"==":[{"var":"unknown"},1]}""", false)]
+	[InlineData("""{"==":[{"var":"weekday"},"funday"]}""", false)]
+	[InlineData("""{"==":[{"var":"month"},13]}""", false)]
+	[InlineData("""{"in":[{"var":"month"},[1,2]]}""", false)]
 	public void IsSupportedCondition_Distinguishes_A_Non_Match_From_An_Unsupported_Condition(string condition, bool expected)
 	{
 		using var document = JsonDocument.Parse(condition);

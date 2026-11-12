@@ -55,13 +55,7 @@ public sealed class LeLøginUserGroupProvisioningNotificationHandlerTests
 		public Task<IUserGroup?> GetAsync(string groupAlias, CancellationToken cancellationToken = default)
 			=> throw new InvalidOperationException("The user-group database is unavailable during installation.");
 
-		public Task<IUserGroup?> GetByNameAsync(string groupName, CancellationToken cancellationToken = default)
-			=> throw new InvalidOperationException("The user-group database is unavailable during installation.");
-
 		public Task CreateAsync(IUserGroup group, CancellationToken cancellationToken = default)
-			=> throw new InvalidOperationException("The user-group database is unavailable during installation.");
-
-		public Task UpdateAsync(IUserGroup group, CancellationToken cancellationToken = default)
 			=> throw new InvalidOperationException("The user-group database is unavailable during installation.");
 	}
 
@@ -72,16 +66,10 @@ public sealed class LeLøginUserGroupProvisioningNotificationHandlerTests
 		public Task<IUserGroup?> GetAsync(string groupAlias, CancellationToken cancellationToken = default)
 			=> Task.FromResult<IUserGroup?>(null);
 
-		public Task<IUserGroup?> GetByNameAsync(string groupName, CancellationToken cancellationToken = default)
-			=> Task.FromResult<IUserGroup?>(null);
-
 		public Task CreateAsync(IUserGroup group, CancellationToken cancellationToken = default)
 		{
 			CreatedGroups.Add(group);
 			return Task.CompletedTask;
 		}
-
-		public Task UpdateAsync(IUserGroup group, CancellationToken cancellationToken = default)
-			=> throw new InvalidOperationException("A newly provisioned group must not be updated.");
 	}
 }

@@ -71,6 +71,8 @@ public class MyCustomStorageComposer : IComposer
 
 ### Requirements for `LeLøginPublishFileManager`
 
+Give `LeLøginPublishFileManager` a dedicated directory or container that is not shared with other site files. Stale publication clean-up only deletes files matching Le Løgin's publication name shape (`<32 hex characters>.jpg`), but dedicating the root prevents accidental name collisions or unexpected listings.
+
 `IFileSystem.GetUrl(fileName)` must return a URL the browser can fetch. It is returned, with ImageSharp crop parameters added, by `runtime/active`, and the `/login-background` middleware redirects to it. For the focal-point and zoom crop to work, the URL must resolve to a path the site's web root serves, so ImageSharp can process it. For a physical file system this is a path under `wwwroot`. The `LeLøgin.AzureBlob` adapter mounts the publish container on the web root at its `VirtualPath`, as Umbraco does for media. A direct CDN or public blob URL works only if you accept losing the crop.
 
 For `LeLøginAssetFileManager`, `GetUrl` is never called — only `AddFile`, `OpenFile`, `FileExists`, `GetLastModified`, `GetFiles`, and `DeleteFile` are used.

@@ -31,12 +31,12 @@ public sealed class RuntimeControllerTests : IDisposable
 	{
 		var runtimeState = new Mock<IRuntimeState>();
 		runtimeState.SetupGet(state => state.Level).Returns(RuntimeLevel.Install);
-		var controller = new RuntimeController(
+		var controller = new ActiveScreenController(
 			new Mock<ILeLøginScreenStore>(MockBehavior.Strict).Object,
 			new Mock<ILeLøginScreenFileService>(MockBehavior.Strict).Object,
 			new LeLøginScreenRuntimeResolver(),
 			TimeProvider.System,
-			new NullLogger<RuntimeController>(),
+			new NullLogger<ActiveScreenController>(),
 			Options.Create(new ImageSharpMiddlewareOptions()),
 			runtimeState: runtimeState.Object)
 		{
@@ -53,11 +53,8 @@ public sealed class RuntimeControllerTests : IDisposable
 		runtimeState.SetupGet(state => state.Level).Returns(RuntimeLevel.Install);
 		var controller = new RuntimeController(
 			new Mock<ILeLøginScreenStore>(MockBehavior.Strict).Object,
-			new Mock<ILeLøginScreenFileService>(MockBehavior.Strict).Object,
 			new LeLøginScreenRuntimeResolver(),
 			TimeProvider.System,
-			new NullLogger<RuntimeController>(),
-			Options.Create(new ImageSharpMiddlewareOptions()),
 			runtimeState.Object)
 		{
 			ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
@@ -137,12 +134,12 @@ public sealed class RuntimeControllerTests : IDisposable
 
 		var store = CreateStore();
 		var fileService = new RecordingFileService();
-		var controller = new RuntimeController(
+		var controller = new ActiveScreenController(
 			store,
 			fileService,
 			new LeLøginScreenRuntimeResolver(),
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
-			new NullLogger<RuntimeController>(),
+			new NullLogger<ActiveScreenController>(),
 			Options.Create(new ImageSharpMiddlewareOptions()),
 			RunningRuntimeState)
 		{
@@ -224,12 +221,12 @@ public sealed class RuntimeControllerTests : IDisposable
 
 		var store = CreateStore();
 		var fileService = new RecordingFileService();
-		var controller = new RuntimeController(
+		var controller = new ActiveScreenController(
 			store,
 			fileService,
 			new LeLøginScreenRuntimeResolver(),
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 20, 9, 0, 0, TimeSpan.Zero)),
-			new NullLogger<RuntimeController>(),
+			new NullLogger<ActiveScreenController>(),
 			Options.Create(new ImageSharpMiddlewareOptions()),
 			RunningRuntimeState)
 		{
@@ -289,12 +286,12 @@ public sealed class RuntimeControllerTests : IDisposable
 
 		var store = CreateStore();
 		var fileService = new RecordingFileService();
-		var controller = new RuntimeController(
+		var controller = new ActiveScreenController(
 			store,
 			fileService,
 			new LeLøginScreenRuntimeResolver(),
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 20, 9, 0, 0, TimeSpan.Zero)),
-			new NullLogger<RuntimeController>(),
+			new NullLogger<ActiveScreenController>(),
 			Options.Create(new ImageSharpMiddlewareOptions()),
 			RunningRuntimeState)
 		{
@@ -353,12 +350,12 @@ public sealed class RuntimeControllerTests : IDisposable
 		""");
 
 		var store = CreateStore();
-		var controller = new RuntimeController(
+		var controller = new ActiveScreenController(
 			store,
 			new RecordingFileService(),
 			new LeLøginScreenRuntimeResolver(),
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
-			new NullLogger<RuntimeController>(),
+			new NullLogger<ActiveScreenController>(),
 			Options.Create(new ImageSharpMiddlewareOptions()),
 			RunningRuntimeState)
 		{
@@ -420,12 +417,12 @@ public sealed class RuntimeControllerTests : IDisposable
 		""");
 
 		var store = CreateStore();
-		var controller = new RuntimeController(
+		var controller = new ActiveScreenController(
 			store,
 			new RecordingFileService(),
 			new LeLøginScreenRuntimeResolver(),
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
-			new NullLogger<RuntimeController>(),
+			new NullLogger<ActiveScreenController>(),
 			Options.Create(new ImageSharpMiddlewareOptions()),
 			RunningRuntimeState)
 		{
@@ -485,12 +482,12 @@ public sealed class RuntimeControllerTests : IDisposable
 		""");
 
 		var store = CreateStore();
-		var controller = new RuntimeController(
+		var controller = new ActiveScreenController(
 			store,
 			new RecordingFileService(),
 			new LeLøginScreenRuntimeResolver(),
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
-			new NullLogger<RuntimeController>(),
+			new NullLogger<ActiveScreenController>(),
 			Options.Create(new ImageSharpMiddlewareOptions()),
 			RunningRuntimeState)
 		{
@@ -547,9 +544,9 @@ public sealed class RuntimeControllerTests : IDisposable
 		""");
 
 		var store = CreateStore();
-		var logger = new CapturingLogger<RuntimeController>();
+		var logger = new CapturingLogger<ActiveScreenController>();
 		var options = Options.Create(new ImageSharpMiddlewareOptions { HMACSecretKey = new byte[] { 1, 2, 3, 4 } });
-		var controller = new RuntimeController(
+		var controller = new ActiveScreenController(
 			store,
 			new RecordingFileService(),
 			new LeLøginScreenRuntimeResolver(),
@@ -739,11 +736,8 @@ public sealed class RuntimeControllerTests : IDisposable
 	{
 		var controller = new RuntimeController(
 			CreateStore(),
-			new RecordingFileService(),
 			new LeLøginScreenRuntimeResolver(),
 			new FixedTimeProvider(localNow),
-			new NullLogger<RuntimeController>(),
-			Options.Create(new ImageSharpMiddlewareOptions()),
 			RunningRuntimeState)
 		{
 			ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
@@ -765,12 +759,12 @@ public sealed class RuntimeControllerTests : IDisposable
 	public async Task GetActive_Keeps_Every_Image_An_Enabled_Rule_Can_Show_Published()
 	{
 		var fileService = new RecordingFileService();
-		var controller = new RuntimeController(
+		var controller = new ActiveScreenController(
 			LeLøginBackgroundMiddlewareTests.StoreWithAnInactiveRuleImage(),
 			fileService,
 			new LeLøginScreenRuntimeResolver(),
 			new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero)),
-			new NullLogger<RuntimeController>(),
+			new NullLogger<ActiveScreenController>(),
 			Options.Create(new ImageSharpMiddlewareOptions()),
 			RunningRuntimeState)
 		{

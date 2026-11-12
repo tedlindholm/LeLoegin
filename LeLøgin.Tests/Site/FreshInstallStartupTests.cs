@@ -198,7 +198,7 @@ public sealed class FreshInstallStartupTests
 		{
 			await using var scope = services.CreateAsyncScope();
 			var store = scope.ServiceProvider.GetRequiredService<ILeLøginUserGroupStore>();
-			var group = await store.GetByNameAsync(LeLøginUserGroupDefaults.GroupName);
+			var group = await store.GetAsync(LeLøginUserGroupDefaults.GroupAlias);
 			if (group is not null &&
 				group.AllowedSections.Contains(Constants.Applications.Settings, StringComparer.Ordinal) &&
 				group.Permissions.Contains(LeLøginPermissionVerbs.Manage, StringComparer.Ordinal))

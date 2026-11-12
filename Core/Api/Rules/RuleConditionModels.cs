@@ -669,16 +669,6 @@ public static class LoginRuleConditionJsonMapper
 		{
 			LoginRuleConditionOperator.Is => BuildEqualityJsonLogic(condition, "=="),
 			LoginRuleConditionOperator.IsNot => BuildEqualityJsonLogic(condition, "!="),
-			LoginRuleConditionOperator.In => BuildInJsonLogic(condition),
-			LoginRuleConditionOperator.NotIn => new Dictionary<string, object?>
-			{
-				["!"] = BuildInJsonLogic(condition)
-			},
-			LoginRuleConditionOperator.Between => BuildBetweenJsonLogic(condition),
-			LoginRuleConditionOperator.NotBetween => new Dictionary<string, object?>
-			{
-				["!"] = BuildBetweenJsonLogic(condition)
-			},
 			_ => throw new InvalidOperationException($"Operator '{condition.Operator}' is not supported.")
 		};
 	}
@@ -696,47 +686,6 @@ public static class LoginRuleConditionJsonMapper
 					["var"] = ToVariableName(condition.Field)
 				},
 				condition.Values[0].ToPrimitive()
-			]
-		};
-	}
-
-	private static Dictionary<string, object?[]> BuildInJsonLogic(LoginRuleConditionModel condition)
-	{
-		return new Dictionary<string, object?[]>
-		{
-			["in"] =
-			[
-				new Dictionary<string, string>
-				{
-					["var"] = ToVariableName(condition.Field)
-				},
-				condition.Values.Select(value => value.ToPrimitive()).ToArray()
-			]
-		};
-	}
-
-	private static Dictionary<string, object?[]> BuildBetweenJsonLogic(LoginRuleConditionModel condition)
-	{
-		var variable = new Dictionary<string, string>
-		{
-			["var"] = ToVariableName(condition.Field)
-		};
-
-		var low = condition.Values[0].ToPrimitive();
-		var high = condition.Values[1].ToPrimitive();
-
-		return new Dictionary<string, object?[]>
-		{
-			["and"] =
-			[
-				new Dictionary<string, object?[]>
-				{
-					[">="] = [variable, low]
-				},
-				new Dictionary<string, object?[]>
-				{
-					["<="] = [variable, high]
-				}
 			]
 		};
 	}
@@ -774,16 +723,31 @@ public static class LoginRuleConditionJsonMapper
 	private static LoginRuleConditionValue ParseConditionValue(LoginRuleField field, JsonElement literal) =>
 		field switch
 		{
-			LoginRuleField.Month when literal.ValueKind == JsonValueKind.Number && literal.TryGetInt32(out var monthValue) =>
+			LoginRuleField.Month when literal.ValueKind == JsonValueKind.Number && literal.TryGetInt32(out var monthValue) && monthValue is >= 1 and <= 12 =>
 				LoginRuleConditionValue.FromNumber(monthValue),
+			LoginRuleField.Month when literal.ValueKind == JsonValueKind.Number && literal.TryGetInt32(out _) =>
+				throw new InvalidOperationException("Stored month conditions must use a value between 1 and 12."),
 			LoginRuleField.Month when literal.ValueKind == JsonValueKind.Number =>
 				throw new InvalidOperationException("Stored month conditions must fit within a 32-bit integer."),
 			LoginRuleField.Month =>
 				throw new InvalidOperationException("Stored month conditions must use numeric values."),
-			_ when literal.ValueKind == JsonValueKind.String =>
-				LoginRuleConditionValue.FromText(literal.GetString() ?? string.Empty),
+			LoginRuleField.Weekday when literal.ValueKind == JsonValueKind.String && literal.GetString() is { } weekday && AllowedWeekdays.Contains(weekday) =>
+				LoginRuleConditionValue.FromText(weekday),
+			LoginRuleField.Weekday when literal.ValueKind == JsonValueKind.String =>
+				throw new InvalidOperationException($"Stored weekday condition value '{literal.GetString()}' is not supported."),
 			_ => throw new InvalidOperationException($"Stored {ToVariableName(field)} conditions must use text values.")
 		};
+
+	private static readonly HashSet<string> AllowedWeekdays = new(StringComparer.Ordinal)
+	{
+		"monday",
+		"tuesday",
+		"wednesday",
+		"thursday",
+		"friday",
+		"saturday",
+		"sunday",
+	};
 
 	private static void ValidateCondition(LoginRuleConditionModel condition)
 	{
@@ -802,39 +766,40 @@ public static class LoginRuleConditionJsonMapper
 				}
 				break;
 
-			case LoginRuleConditionOperator.Between:
-			case LoginRuleConditionOperator.NotBetween:
-				if (condition.Values.Count != 2)
-				{
-					throw new InvalidOperationException("'between' / 'notBetween' conditions must contain exactly two values.");
-				}
-				break;
-
-			case LoginRuleConditionOperator.In:
-			case LoginRuleConditionOperator.NotIn:
-				// At least one value already validated above.
-				break;
 			default:
-				break;
+				throw new InvalidOperationException($"Rule condition operator '{condition.Operator}' is not supported.");
 		}
-
-		var fieldName = ToVariableName(condition.Field);
 
 		foreach (var value in condition.Values)
 		{
-			if (condition.Field == LoginRuleField.Month)
+			switch (condition.Field)
 			{
-				if (!value.HasNumber)
-				{
-					throw new InvalidOperationException("Month conditions must use numeric values.");
-				}
+				case LoginRuleField.Month:
+					if (!value.HasNumber)
+					{
+						throw new InvalidOperationException("Month conditions must use numeric values.");
+					}
 
-				continue;
-			}
+					if (value.Number is < 1 or > 12)
+					{
+						throw new InvalidOperationException("Month conditions must use a value between 1 and 12.");
+					}
+					break;
 
-			if (!value.HasText)
-			{
-				throw new InvalidOperationException($"{CultureInfo.InvariantCulture.TextInfo.ToTitleCase(fieldName)} conditions must use text values.");
+				case LoginRuleField.Weekday:
+					if (!value.HasText)
+					{
+						throw new InvalidOperationException("Weekday conditions must use text values.");
+					}
+
+					if (!AllowedWeekdays.Contains(value.Text!))
+					{
+						throw new InvalidOperationException($"Weekday condition value '{value.Text}' is not supported.");
+					}
+					break;
+
+				default:
+					throw new InvalidOperationException($"Rule condition field '{condition.Field}' is not supported.");
 			}
 		}
 	}

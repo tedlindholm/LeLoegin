@@ -13,19 +13,128 @@ namespace LeLøgin.Core.Runtime;
 /// </remarks>
 public static class LoginRuleConditionEvaluator
 {
+	private static readonly HashSet<string> AllowedWeekdays = new(StringComparer.Ordinal)
+	{
+		"monday",
+		"tuesday",
+		"wednesday",
+		"thursday",
+		"friday",
+		"saturday",
+		"sunday",
+	};
+
 	/// <summary>
-	/// Checks that <paramref name="condition"/> uses only the supported subset, by evaluating it
-	/// against a fixed dummy context. The outcome of that evaluation is discarded.
+	/// Checks that <paramref name="condition"/> uses only the supported metadata subset:
+	/// <c>and</c>, <c>or</c>, <c>!</c>, <c>==</c>, <c>!=</c>, literal booleans, and valid
+	/// <c>weekday</c> (<c>monday</c>–<c>sunday</c>) or <c>month</c> (<c>1</c>–<c>12</c>) values.
 	/// </summary>
 	/// <param name="condition">The parsed JsonLogic condition.</param>
 	/// <returns><see langword="true"/> when the condition is well-formed and supported.</returns>
-	public static bool IsSupportedCondition(JsonElement condition)
+	public static bool IsSupportedCondition(JsonElement condition) =>
+		condition.ValueKind switch
+		{
+			JsonValueKind.True or JsonValueKind.False => true,
+			JsonValueKind.Object => IsSupportedObject(condition),
+			_ => false
+		};
+
+	private static bool IsSupportedObject(JsonElement condition)
 	{
-		// Shape-checking only — the values never affect whether the condition is *supported*,
-		// so the render token is irrelevant here.
-		var validationContext = new LoginRuntimeContext("monday", 1, RenderToken: 0);
-		return TryEvaluate(condition, validationContext, out _);
+		var propertyCount = 0;
+		foreach (var property in condition.EnumerateObject())
+		{
+			propertyCount++;
+			if (propertyCount > 1)
+			{
+				return false;
+			}
+
+			switch (property.Name)
+			{
+				case "and":
+				case "or":
+					if (property.Value.ValueKind != JsonValueKind.Array)
+					{
+						return false;
+					}
+
+					foreach (var item in property.Value.EnumerateArray())
+					{
+						if (!IsSupportedCondition(item))
+						{
+							return false;
+						}
+					}
+
+					return true;
+
+				case "!":
+					return IsSupportedCondition(property.Value);
+
+				case "==":
+				case "!=":
+					return IsSupportedComparison(property.Value);
+
+				default:
+					return false;
+			}
+		}
+
+		return false;
 	}
+
+	private static bool IsSupportedComparison(JsonElement comparison)
+	{
+		if (comparison.ValueKind != JsonValueKind.Array || comparison.GetArrayLength() != 2)
+		{
+			return false;
+		}
+
+		using var enumerator = comparison.EnumerateArray();
+		enumerator.MoveNext();
+		var left = enumerator.Current;
+		enumerator.MoveNext();
+		var right = enumerator.Current;
+
+		if (TryGetVariableName(left, out var leftVar))
+		{
+			return IsValidFieldLiteral(leftVar, right);
+		}
+
+		if (TryGetVariableName(right, out var rightVar))
+		{
+			return IsValidFieldLiteral(rightVar, left);
+		}
+
+		return false;
+	}
+
+	private static bool TryGetVariableName(JsonElement operand, out string variableName)
+	{
+		variableName = string.Empty;
+		if (operand.ValueKind != JsonValueKind.Object ||
+			!operand.TryGetProperty("var", out var varElement) ||
+			varElement.ValueKind != JsonValueKind.String)
+		{
+			return false;
+		}
+
+		variableName = varElement.GetString() ?? string.Empty;
+		return true;
+	}
+
+	private static bool IsValidFieldLiteral(string variableName, JsonElement literal) =>
+		variableName switch
+		{
+			"weekday" => literal.ValueKind == JsonValueKind.String &&
+				literal.GetString() is { } weekday &&
+				AllowedWeekdays.Contains(weekday),
+			"month" => literal.ValueKind == JsonValueKind.Number &&
+				literal.TryGetInt32(out var month) &&
+				month is >= 1 and <= 12,
+			_ => false
+		};
 
 	/// <summary>
 	/// Parses and evaluates a JSON condition string. Never throws on malformed JSON.

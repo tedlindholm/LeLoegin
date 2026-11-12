@@ -6,7 +6,7 @@ namespace LeLøgin.Core.Api.Runtime;
 
 /// <summary>
 /// Base controller for public (pre-auth) Login Screen endpoints.
-/// No <c>[Authorize]</c> — the login page must fetch the image before the user logs in.
+/// No <c>[Authorize]</c> — the login page must fetch the greeting module before the user logs in.
 /// </summary>
 [ApiController]
 [ApiVersion(ApiBase.LeLøginScreenApiVersion)]

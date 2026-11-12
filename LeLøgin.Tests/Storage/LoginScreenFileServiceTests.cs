@@ -3,6 +3,9 @@ using LeLøgin.Core.Storage;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Metadata.Profiles.Exif;
+using SixLabors.ImageSharp.Metadata.Profiles.Iptc;
+using SixLabors.ImageSharp.Metadata.Profiles.Xmp;
 using SixLabors.ImageSharp.PixelFormats;
 using Xunit;
 
@@ -288,6 +291,144 @@ public sealed class LeLøginScreenFileServiceTests
 
 		var (storagePath, _, _) = await CreateService(contentRootPath).SaveUploadAsync("logo-asset", upload);
 		return await File.ReadAllTextAsync(ToAssetFilePath(contentRootPath, storagePath));
+	}
+
+	[Fact]
+	public async Task EnsureRuntimeAssetsAsync_Strips_Exif_Xmp_And_Iptc_Metadata_From_Published_Image()
+	{
+		var contentRootPath = CreateTempDirectory();
+		try
+		{
+			var sourcePath = Path.Combine(contentRootPath, "App_Data", "LeLøgin", "assets", "gps-source.jpg");
+			Directory.CreateDirectory(Path.GetDirectoryName(sourcePath)!);
+			using (var source = new Image<Rgba32>(16, 16, Color.CornflowerBlue.ToPixel<Rgba32>()))
+			{
+				var exif = new ExifProfile();
+				exif.SetValue(ExifTag.Make, "Leica");
+				exif.SetValue(ExifTag.GPSLatitude, [new Rational(55, 1), new Rational(40, 1), new Rational(34, 1)]);
+				source.Metadata.ExifProfile = exif;
+				source.Metadata.XmpProfile = new XmpProfile("<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"/>"u8.ToArray());
+				source.Metadata.IptcProfile = new IptcProfile();
+				await source.SaveAsJpegAsync(sourcePath);
+			}
+
+			var asset = CreateAsset("asset-gps", "assets/gps-source.jpg", new DateTime(2026, 5, 16, 0, 0, 0, DateTimeKind.Utc));
+			var service = CreateService(contentRootPath);
+
+			var publication = await service.EnsureRuntimeAssetsAsync(asset, [asset]);
+			var publishedPath = ToPublicFilePath(contentRootPath, publication.ImageUrl);
+
+			using var published = await Image.LoadAsync(publishedPath);
+			Assert.Null(published.Metadata.ExifProfile);
+			Assert.Null(published.Metadata.XmpProfile);
+			Assert.Null(published.Metadata.IptcProfile);
+
+			var thumbnail = await service.GetThumbnailAsync(asset);
+			var thumbnailPath = Path.Combine(contentRootPath, "App_Data", "LeLøgin", thumbnail.FileName.Replace('/', Path.DirectorySeparatorChar));
+			using var thumbImage = await Image.LoadAsync(thumbnailPath);
+			Assert.Null(thumbImage.Metadata.ExifProfile);
+			Assert.Null(thumbImage.Metadata.XmpProfile);
+			Assert.Null(thumbImage.Metadata.IptcProfile);
+		}
+		finally
+		{
+			Directory.Delete(contentRootPath, recursive: true);
+		}
+	}
+
+	[Fact]
+	public async Task SaveUploadAsync_Rejects_Images_Exceeding_Maximum_Pixel_Count()
+	{
+		var contentRootPath = CreateTempDirectory();
+		try
+		{
+			var service = CreateService(contentRootPath);
+			await using var stream = new MemoryStream();
+			using (var oversized = new Image<Rgba32>(6000, 5000, Color.CornflowerBlue.ToPixel<Rgba32>()))
+			{
+				await oversized.SaveAsPngAsync(stream);
+			}
+			stream.Position = 0;
+
+			var upload = new FormFile(stream, 0, stream.Length, "file", "huge.png")
+			{
+				Headers = new HeaderDictionary(),
+				ContentType = "image/png"
+			};
+
+			await Assert.ThrowsAsync<InvalidDataException>(() => service.SaveUploadAsync("huge-asset", upload));
+		}
+		finally
+		{
+			Directory.Delete(contentRootPath, recursive: true);
+		}
+	}
+
+	[Fact]
+	public async Task EnsureRuntimeAssetsAsync_Only_Prunes_LeLøgin_Publication_Files()
+	{
+		var contentRootPath = CreateTempDirectory();
+		try
+		{
+			var (assetA, _) = await CreateTwoBackgroundsAsync(contentRootPath);
+			var service = CreateService(contentRootPath);
+
+			var publishRoot = Path.Combine(contentRootPath, "wwwroot", "login-screen");
+			Directory.CreateDirectory(publishRoot);
+			var unrelatedText = Path.Combine(publishRoot, "keep-me.txt");
+			var unrelatedJpg = Path.Combine(publishRoot, "other-image.jpg");
+			var stalePublication = Path.Combine(publishRoot, "0123456789abcdef0123456789abcdef.jpg");
+			var nestedPublication = Path.Combine(publishRoot, "nested", "0123456789abcdef0123456789abcdef.jpg");
+			Directory.CreateDirectory(Path.GetDirectoryName(nestedPublication)!);
+			await File.WriteAllTextAsync(unrelatedText, "keep");
+			await File.WriteAllTextAsync(unrelatedJpg, "keep");
+			await File.WriteAllTextAsync(stalePublication, "stale");
+			await File.WriteAllTextAsync(nestedPublication, "keep-nested");
+
+			await service.EnsureRuntimeAssetsAsync(assetA, [assetA]);
+
+			Assert.True(File.Exists(unrelatedText));
+			Assert.True(File.Exists(unrelatedJpg));
+			Assert.True(File.Exists(nestedPublication));
+			Assert.False(File.Exists(stalePublication));
+		}
+		finally
+		{
+			Directory.Delete(contentRootPath, recursive: true);
+		}
+	}
+
+	[Fact]
+	public async Task EnsureRuntimeAssetsAsync_AutoOrients_Before_Stripping_Exif_Metadata()
+	{
+		var contentRootPath = CreateTempDirectory();
+		try
+		{
+			var sourcePath = Path.Combine(contentRootPath, "App_Data", "LeLøgin", "assets", "rotated-source.jpg");
+			Directory.CreateDirectory(Path.GetDirectoryName(sourcePath)!);
+			using (var source = new Image<Rgba32>(20, 10, Color.CornflowerBlue.ToPixel<Rgba32>()))
+			{
+				var exif = new ExifProfile();
+				exif.SetValue(ExifTag.Orientation, (ushort)6);
+				source.Metadata.ExifProfile = exif;
+				await source.SaveAsJpegAsync(sourcePath);
+			}
+
+			var asset = CreateAsset("asset-rotated", "assets/rotated-source.jpg", new DateTime(2026, 5, 16, 0, 0, 0, DateTimeKind.Utc));
+			var service = CreateService(contentRootPath);
+
+			var publication = await service.EnsureRuntimeAssetsAsync(asset, [asset]);
+			var publishedPath = ToPublicFilePath(contentRootPath, publication.ImageUrl);
+
+			using var published = await Image.LoadAsync(publishedPath);
+			Assert.Equal(10, published.Width);
+			Assert.Equal(20, published.Height);
+			Assert.Null(published.Metadata.ExifProfile);
+		}
+		finally
+		{
+			Directory.Delete(contentRootPath, recursive: true);
+		}
 	}
 
 	private static LeLøginScreenFileService CreateService(string contentRootPath) => new(

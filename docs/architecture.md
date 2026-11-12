@@ -59,7 +59,7 @@ Le Løgin therefore treats exact `RuntimeLevel.Run` equality as its database-rea
 | Boundary | Before `Run` | At `Run` |
 | --- | --- | --- |
 | Schema migration | Returns without opening an Umbraco scope | Runs the Le Løgin migration plan |
-| User-group provisioning | Returns without querying `IUserGroupService` | Ensures the package-managed group exists |
+| User-group provisioning | Returns without querying `IUserGroupService` | Creates the `leløgin` group once when missing (leaving existing groups untouched) |
 | Login graphics middleware | Falls through to Umbraco's default graphics | Resolves the configured Le Løgin graphic |
 | Public runtime actions | Returns a safe empty response | Reads the current package configuration |
 

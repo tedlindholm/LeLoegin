@@ -33,6 +33,8 @@ public sealed class LeLøginScreenFileService(
     // from the source at the editor's display size.
     private const int ThumbnailMaxDimension = 1280;
     private const int ThumbnailWebpQuality = 75;
+    /// <summary>Maximum decoded pixel count accepted for raster images (25 MP).</summary>
+    internal const long MaxImagePixels = 25_000_000;
 
     /// <inheritdoc />
     public async Task<(string storagePath, int width, int height)> SaveUploadAsync(string assetId, IFormFile file)
@@ -56,22 +58,10 @@ public sealed class LeLøginScreenFileService(
         }
 
         using var stream = file.OpenReadStream();
-        Image image;
-        try
-        {
-            image = await Image.LoadAsync(stream);
-        }
-        catch (Exception ex) when (ex is UnknownImageFormatException or InvalidImageContentException)
-        {
-            throw new InvalidDataException("The uploaded file is not a valid image.", ex);
-        }
-
-        using (image)
-        {
-            using var validatedStream = file.OpenReadStream();
-            assetManager.FileSystem.AddFile(relativePath, validatedStream);
-            return (relativePath, width: image.Width, height: image.Height);
-        }
+        using var image = await LoadBoundedImageAsync(stream);
+        using var validatedStream = file.OpenReadStream();
+        assetManager.FileSystem.AddFile(relativePath, validatedStream);
+        return (relativePath, width: image.Width, height: image.Height);
     }
 
     /// <inheritdoc />
@@ -192,7 +182,7 @@ public sealed class LeLøginScreenFileService(
 
             foreach (var existing in publishManager.FileSystem.GetFiles(""))
             {
-                if (!keepFileNames.Contains(existing))
+                if (IsPublicationFileName(existing) && !keepFileNames.Contains(existing))
                 {
                     publishManager.FileSystem.DeleteFile(existing);
                 }
@@ -227,12 +217,13 @@ public sealed class LeLøginScreenFileService(
     private async Task EncodeWebpThumbnailAsync(string sourcePath, string cacheFileName)
     {
         using var sourceStream = assetManager.FileSystem.OpenFile(sourcePath);
-        using var image = await Image.LoadAsync(sourceStream);
-        image.Mutate(op => op.Resize(new ResizeOptions
+        using var image = await LoadBoundedImageAsync(sourceStream, () => assetManager.FileSystem.OpenFile(sourcePath));
+        image.Mutate(op => op.AutoOrient().Resize(new ResizeOptions
         {
             Mode = ResizeMode.Max,
             Size = new Size(ThumbnailMaxDimension, ThumbnailMaxDimension)
         }));
+        StripMetadata(image);
         using var encoded = new MemoryStream();
         await image.SaveAsWebpAsync(encoded, new WebpEncoder { Quality = ThumbnailWebpQuality });
         encoded.Position = 0;
@@ -254,11 +245,103 @@ public sealed class LeLøginScreenFileService(
         }
 
         using var sourceStream = assetManager.FileSystem.OpenFile(storagePath);
-        using var image = await Image.LoadAsync(sourceStream);
+        using var image = await LoadBoundedImageAsync(sourceStream, () => assetManager.FileSystem.OpenFile(storagePath));
+        image.Mutate(op => op.AutoOrient());
+        StripMetadata(image);
         using var encoded = new MemoryStream();
         await image.SaveAsJpegAsync(encoded);
         encoded.Position = 0;
         publishManager.FileSystem.AddFile(publishFileName, encoded);
+        return true;
+    }
+
+    private static async Task<Image> LoadBoundedImageAsync(Stream stream, Func<Stream>? reopenStream = null)
+    {
+        ImageInfo info;
+        try
+        {
+            info = await Image.IdentifyAsync(stream);
+        }
+        catch (Exception ex) when (ex is UnknownImageFormatException or InvalidImageContentException)
+        {
+            throw new InvalidDataException("The uploaded file is not a valid image.", ex);
+        }
+
+        var frameCount = Math.Max(1, info.FrameMetadataCollection.Count);
+        var pixelCount = (long)info.Width * info.Height * frameCount;
+        if (pixelCount <= 0 || pixelCount > MaxImagePixels)
+        {
+            throw new InvalidDataException(
+                $"Image dimensions {info.Width}x{info.Height} ({frameCount} frame(s)) exceed the maximum allowed pixel count of {MaxImagePixels}.");
+        }
+
+        Stream decodeStream = stream;
+        Stream? reopened = null;
+        try
+        {
+            if (stream.CanSeek)
+            {
+                stream.Position = 0;
+            }
+            else if (reopenStream is not null)
+            {
+                reopened = reopenStream();
+                decodeStream = reopened;
+            }
+            else
+            {
+                throw new InvalidDataException("Unable to rewind image stream for decoding.");
+            }
+
+            return await Image.LoadAsync(decodeStream);
+        }
+        catch (Exception ex) when (ex is UnknownImageFormatException or InvalidImageContentException)
+        {
+            throw new InvalidDataException("The uploaded file is not a valid image.", ex);
+        }
+        finally
+        {
+            if (reopened is not null)
+            {
+                await reopened.DisposeAsync();
+            }
+        }
+    }
+
+    private static void StripMetadata(Image image)
+    {
+        image.Metadata.ExifProfile = null;
+        image.Metadata.XmpProfile = null;
+        image.Metadata.IptcProfile = null;
+
+        foreach (var frame in image.Frames)
+        {
+            frame.Metadata.ExifProfile = null;
+            frame.Metadata.XmpProfile = null;
+            frame.Metadata.IptcProfile = null;
+        }
+    }
+
+    private static bool IsPublicationFileName(string path)
+    {
+        if (path.Contains('/', StringComparison.Ordinal) || path.Contains('\\', StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (path.Length != 36 || !path.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        for (var i = 0; i < 32; i++)
+        {
+            if (!Uri.IsHexDigit(path[i]))
+            {
+                return false;
+            }
+        }
+
         return true;
     }
 

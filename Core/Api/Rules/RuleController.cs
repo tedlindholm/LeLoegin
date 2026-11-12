@@ -48,10 +48,6 @@ public sealed class RuleController(
 			{
 				["is"] = new("single"),
 				["isNot"] = new("single"),
-				["in"] = new("set"),
-				["notIn"] = new("set"),
-				["between"] = new("range"),
-				["notBetween"] = new("range"),
 			},
 			Fields: new Dictionary<string, ConditionFieldMetadata>
 			{

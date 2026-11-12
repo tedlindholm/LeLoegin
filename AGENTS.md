@@ -117,12 +117,12 @@ Management routes (backoffice authentication and the Le Løgin permission):
 /umbraco/le-løgin/api/v{version}/rules/{id}
 /umbraco/le-løgin/api/v{version}/rules/{id}/preview
 /umbraco/le-løgin/api/v{version}/rules/condition-metadata
+/umbraco/le-løgin/api/v{version}/runtime/active
 ```
 
 Public routes (pre-auth, read-only):
 
 ```text
-/umbraco/le-løgin/api/v{version}/runtime/active
 /umbraco/le-løgin/api/v{version}/runtime/greeting.js
 ```
 
@@ -177,8 +177,8 @@ Client/lib/
 
 ### Public Runtime API
 
-- The two runtime endpoints (`runtime/active` and `runtime/greeting.js`) are public (pre-auth) and read-only
-- They return only the currently resolved public login-screen configuration. The login image and logo are served by `LoginBackgroundMiddleware` and `LoginLogoMiddleware` at Umbraco's own graphics URLs
+- `runtime/greeting.js` is public (pre-auth) and read-only, serving the resolved greeting module for the login page
+- `runtime/active` is an authenticated management endpoint (Overview preview) behind Settings access and `LeLøgin.Permission.Manage`. The login image and logo are served by `LoginBackgroundMiddleware` and `LoginLogoMiddleware` at Umbraco's own graphics URLs
 - Source assets and management endpoints must never be publicly accessible
 
 ## Storage Model
