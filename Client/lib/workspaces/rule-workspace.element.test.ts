@@ -34,12 +34,12 @@ describe('rule workspace source', () => {
 		expect(source).not.toContain('<login-screen-condition-editor id="condition-editor">');
 	});
 
-	it('multi-selects images — clicking toggles a card in or out of the rule image set', async () => {
+	it('multi-selects images — card selection events update the rule image set', async () => {
 		const source = await readFile(workspaceElementFilePath, 'utf8');
 
-		// Card selection reflects the rule's image list, and clicking toggles membership.
+		// Card selection reflects the rule's image list, and UUI selection events update membership.
 		expect(source).toContain('draft.assetIds.includes(asset.id)');
-		expect(source).toContain('current.filter((id) => id !== assetId)');
+		expect(source).toContain('updateSelectedAssetIds');
 		// A hint tells the user that multiple images rotate randomly.
 		expect(source).toContain('loginScreen_ruleImagesHint');
 	});

@@ -142,6 +142,7 @@ export class LeLøginScreenRuleEditorWorkspaceContext extends UmbContextBase {
 	}
 
 	async #setUpCreate() {
+		this.#loads.begin();
 		this.#unique.setValue(globalThis.crypto.randomUUID());
 		this.#isNew.setValue(true);
 		await Promise.all([this.loadAssets(), this.loadConditionMetadata()]);
@@ -149,6 +150,7 @@ export class LeLøginScreenRuleEditorWorkspaceContext extends UmbContextBase {
 	}
 
 	async #setUpEdit(unique: string | undefined) {
+		this.#loads.begin();
 		this.#unique.setValue(unique);
 		this.#isNew.setValue(false);
 		if (unique === undefined) {
@@ -274,9 +276,13 @@ export class LeLøginScreenRuleEditorWorkspaceContext extends UmbContextBase {
 	 */
 	applySavedEnabled(ruleId: string, enabled: boolean) {
 		if (this.#unique.getValue() !== ruleId) return;
+		if (this.#draft !== null) {
+			this.#draft = { ...this.#draft, enabled };
+			this.#currentRule.setValue(cloneRuleDraft(this.#draft));
+			return;
+		}
 		const current = this.#currentRule.getValue();
 		if (current !== null) this.#currentRule.setValue({ ...current, enabled });
-		if (this.#draft !== null) this.#draft = { ...this.#draft, enabled };
 	}
 
 	/**
@@ -301,7 +307,10 @@ export class LeLøginScreenRuleEditorWorkspaceContext extends UmbContextBase {
 		if (this.#draft === null) return false;
 		const validationState = validateRuleDraft(this.#draft);
 		if (validationState !== undefined) {
-			await this.#notify('danger', this.#localize.term(RULE_DRAFT_VALIDATION_TERMS[validationState]));
+			await this.#notify(
+				'danger',
+				this.#localize.term(RULE_DRAFT_VALIDATION_TERMS[validationState])
+			);
 			return false;
 		}
 		const wasNew = this.#draft.id === undefined;
@@ -327,6 +336,7 @@ export class LeLøginScreenRuleEditorWorkspaceContext extends UmbContextBase {
 	}
 
 	async #saveRule(draft: LoginRuleDraft) {
+		const isCurrent = this.#loads.begin();
 		this.#isLoading.setValue(true);
 		const rule = draftToRule(draft, globalThis.crypto.randomUUID());
 		try {
@@ -339,7 +349,8 @@ export class LeLøginScreenRuleEditorWorkspaceContext extends UmbContextBase {
 				console.error('[LeLøginScreen] Failed to save rule', error);
 				return { data: undefined, error };
 			}
-			if (data !== undefined) {
+			// Only update editor state and URL if the user has not switched to another rule or create route.
+			if (data !== undefined && isCurrent()) {
 				this.#showDraft(ruleToDraft(data));
 				this.#unique.setValue(data.id);
 				this.#isNew.setValue(false);
@@ -348,7 +359,9 @@ export class LeLøginScreenRuleEditorWorkspaceContext extends UmbContextBase {
 			}
 			return { data: data === undefined ? undefined : ruleToDraft(data), error: undefined };
 		} finally {
-			this.#isLoading.setValue(false);
+			if (isCurrent()) {
+				this.#isLoading.setValue(false);
+			}
 		}
 	}
 

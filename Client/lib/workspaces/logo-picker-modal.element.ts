@@ -5,6 +5,7 @@ import type { LogoPickerModalData, LogoPickerModalValue } from './logo-picker-mo
 import { UMBRACO_LOGO_SVG } from './asset-workspace.helpers.js';
 import { cloneTemplate } from '../utils/template.js';
 import { LeLøginAssetThumbnailController } from '../assets/asset-thumbnail.controller.js';
+import { extractSelectedCardAssetId } from './rule-card-click.js';
 
 type ElementGuard<T extends Element> = (value: Element | null) => value is T;
 
@@ -91,16 +92,18 @@ export class LeLøginLogoPickerModalElement
 			const target = getEventTargetElement(e);
 			if (target?.closest('#close-btn') !== null) {
 				this.#modalContext?.reject();
-				return;
-			}
-
-			const card = target?.closest('uui-card-media');
-			if (card instanceof HTMLElement) {
-				const id = card.dataset['assetId'] ?? '';
-				this.#select(id);
 			}
 		});
+		this.#layout.addEventListener('selected', this.#onCardSelection);
+		this.#layout.addEventListener('deselected', this.#onCardSelection);
 	}
+
+	#onCardSelection = (event: Event) => {
+		const id = extractSelectedCardAssetId(event);
+		if (id !== undefined) {
+			this.#select(id);
+		}
+	};
 
 	#select(logoAssetId: string) {
 		this.#modalContext?.updateValue({ logoAssetId });

@@ -43,14 +43,14 @@ describe('computeFocalPointFromDrag', () => {
 		expect(result.left).toBe(0);
 		expect(result.top).toBe(0.5);
 	});
-
 });
 
 describe('computeFocalPointFromDrag when zoomed', () => {
-	it('unlocks the Y axis for a wide image at zoom > 1', () => {
+	it('unlocks the Y axis for a wide image at zoom > 1 with 1:1 painted-height panning', () => {
 		// image 2000x1000 cover-scaled to 800x400 in the container.
-		// At zoom=1 overflowY=0 (locked). At zoom=2: scaledHeight*2=800, overflowY=400.
-		// top = 0.5 - (-100) / 400 = 0.75.
+		// At zoom=2, crop-preview paints the image 1600x800 and centres the crop window,
+		// so shifting fp.top by Δfp moves the image by 800 * Δfp pixels.
+		// top = 0.5 - (-100) / 800 = 0.625.
 		const result = computeFocalPointFromDrag({
 			...wideImageOnTallContainer,
 			startFocalPoint: { left: 0.5, top: 0.5 },
@@ -59,12 +59,12 @@ describe('computeFocalPointFromDrag when zoomed', () => {
 			zoom: 2
 		});
 		expect(result.left).toBe(0.5);
-		expect(result.top).toBeCloseTo(0.75, 5);
+		expect(result.top).toBeCloseTo(0.625, 5);
 	});
 
-	it('scales drag sensitivity with zoom on the X axis', () => {
-		// At zoom=1 overflowX=400. At zoom=2: 800*2-400=1200.
-		// left = 0.5 - 100/1200.
+	it('scales drag sensitivity with painted width at zoom > 1', () => {
+		// At zoom=2, paintedW = 800 * 2 = 1600.
+		// left = 0.5 - 100 / 1600 = 0.4375.
 		const result = computeFocalPointFromDrag({
 			...wideImageOnTallContainer,
 			startFocalPoint: { left: 0.5, top: 0.5 },
@@ -72,7 +72,42 @@ describe('computeFocalPointFromDrag when zoomed', () => {
 			deltaY: 0,
 			zoom: 2
 		});
-		expect(result.left).toBeCloseTo(0.5 - 100 / 1200, 5);
+		expect(result.left).toBeCloseTo(0.5 - 100 / 1600, 5);
+	});
+});
+
+describe('computeFocalPointFromDrag alignment with crop-preview', () => {
+	it('moves the crop-preview painted image by exactly deltaX/deltaY container pixels', () => {
+		const image = { width: 2000, height: 1000 };
+		const container = { width: 400, height: 400 };
+		const zoom = 2.5;
+		const startFocalPoint = { left: 0.5, top: 0.5 };
+		const deltaX = 75;
+		const deltaY = -40;
+
+		const next = computeFocalPointFromDrag({
+			image,
+			container,
+			startFocalPoint,
+			deltaX,
+			deltaY,
+			zoom
+		});
+
+		// Mirror crop-preview.ts maths: coverScale = zoom * max(W/imgW, H/imgH)
+		const coverScale =
+			zoom * Math.max(container.width / image.width, container.height / image.height);
+		const paintedW = image.width * coverScale;
+		const paintedH = image.height * coverScale;
+		// When focal point is unclamped inside [half, 1-half], cropCentre === focalPoint,
+		// and image left/top edge in container is container/2 - cropCentre * paintedSize.
+		const edgeBeforeX = container.width / 2 - startFocalPoint.left * paintedW;
+		const edgeAfterX = container.width / 2 - next.left * paintedW;
+		const edgeBeforeY = container.height / 2 - startFocalPoint.top * paintedH;
+		const edgeAfterY = container.height / 2 - next.top * paintedH;
+
+		expect(edgeAfterX - edgeBeforeX).toBeCloseTo(deltaX, 5);
+		expect(edgeAfterY - edgeBeforeY).toBeCloseTo(deltaY, 5);
 	});
 });
 

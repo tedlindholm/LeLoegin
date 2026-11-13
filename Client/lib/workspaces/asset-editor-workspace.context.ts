@@ -307,6 +307,7 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 	 * @returns The saved asset, or the repository error.
 	 */
 	async saveAsset(assetId: string, update: AssetSaveRequest) {
+		const isCurrent = this.#loads.begin();
 		const { data, error } = await this.#repository.update(assetId, update);
 		if (error) {
 			console.error('[LeLøginScreen] Failed to save asset', error);
@@ -314,12 +315,15 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 		}
 
 		if (data !== undefined) {
-			this.#currentAsset.setValue(data);
-			this.#name.setValue(data.name);
-			this.#draft = this.#cloneAsset(data);
 			this.#assets.setValue(
 				this.#assets.getValue().map((asset) => (asset.id === data.id ? data : asset))
 			);
+			// Only update the active editor state if the user has not switched to another asset.
+			if (isCurrent() && this.#unique.getValue() === assetId) {
+				this.#currentAsset.setValue(data);
+				this.#name.setValue(data.name);
+				this.#draft = this.#cloneAsset(data);
+			}
 		}
 
 		return { data, error: undefined };

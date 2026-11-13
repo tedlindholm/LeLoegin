@@ -26,21 +26,7 @@ export class LeLøginScreenActiveScreenDataSource extends UmbControllerBase {
 			this,
 			V1.getRuntimeActive({ headers: { 'Cache-Control': 'no-cache' } })
 		);
-
-		if (error) {
-			return { data: undefined, error };
-		}
-
-		if (data === undefined) {
-			// 204 No Content — no active image configured
-			return { data: null, error: undefined };
-		}
-
-		try {
-			return { data: mapApiActiveLeLøginScreenResponse(data), error: undefined };
-		} catch (parseError) {
-			return { data: undefined, error: parseError };
-		}
+		return this.#mapResponse(data, error);
 	}
 
 	/**
@@ -59,12 +45,16 @@ export class LeLøginScreenActiveScreenDataSource extends UmbControllerBase {
 				headers: { 'Cache-Control': 'no-cache' }
 			})
 		);
+		return this.#mapResponse(data, error);
+	}
 
+	#mapResponse(data: unknown, error: unknown) {
 		if (error) {
 			return { data: undefined, error };
 		}
 
-		if (data === undefined) {
+		// 204 No Content: the generated OpenAPI client returns `null` when Content-Type is absent.
+		if (data === undefined || data === null) {
 			return { data: null, error: undefined };
 		}
 

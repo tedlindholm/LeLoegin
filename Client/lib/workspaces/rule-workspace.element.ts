@@ -1,5 +1,5 @@
 import '@umbraco-cms/backoffice/workspace';
-import { isLinkInEventPath } from './rule-card-click.js';
+import { extractSelectedCardAssetId, updateSelectedAssetIds } from './rule-card-click.js';
 import '@umbraco-cms/backoffice/components';
 import { UmbElementMixin } from '@umbraco-cms/backoffice/element-api';
 import { UmbModalRouteRegistrationController } from '@umbraco-cms/backoffice/router';
@@ -97,7 +97,8 @@ export class LeLøginScreenRuleWorkspace extends UmbElementMixin(HTMLElement) {
 			</umb-entity-detail-workspace-editor>
 		`;
 		this.#layout = getRequiredById(shadow, 'layout', isHtmlElement, 'layout');
-		this.#layout.addEventListener('click', this.#onAssetCardClick);
+		this.#layout.addEventListener('selected', this.#onAssetCardSelected);
+		this.#layout.addEventListener('deselected', this.#onAssetCardDeselected);
 		this.#layout.addEventListener('condition-change', this.#onConditionChange);
 
 		new UmbModalRouteRegistrationController(this, UMB_WORKSPACE_MODAL)
@@ -295,35 +296,29 @@ export class LeLøginScreenRuleWorkspace extends UmbElementMixin(HTMLElement) {
 		return `${this.#assetModalRouteBuilder({})}edit/${encodeURIComponent(assetId)}`;
 	}
 
-	#onAssetCardClick = (event: Event) => {
-		if (!(event.target instanceof Element) || this.#draft === null) {
+	#onAssetCardSelected = (event: Event) => {
+		this.#applyCardSelection(event, 'selected');
+	};
+
+	#onAssetCardDeselected = (event: Event) => {
+		this.#applyCardSelection(event, 'deselected');
+	};
+
+	#applyCardSelection(event: Event, action: 'selected' | 'deselected') {
+		if (this.#draft === null) {
 			return;
 		}
 
-		// The card's name is a link that opens the asset; following it must not change the rule.
-		// UUI's own selection ignores link clicks the same way.
-		if (isLinkInEventPath(event.composedPath())) {
-			return;
-		}
-
-		const card = event.target.closest<HTMLElement>('uui-card-media[data-asset-id]');
-		if (card === null) {
-			return;
-		}
-
-		const assetId = card.dataset['assetId'];
+		const assetId = extractSelectedCardAssetId(event);
 		if (assetId === undefined) {
 			return;
 		}
 
-		// Clicking toggles a card in or out of the rule's image set. A rule with more than one
-		// selected image shows one at random each login (see #buildAssetField hint).
-		const current = this.#draft.assetIds;
-		const next = current.includes(assetId)
-			? current.filter((id) => id !== assetId)
-			: [...current, assetId];
-		this.#updateDraft({ assetIds: next }, true);
-	};
+		const next = updateSelectedAssetIds(this.#draft.assetIds, assetId, action);
+		// Let uui-card-media update its own `selected` attribute without rebuilding the DOM
+		// so keyboard focus stays on the card.
+		this.#updateDraft({ assetIds: next }, false);
+	}
 
 	#onConditionChange = (event: Event) => {
 		if (!isConditionChangeEvent(event)) {

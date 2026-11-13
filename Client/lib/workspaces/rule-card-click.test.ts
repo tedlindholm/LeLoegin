@@ -1,5 +1,10 @@
+import { readFile } from 'node:fs/promises';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { isLinkInEventPath } from './rule-card-click.js';
+import { isLinkInEventPath, updateSelectedAssetIds } from './rule-card-click.js';
+
+const currentDirectory = dirname(fileURLToPath(import.meta.url));
 
 const element = (localName: string) => ({ localName });
 
@@ -23,5 +28,33 @@ describe('isLinkInEventPath', () => {
 	it('ignores path entries that are not elements', () => {
 		expect(isLinkInEventPath([null, 'text', 42, element('a')])).toBe(true);
 		expect(isLinkInEventPath([null, 'text', 42])).toBe(false);
+	});
+});
+
+describe('updateSelectedAssetIds (3.3)', () => {
+	it('adds an asset id on selected without duplicating existing ids', () => {
+		expect(updateSelectedAssetIds(['a'], 'b', 'selected')).toEqual(['a', 'b']);
+		expect(updateSelectedAssetIds(['a', 'b'], 'b', 'selected')).toEqual(['a', 'b']);
+	});
+
+	it('removes an asset id on deselected', () => {
+		expect(updateSelectedAssetIds(['a', 'b'], 'a', 'deselected')).toEqual(['b']);
+		expect(updateSelectedAssetIds(['b'], 'a', 'deselected')).toEqual(['b']);
+	});
+
+	it('wires rule workspace and logo picker to UUI selected and deselected events', async () => {
+		const ruleWorkspace = await readFile(
+			resolve(currentDirectory, 'rule-workspace.element.ts'),
+			'utf8'
+		);
+		const logoPicker = await readFile(
+			resolve(currentDirectory, 'logo-picker-modal.element.ts'),
+			'utf8'
+		);
+
+		expect(ruleWorkspace).toContain("'selected'");
+		expect(ruleWorkspace).toContain("'deselected'");
+		expect(logoPicker).toContain("'selected'");
+		expect(logoPicker).toContain("'deselected'");
 	});
 });

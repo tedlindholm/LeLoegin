@@ -43,12 +43,13 @@ export interface ComputeFocalPointFromDragArgs {
  * image to the same point in the container, so dragging rightwards (positive deltaX)
  * means the user wants to see more of the left side, which decreases the percentage.
  *
- * Geometric derivation (with zoom Z applied via the wrapper transform):
- * - Visible-window-center shift in wrapper space per Δfp = W × (1 − 1/Z)
- * - Image-within-wrapper shift per Δfp = (cover-scaled-width − W)
- * - Both effects render at scale Z on screen → total screen pan = scaledWidth × Z − W
- *
- * That's `overflowX` below, and the formula is exact (not approximate).
+ * Geometric derivation:
+ * - At zoom = 1 (`background-size: cover` on `#graphic`), `background-position: x%` places
+ *   the image edge at `-x * (coverScaledWidth - containerWidth)`, so a unit focal-point shift
+ *   pans by `coverScaledWidth - containerWidth`.
+ * - At zoom > 1 (`crop-preview.ts`), the preview paints the image at `coverScaledWidth * Z`
+ *   and centres the crop window (`container / 2 - cropCentre * paintedSize`), so a unit
+ *   focal-point shift pans by the full `coverScaledWidth * Z`.
  *
  * @param args.image - Natural pixel dimensions of the source image.
  * @param args.container - Pixel dimensions of the visible preview container.
@@ -80,11 +81,12 @@ export function computeFocalPointFromDrag({
 	// the rxy= focal-point hint can use the full [0, 1] range.
 	const half = 0.5 / z;
 	const bounds = z > 1 ? { min: half, max: 1 - half } : { min: 0, max: 1 };
+	const panRangeX = z > 1 ? scaled.width * z : scaled.width - container.width;
+	const panRangeY = z > 1 ? scaled.height * z : scaled.height - container.height;
 
-	// Multiply by zoom so that axes with no overflow at zoom=1 become draggable once zoomed.
 	return {
-		left: dragAxis(startFocalPoint.left, deltaX, scaled.width * z - container.width, bounds),
-		top: dragAxis(startFocalPoint.top, deltaY, scaled.height * z - container.height, bounds)
+		left: dragAxis(startFocalPoint.left, deltaX, panRangeX, bounds),
+		top: dragAxis(startFocalPoint.top, deltaY, panRangeY, bounds)
 	};
 }
 
