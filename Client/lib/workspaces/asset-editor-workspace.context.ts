@@ -22,6 +22,7 @@ import { LatestLoad } from '../utils/latest-load.js';
 import { requestStructureReload } from '../utils/request-structure-reload.js';
 import { toAssetSaveRequest, type AssetSaveRequest } from './asset-save-request.js';
 import { assetTextLimitViolation } from './asset-text-limits.js';
+import { LeLøginScreenUnsavedChangesGuard } from './unsaved-changes-guard.js';
 
 const LOADING_STATE_UNIQUE = 'loginScreenAssetWorkspaceLoading';
 
@@ -60,6 +61,10 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 	#assets = new UmbObjectState<Array<LoginImageAsset>>([]);
 	#currentAsset = new UmbObjectState<LoginImageAsset | null>(null);
 	#isLoading = new UmbBooleanState(false);
+	#loadError = new UmbBooleanState(false);
+	#isDirty = new UmbBooleanState(false);
+	#editVersion = 0;
+	#unsavedChangesGuard: LeLøginScreenUnsavedChangesGuard;
 	#name = new UmbStringState('');
 	#unique = new UmbObjectState<string | undefined>(undefined);
 	#entityType = new UmbStringState(LOGIN_SCREEN_ASSET_ENTITY_TYPE);
@@ -77,6 +82,10 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 	readonly data = this.#currentAsset.asObservable();
 	/** True while an asset load is in flight. */
 	readonly isLoading = this.#isLoading.asObservable();
+	/** True when the last asset load failed with an error. */
+	readonly loadError = this.#loadError.asObservable();
+	/** True when the draft has unsaved edits. */
+	readonly isDirty = this.#isDirty.asObservable();
 	/** The draft's name, shown in the workspace header. */
 	readonly name = this.#name.asObservable();
 	/** Id of the asset being edited. */
@@ -104,6 +113,9 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 	constructor(host: UmbControllerHost) {
 		super(host, UMB_LOGIN_SCREEN_ASSET_EDITOR_WORKSPACE_CONTEXT);
 		this.#repository = new LeLøginScreenAssetRepository(this);
+		this.#unsavedChangesGuard = new LeLøginScreenUnsavedChangesGuard(this, this.routes, () =>
+			this.getIsDirty()
+		);
 		const entityContext = new UmbEntityContext(this);
 		entityContext.setEntityType(LOGIN_SCREEN_ASSET_ENTITY_TYPE);
 		this.observe(this.unique, (unique) => {
@@ -166,6 +178,17 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 		return this.#isNew.getValue();
 	}
 
+	/** @returns True when the draft has unsaved edits. */
+	getIsDirty(): boolean {
+		return this.#isDirty.getValue();
+	}
+
+	/** Cleans up navigation guards when the workspace context is destroyed. */
+	override destroy() {
+		this.#unsavedChangesGuard.dispose();
+		super.destroy();
+	}
+
 	/**
 	 * Loads every asset into `assets`. Errors are logged and returned, not thrown.
 	 *
@@ -192,6 +215,7 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 	 */
 	async loadAsset(assetId: string) {
 		this.#isLoading.setValue(true);
+		this.#loadError.setValue(false);
 		if (!this.loading.getStates().some((state) => state.unique === LOADING_STATE_UNIQUE)) {
 			this.loading.addState({
 				unique: LOADING_STATE_UNIQUE,
@@ -205,12 +229,15 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 		this.#currentAsset.setValue(null);
 		this.#name.setValue('');
 		this.#draft = null;
+		this.#isDirty.setValue(false);
+		this.#unsavedChangesGuard.reset();
 
 		try {
 			const { data, error } = await this.#repository.requestByUnique(assetId);
 			if (!isLatest()) return { data: undefined, error: undefined };
 			if (error) {
 				console.error('[LeLøginScreen] Failed to load asset', error);
+				this.#loadError.setValue(true);
 				return { data: undefined, error };
 			}
 
@@ -245,6 +272,8 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 			return;
 		}
 
+		this.#editVersion++;
+		this.#isDirty.setValue(true);
 		const draft = this.#draft;
 		if (update.name !== undefined) {
 			draft.name = update.name;
@@ -269,7 +298,8 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 			return false;
 		}
 
-		if (this.#draft.name.trim().length === 0) {
+		const trimmedName = this.#draft.name.trim();
+		if (trimmedName.length === 0) {
 			await this.#notify('danger', this.#localize.term('loginScreen_assetNameRequired'));
 			return false;
 		}
@@ -280,7 +310,10 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 			return false;
 		}
 
-		const { data, error } = await this.saveAsset(assetId, toAssetSaveRequest(this.#draft));
+		const { data, error } = await this.saveAsset(
+			assetId,
+			toAssetSaveRequest({ ...this.#draft, name: trimmedName })
+		);
 
 		if (error || data === undefined) {
 			await this.#notify('danger', this.#localize.term('loginScreen_assetSaveFailed'));
@@ -308,6 +341,7 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 	 */
 	async saveAsset(assetId: string, update: AssetSaveRequest) {
 		const isCurrent = this.#loads.begin();
+		const editVersionAtSave = this.#editVersion;
 		const { data, error } = await this.#repository.update(assetId, update);
 		if (error) {
 			console.error('[LeLøginScreen] Failed to save asset', error);
@@ -323,6 +357,9 @@ export class LeLøginScreenAssetEditorWorkspaceContext extends UmbContextBase {
 				this.#currentAsset.setValue(data);
 				this.#name.setValue(data.name);
 				this.#draft = this.#cloneAsset(data);
+				if (this.#editVersion === editVersionAtSave) {
+					this.#isDirty.setValue(false);
+				}
 			}
 		}
 

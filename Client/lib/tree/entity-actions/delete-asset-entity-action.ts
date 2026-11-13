@@ -32,14 +32,19 @@ export class LeLøginScreenDeleteAssetEntityAction extends UmbEntityActionBase<M
 		if (!unique) return;
 
 		const assetRepository = new LeLøginScreenAssetRepository(this);
-		const { data: asset } = await assetRepository.requestByUnique(unique);
-		const { data: rules } = await new LeLøginScreenRuleRepository(this).requestItems();
-		const impact = assetDeletionImpact(rules ?? [], unique);
+		const [assetResult, rulesResult] = await Promise.all([
+			assetRepository.requestByUnique(unique),
+			new LeLøginScreenRuleRepository(this).requestItems()
+		]);
+		if (assetResult.error || assetResult.data === undefined || rulesResult.error) {
+			return;
+		}
+		const impact = assetDeletionImpact(rulesResult.data ?? [], unique);
 
 		try {
 			await umbConfirmModal(this, {
 				headline: this.#localize.term('actions_delete'),
-				content: this.#confirmationHtml(asset?.name ?? '', impact),
+				content: this.#confirmationHtml(assetResult.data.name, impact),
 				color: 'danger',
 				confirmLabel: this.#localize.term('general_delete')
 			});
@@ -50,7 +55,6 @@ export class LeLøginScreenDeleteAssetEntityAction extends UmbEntityActionBase<M
 
 		const { error } = await assetRepository.delete(unique);
 		if (error) {
-			await this.#notify('danger', 'loginScreen_assetDeleteFailed');
 			return;
 		}
 

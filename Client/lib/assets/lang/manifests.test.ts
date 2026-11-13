@@ -18,12 +18,12 @@ describe('Le Løgin localisation manifests', () => {
 		const umbracoLanguages = new Set(
 			(await readdir(umbracoLanguageDirectory))
 				.filter((fileName) => fileName.endsWith('.js'))
-				.map((fileName) => fileName.slice(0, -'.js'.length).split('-')[0])
+				.map((fileName) => fileName.slice(0, -'.js'.length).toLowerCase())
 		);
 
 		const unsupported = manifests
 			.map((manifest) => manifest.meta.culture)
-			.filter((culture) => !umbracoLanguages.has(culture.toLowerCase().split('-')[0] ?? ''));
+			.filter((culture) => !umbracoLanguages.has(culture.toLowerCase()));
 
 		expect(unsupported).toEqual([]);
 	});

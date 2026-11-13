@@ -91,12 +91,16 @@ export default {
 		validationRuleAsset: 'Et bilde er påkrevd.',
 		validationConditionValue: 'Hver betingelse må ha en verdi.',
 		assetsLoadFailed: 'Kunne ikke laste inn bildene. Se nettleserkonsollen for detaljer.',
+		assetLoadFailed: 'Kunne ikke laste inn bildet. Se nettleserkonsollen for detaljer.',
 		rulesLoadFailed: 'Kunne ikke laste inn reglene. Se nettleserkonsollen for detaljer.',
+		ruleLoadFailed: 'Kunne ikke laste inn regelen. Se nettleserkonsollen for detaljer.',
 		loadingRule: 'Laster inn regel',
 		previewOnly: 'Kun forhåndsvisning',
 		assetDeleteRulesReduced: 'Disse reglene vil ikke lenger vise dette bildet: %0%.',
 		assetDeleteRulesDisabled: 'Disse reglene har ingen andre bilder og blir deaktivert: %0%.',
 		assetDeleteFailed: 'Kunne ikke slette bildet.',
-		toggleEnabled: 'Aktiver / Deaktiver'
+		toggleEnabled: 'Aktiver / Deaktiver',
+		moveRuleUp: 'Flytt regel opp',
+		moveRuleDown: 'Flytt regel ned'
 	}
 } satisfies LeLøginScreenLocalisationDictionary;

@@ -43,4 +43,11 @@ describe('rule workspace source', () => {
 		// A hint tells the user that multiple images rotate randomly.
 		expect(source).toContain('loginScreen_ruleImagesHint');
 	});
+
+	it('observes loadError and shows ruleLoadFailed when loading fails (3.12)', async () => {
+		const source = await readFile(workspaceElementFilePath, 'utf8');
+
+		expect(source).toContain('ctx.loadError');
+		expect(source).toContain('loginScreen_ruleLoadFailed');
+	});
 });

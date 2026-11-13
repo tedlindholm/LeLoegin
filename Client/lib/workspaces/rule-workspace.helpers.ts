@@ -11,7 +11,8 @@ export interface ConditionEditorElement extends HTMLElement {
 type ElementGuard<T extends Element> = (value: Element | null) => value is T;
 
 /** Type guard for any `HTMLElement`; rejects `null`. */
-export const isHtmlElement = (value: Element | null): value is HTMLElement => value instanceof HTMLElement;
+export const isHtmlElement = (value: Element | null): value is HTMLElement =>
+	value instanceof HTMLElement;
 /** Type guard for an `img` element; rejects `null`. */
 export const isHtmlImageElement = (value: Element | null): value is HTMLImageElement =>
 	value instanceof HTMLImageElement;
@@ -92,6 +93,34 @@ function isConditionGroup(value: unknown): value is LoginRuleConditionGroup {
  * @param event - The event to check.
  * @returns True when the event is a `CustomEvent` carrying a condition group.
  */
-export function isConditionChangeEvent(event: Event): event is CustomEvent<LoginRuleConditionGroup> {
+export function isConditionChangeEvent(
+	event: Event
+): event is CustomEvent<LoginRuleConditionGroup> {
 	return event instanceof CustomEvent && isConditionGroup(event.detail);
+}
+
+/**
+ * Builds the `create` and `edit/:unique` route definitions for the rule editor workspace.
+ *
+ * @param onCreate - Callback invoked when the create route is activated.
+ * @param onEdit - Callback invoked with the route `unique` param when the edit route is activated.
+ * @returns Route configuration array for `UmbWorkspaceRouteManager.setRoutes`.
+ */
+export function buildRuleEditorRoutes(
+	onCreate: () => Promise<void>,
+	onEdit: (unique: string | undefined) => Promise<void>
+) {
+	return [
+		{
+			path: 'create',
+			component: () => import('./rule-workspace.element.js'),
+			setup: () => onCreate()
+		},
+		{
+			path: 'edit/:unique',
+			component: () => import('./rule-workspace.element.js'),
+			setup: (_component: unknown, info: { match: { params: { unique?: string } } }) =>
+				onEdit(info.match.params.unique)
+		}
+	];
 }

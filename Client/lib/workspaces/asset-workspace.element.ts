@@ -3,15 +3,24 @@ import '@umbraco-cms/backoffice/workspace';
 import { UmbElementMixin } from '@umbraco-cms/backoffice/element-api';
 import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
 import styles from './asset-workspace.element.css?inline';
-import { normaliseOptionalInputValue, buildWorkspaceBody } from './asset-workspace.helpers.js';
+import {
+	isHtmlElement,
+	isValueElement,
+	normaliseOptionalInputValue,
+	buildWorkspaceBody
+} from './asset-workspace.helpers.js';
 import { ZOOM_MIN, ZOOM_MAX } from './asset-zoom-controls.js';
 import {
 	applyAuthViewCustomisation,
 	observeAuthViewCustomisation
 } from '../auth-view/auth-view-customiser.js';
-import type { FocalPoint, LoginImageAsset } from '../models/index.ts';
+import {
+	isBackgroundLoginImageAsset,
+	isLogoLoginImageAsset,
+	type FocalPoint,
+	type LoginImageAsset
+} from '../models/index.ts';
 import { LeLøginAssetThumbnailController } from '../assets/asset-thumbnail.controller.js';
-import { isBackgroundLoginImageAsset, isLogoLoginImageAsset } from '../models/index.ts';
 import {
 	UMB_LOGIN_SCREEN_ASSET_EDITOR_WORKSPACE_CONTEXT,
 	type LeLøginScreenAssetEditorWorkspaceContext
@@ -24,27 +33,9 @@ import {
 	observeAuthPreviewLayout
 } from './asset-preview.helpers.js';
 
+import { getEventTargetElement, getRequiredById } from './rule-list-workspace.helpers.js';
+
 const ZOOM_STEP = 1.1;
-
-interface ValueElement extends HTMLElement {
-	value: string;
-}
-
-const isHtmlElement = (value: Element | null): value is HTMLElement => value instanceof HTMLElement;
-const isValueElement = (value: Element | null): value is ValueElement =>
-	value instanceof HTMLElement && value.localName === 'uui-input';
-
-function getRequiredById(root: ShadowRoot, id: string): HTMLElement {
-	const element = root.getElementById(id);
-	if (!isHtmlElement(element)) {
-		throw new Error(`Expected HTMLElement with id "${id}".`);
-	}
-	return element;
-}
-
-function getEventTargetElement(event: Event): Element | null {
-	return event.target instanceof Element ? event.target : null;
-}
 
 /**
  * Asset edit workspace. A logo shows as a plain image; a background shows in a login-style
@@ -57,6 +48,7 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 	#assets: Array<LoginImageAsset> = [];
 	#assetId: string | undefined;
 	#isLoading = true;
+	#loadError = false;
 	#authPreview: HTMLElement | undefined;
 	#stopObservingAuthPreview: (() => void) | undefined;
 	#authPreviewMutationCleanup: (() => void) | undefined;
@@ -81,7 +73,7 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 				<div id="layout"></div>
 			</umb-entity-detail-workspace-editor>
 		`;
-		this.#layout = getRequiredById(shadow, 'layout');
+		this.#layout = getRequiredById(shadow, 'layout', isHtmlElement, 'layout');
 
 		this.#layout.addEventListener('click', this.#onLayoutClick);
 		this.#layout.addEventListener('input', this.#onLayoutInput);
@@ -119,8 +111,11 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 	#setupWorkspaceObservers(ctx: LeLøginScreenAssetEditorWorkspaceContext) {
 		this.#workspaceContext = ctx;
 		this.observe(ctx.currentAsset, (asset) => {
+			const isDifferentAsset = asset === null || asset.id !== this.#asset?.id;
 			this.#asset = asset ?? null;
-			this.#applyAssetDraft(asset ?? null);
+			if (isDifferentAsset) {
+				this.#applyAssetDraft(this.#asset);
+			}
 			this.#render();
 		});
 		this.observe(ctx.assets, (assets) => {
@@ -129,6 +124,10 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 		});
 		this.observe(ctx.isLoading, (isLoading) => {
 			this.#isLoading = isLoading;
+			this.#render();
+		});
+		this.observe(ctx.loadError, (loadError) => {
+			this.#loadError = loadError;
 			this.#render();
 		});
 		this.observe(ctx.unique, (assetId) => {
@@ -157,10 +156,11 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 			...buildWorkspaceBody({
 				localize: this.localize,
 				isLoading: this.#isLoading,
+				loadError: this.#loadError,
 				asset: this.#asset,
 				previewUrl,
 				logoAssets: this.#logoAssets(),
-				greetingText: this.#currentGreetingText(),
+				greetingText: this.#draftGreetingTextValue ?? '',
 				selectedLogoAssetId: this.#selectedLogoAssetId(),
 				zoom: this.#draftZoom
 			})
@@ -180,7 +180,9 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 	#updateZoomButtonStates() {
 		const root = this.shadowRoot;
 		root?.querySelector('#asset-zoom-in')?.toggleAttribute('disabled', this.#draftZoom >= ZOOM_MAX);
-		root?.querySelector('#asset-zoom-out')?.toggleAttribute('disabled', this.#draftZoom <= ZOOM_MIN);
+		root
+			?.querySelector('#asset-zoom-out')
+			?.toggleAttribute('disabled', this.#draftZoom <= ZOOM_MIN);
 	}
 
 	async #openLogoPicker() {
@@ -291,12 +293,13 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 	}
 
 	#authPreviewCustomisation() {
+		const logoId = this.#selectedLogoAssetId();
 		return buildAssetPreviewCustomisation(
 			this.#isBackgroundAssetLoaded() && this.#assetId !== undefined
 				? {
 						imageUrl: this.#thumbnails.peek(this.#assetId),
-						greetingText: normaliseOptionalInputValue(this.#currentGreetingText()),
-						logoUrl: this.#selectedLogoPreviewUrl(),
+						greetingText: normaliseOptionalInputValue(this.#draftGreetingTextValue ?? ''),
+						logoUrl: logoId.length === 0 ? undefined : this.#thumbnails.peek(logoId),
 						focalPoint: this.#draftFocalPoint,
 						zoom: this.#draftZoom,
 						imageWidth: this.#asset?.width,
@@ -325,19 +328,10 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 	#logoAssets() {
 		return this.#assets.filter(isLogoLoginImageAsset);
 	}
-	#currentGreetingText() {
-		return this.#draftGreetingTextValue ?? '';
-	}
 
 	#selectedLogoAssetId() {
 		if (this.#asset === null || !isBackgroundLoginImageAsset(this.#asset)) return '';
 		return this.#draftLogoAssetId ?? '';
-	}
-
-	#selectedLogoPreviewUrl() {
-		const id = this.#selectedLogoAssetId();
-		if (id.length === 0) return undefined;
-		return this.#thumbnails.peek(id);
 	}
 }
 

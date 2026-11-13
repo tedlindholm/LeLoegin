@@ -31,6 +31,7 @@ interface LeLøginScreenLocaliser {
 interface AssetWorkspaceBodyArgs {
 	localize: LeLøginScreenLocaliser;
 	isLoading: boolean;
+	loadError?: boolean;
 	asset: LoginImageAsset | null;
 	previewUrl: string | undefined;
 	logoAssets: Array<LoginImageAsset>;
@@ -96,7 +97,10 @@ greetingFieldTemplate.innerHTML = /* html */ `
 	</div>
 `;
 
-const isHtmlElement = (value: Element | null): value is HTMLElement => value instanceof HTMLElement;
+export const isHtmlElement = (value: Element | null): value is HTMLElement =>
+	value instanceof HTMLElement;
+export const isValueElement = (value: Element | null): value is LeLøginScreenTextInputElement =>
+	value instanceof HTMLElement && value.localName === 'uui-input';
 const isHtmlImageElement = (value: Element | null): value is HTMLImageElement =>
 	value instanceof HTMLImageElement;
 // Tag-name guards for UUI custom elements: a property-existence check (`'value' in
@@ -289,11 +293,16 @@ const buildLoadingBody = (): Array<HTMLElement> => {
 	return [panel.root];
 };
 
-const buildEmptyBody = (localize: LeLøginScreenLocaliser): Array<HTMLElement> => {
+const buildEmptyBody = (
+	localize: LeLøginScreenLocaliser,
+	loadError = false
+): Array<HTMLElement> => {
 	const panel = buildWorkspacePanel();
 	const message = document.createElement('p');
 	message.className = 'empty-state';
-	message.textContent = localize.term('loginScreen_assetNotFound');
+	message.textContent = localize.term(
+		loadError ? 'loginScreen_assetLoadFailed' : 'loginScreen_assetNotFound'
+	);
 	panel.body.append(message);
 	return [panel.root];
 };
@@ -334,6 +343,7 @@ const buildLoadedBody = ({
 export const buildWorkspaceBody = ({
 	localize,
 	isLoading,
+	loadError = false,
 	asset,
 	previewUrl,
 	logoAssets,
@@ -346,7 +356,7 @@ export const buildWorkspaceBody = ({
 	}
 
 	if (asset === null) {
-		return buildEmptyBody(localize);
+		return buildEmptyBody(localize, loadError);
 	}
 
 	return buildLoadedBody({

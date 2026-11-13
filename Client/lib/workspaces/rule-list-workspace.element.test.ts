@@ -36,4 +36,16 @@ describe('LeLøginScreenRuleListWorkspace source', () => {
 		expect(source).toContain("el.localName === 'uui-ref-node'");
 		expect(source).toContain("el.localName === 'uui-button'");
 	});
+
+	it('uses UUI label attribute with hide-label on enabled toggle and provides accessible move up/down buttons (3.18)', async () => {
+		const source = await readFile(workspaceElementFilePath, 'utf8');
+
+		expect(source).toContain('hide-label');
+		expect(source).toContain("toggle.setAttribute('label',");
+		expect(source).not.toContain("toggle.setAttribute('aria-label',");
+		expect(source).toContain('move-up-btn');
+		expect(source).toContain('move-down-btn');
+		expect(source).toContain('loginScreen_moveRuleUp');
+		expect(source).toContain('loginScreen_moveRuleDown');
+	});
 });

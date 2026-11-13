@@ -110,6 +110,10 @@ vi.mock('@umbraco-cms/backoffice/notification', () => ({
 	UMB_NOTIFICATION_CONTEXT: {}
 }));
 
+vi.mock('@umbraco-cms/backoffice/modal', () => ({
+	umbConfirmModal: vi.fn().mockResolvedValue(undefined)
+}));
+
 vi.mock('../assets/asset.repository.js', () => ({
 	LeLøginScreenAssetRepository: class {
 		requestByUnique = assetRequestByUniqueMock;
@@ -290,5 +294,45 @@ describe('rule editor workspace context enable/disable (3.5)', () => {
 			assetIds: ['asset-1', 'asset-2'],
 			enabled: false
 		});
+	});
+});
+
+describe('editor workspace contexts trim names on save (3.15)', () => {
+	it('trims asset name before submitting update', async () => {
+		const asset = makeAsset('asset-1', 'Original');
+		const ctx = new LeLøginScreenAssetEditorWorkspaceContext(stubHost);
+		assetRequestByUniqueMock.mockResolvedValueOnce({ data: asset, error: undefined });
+		await ctx.loadAsset('asset-1');
+		ctx.updateDraft({ name: '  Trimmed Asset  ' });
+		assetUpdateMock.mockResolvedValueOnce({
+			data: { ...asset, name: 'Trimmed Asset' },
+			error: undefined
+		});
+
+		await ctx.requestSubmit();
+
+		expect(assetUpdateMock).toHaveBeenCalledWith(
+			'asset-1',
+			expect.objectContaining({ name: 'Trimmed Asset' })
+		);
+	});
+
+	it('trims rule name before submitting update', async () => {
+		const rule = makeRule('rule-1', 'Original', ['asset-1']);
+		const ctx = new LeLøginScreenRuleEditorWorkspaceContext(stubHost);
+		ruleRequestByUniqueMock.mockResolvedValueOnce({ data: rule, error: undefined });
+		await ctx.loadRule('rule-1');
+		ctx.updateDraft({ name: '  Trimmed Rule  ' });
+		ruleUpdateMock.mockResolvedValueOnce({
+			data: { ...rule, name: 'Trimmed Rule' },
+			error: undefined
+		});
+
+		await ctx.requestSubmit();
+
+		expect(ruleUpdateMock).toHaveBeenCalledWith(
+			'rule-1',
+			expect.objectContaining({ name: 'Trimmed Rule' })
+		);
 	});
 });

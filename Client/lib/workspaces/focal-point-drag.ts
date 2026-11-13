@@ -113,7 +113,7 @@ function dragAxis(
 	bounds: { min: number; max: number }
 ): number {
 	if (overflow <= 0) return start;
-	return clamp(start - delta / overflow, bounds.min, bounds.max);
+	return clamp(clamp(start, bounds.min, bounds.max) - delta / overflow, bounds.min, bounds.max);
 }
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));

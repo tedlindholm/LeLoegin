@@ -89,12 +89,16 @@ export default {
 		validationRuleAsset: 'En bild krävs.',
 		validationConditionValue: 'Varje villkor måste ha ett värde.',
 		assetsLoadFailed: 'Bilderna kunde inte läsas in. Se webbläsarkonsolen för detaljer.',
+		assetLoadFailed: 'Bilden kunde inte läsas in. Se webbläsarkonsolen för detaljer.',
 		rulesLoadFailed: 'Reglerna kunde inte läsas in. Se webbläsarkonsolen för detaljer.',
+		ruleLoadFailed: 'Regeln kunde inte läsas in. Se webbläsarkonsolen för detaljer.',
 		loadingRule: 'Läser in regel',
 		previewOnly: 'Endast förhandsgranskning',
 		assetDeleteRulesReduced: 'Dessa regler kommer inte längre att visa bilden: %0%.',
 		assetDeleteRulesDisabled: 'Dessa regler har inga andra bilder och kommer att inaktiveras: %0%.',
 		assetDeleteFailed: 'Bilden kunde inte tas bort.',
-		toggleEnabled: 'Aktivera / Inaktivera'
+		toggleEnabled: 'Aktivera / Inaktivera',
+		moveRuleUp: 'Flytta regel upp',
+		moveRuleDown: 'Flytta regel ned'
 	}
 } satisfies LeLøginScreenLocalisationDictionary;

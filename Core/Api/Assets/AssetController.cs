@@ -247,7 +247,16 @@ public class AssetController(
 			return NotFound();
 		}
 
-		asset.Name = request.Name ?? asset.Name;
+		if (request.Name is not null)
+		{
+			var trimmedName = request.Name.Trim();
+			if (string.IsNullOrEmpty(trimmedName))
+			{
+				return BadRequest("Asset name cannot be empty.");
+			}
+
+			asset.Name = trimmedName;
+		}
 		asset.AltText = NormaliseOptionalText(request.AltText);
 		asset.GreetingText = asset.Kind == LoginImageAssetKind.Background
 			? NormaliseOptionalText(request.GreetingText)

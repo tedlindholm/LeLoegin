@@ -11,6 +11,14 @@ import {
 import { LeLøginScreenRuleWorkspaceContext } from '../rules/rule-workspace.context.js';
 import { cloneTemplate } from '../utils/template.js';
 
+import {
+	getEventTargetElement,
+	getRequiredById,
+	queryRequired,
+	reorderRuleIds,
+	swapAdjacentRuleIds
+} from './rule-list-workspace.helpers.js';
+
 interface ToggleElement extends HTMLElement {
 	checked: boolean;
 	label: string;
@@ -23,9 +31,8 @@ interface RefNodeElement extends HTMLElement {
 
 interface LabelElement extends HTMLElement {
 	label: string;
+	disabled: boolean;
 }
-
-type ElementGuard<T extends Element> = (value: Element | null) => value is T;
 
 const isHtmlElement = (el: Element | null): el is HTMLElement => el instanceof HTMLElement;
 const isTemplateElement = (el: Element | null): el is HTMLTemplateElement =>
@@ -42,34 +49,41 @@ const isRefNodeElement = (el: Element | null): el is RefNodeElement =>
 const isLabelElement = (el: Element | null): el is LabelElement =>
 	el instanceof HTMLElement && el.localName === 'uui-button';
 
-function getRequiredById<T extends Element>(
-	root: ShadowRoot,
-	id: string,
-	guard: ElementGuard<T>,
-	description: string
-): T {
-	const element = root.getElementById(id);
-	if (!guard(element)) {
-		throw new Error(`Expected ${description} with id "${id}".`);
-	}
-	return element;
-}
-
-function queryRequired<T extends Element>(
-	root: ParentNode,
-	selector: string,
-	guard: ElementGuard<T>,
-	description: string
-): T {
-	const element = root.querySelector(selector);
-	if (!guard(element)) {
-		throw new Error(`Expected ${description} for selector "${selector}".`);
-	}
-	return element;
-}
-
-function getEventTargetElement(event: Event): Element | null {
-	return event.target instanceof Element ? event.target : null;
+function buildRuleListShadowMarkup(headline: string, createLabel: string): string {
+	const safeHeadline = escapeHTML(headline);
+	const safeCreate = escapeHTML(createLabel);
+	return /* html */ `
+		<umb-workspace-editor headline="${safeHeadline}" alias="LeLøgin.Workspace.RuleList" enforceNoFooter>
+			<div id="layout">
+				<div id="actions">
+					<uui-button look="outline" href="${LOGIN_SCREEN_RULE_CREATE_WORKSPACE_PATH}" label="${safeCreate}">
+						${safeCreate}
+					</uui-button>
+				</div>
+				<uui-box id="list-box"></uui-box>
+			</div>
+			<template id="row-template">
+				<div class="rule-row">
+					<div class="drag-handle" draggable="true">
+						<uui-icon name="icon-navigation"></uui-icon>
+					</div>
+					<uui-ref-node class="ref"></uui-ref-node>
+					<div class="move-actions">
+						<uui-button class="move-up-btn" look="default" color="default" compact>
+							<uui-icon name="icon-arrow-up"></uui-icon>
+						</uui-button>
+						<uui-button class="move-down-btn" look="default" color="default" compact>
+							<uui-icon name="icon-arrow-down"></uui-icon>
+						</uui-button>
+					</div>
+					<uui-toggle class="enabled-toggle" hide-label></uui-toggle>
+					<uui-button class="delete-btn" look="default" color="default" compact>
+						<uui-icon name="icon-trash"></uui-icon>
+					</uui-button>
+				</div>
+			</template>
+		</umb-workspace-editor>
+	`;
 }
 
 /**
@@ -120,33 +134,10 @@ export class LeLøginScreenRuleListWorkspace extends UmbElementMixin(HTMLElement
 	#initShadow() {
 		const shadow = this.shadowRoot;
 		if (shadow === null) return;
-		shadow.innerHTML = /* html */ `
-			<umb-workspace-editor
-				headline="${escapeHTML(this.localize.term('loginScreen_rules'))}"
-				alias="LeLøgin.Workspace.RuleList"
-				enforceNoFooter>
-				<div id="layout">
-					<div id="actions">
-						<uui-button look="outline" href="${LOGIN_SCREEN_RULE_CREATE_WORKSPACE_PATH}" label="${escapeHTML(this.localize.term('general_create'))}">
-							${escapeHTML(this.localize.term('general_create'))}
-						</uui-button>
-					</div>
-					<uui-box id="list-box"></uui-box>
-				</div>
-				<template id="row-template">
-					<div class="rule-row">
-						<div class="drag-handle" draggable="true">
-							<uui-icon name="icon-navigation"></uui-icon>
-						</div>
-						<uui-ref-node class="ref"></uui-ref-node>
-						<uui-toggle class="enabled-toggle"></uui-toggle>
-						<uui-button class="delete-btn" look="default" color="default" compact>
-							<uui-icon name="icon-trash"></uui-icon>
-						</uui-button>
-					</div>
-				</template>
-			</umb-workspace-editor>
-		`;
+		shadow.innerHTML = buildRuleListShadowMarkup(
+			this.localize.term('loginScreen_rules'),
+			this.localize.term('general_create')
+		);
 		this.#listBox = getRequiredById(shadow, 'list-box', isHtmlElement, 'list box');
 		this.#rowTemplate = getRequiredById(shadow, 'row-template', isTemplateElement, 'row template');
 		this.#listBox.addEventListener('dragstart', this.#onDragStartDelegate);
@@ -155,7 +146,7 @@ export class LeLøginScreenRuleListWorkspace extends UmbElementMixin(HTMLElement
 		this.#listBox.addEventListener('drop', this.#onDropDelegate);
 		this.#listBox.addEventListener('dragenter', this.#onDragEnterDelegate);
 		this.#listBox.addEventListener('change', this.#onEnabledToggleDelegate);
-		this.#listBox.addEventListener('click', this.#onDeleteDelegate);
+		this.#listBox.addEventListener('click', this.#onRowClickDelegate);
 	}
 
 	#render() {
@@ -216,8 +207,19 @@ export class LeLøginScreenRuleListWorkspace extends UmbElementMixin(HTMLElement
 
 		const toggle = queryRequired(row, '.enabled-toggle', isToggleElement, 'enabled toggle');
 		toggle.checked = rule.enabled;
-		toggle.setAttribute('aria-label', this.localize.term('webhooks_enabled'));
+		toggle.setAttribute('label', this.localize.term('webhooks_enabled'));
 		toggle.dataset.id = rule.id;
+
+		const index = this.#rules.findIndex((r) => r.id === rule.id);
+		const moveUpButton = queryRequired(row, '.move-up-btn', isLabelElement, 'move up button');
+		moveUpButton.label = this.localize.term('loginScreen_moveRuleUp');
+		moveUpButton.disabled = index <= 0;
+		moveUpButton.dataset.id = rule.id;
+
+		const moveDownButton = queryRequired(row, '.move-down-btn', isLabelElement, 'move down button');
+		moveDownButton.label = this.localize.term('loginScreen_moveRuleDown');
+		moveDownButton.disabled = index === -1 || index >= this.#rules.length - 1;
+		moveDownButton.dataset.id = rule.id;
 
 		const deleteButton = queryRequired(row, '.delete-btn', isLabelElement, 'delete button');
 		deleteButton.label = this.localize.term('general_delete');
@@ -266,14 +268,28 @@ export class LeLøginScreenRuleListWorkspace extends UmbElementMixin(HTMLElement
 		if (target?.closest('.enabled-toggle') !== null) this.#onEnabledToggle(e);
 	};
 
-	#onDeleteDelegate = (e: Event) => {
+	#onRowClickDelegate = (e: Event) => {
 		const target = getEventTargetElement(e);
-		if (target === null) return;
-		const btn = target.closest<HTMLElement>('.delete-btn[data-id]');
-		if (btn === null) return;
-		const id = btn.dataset.id;
-		if (id !== undefined) void this.#confirmAndDelete(id);
+		const btn = target?.closest<HTMLElement>(
+			'.delete-btn[data-id], .move-up-btn[data-id], .move-down-btn[data-id]'
+		);
+		const id = btn?.dataset.id;
+		if (btn === null || btn === undefined || id === undefined) return;
+		if (btn.classList.contains('delete-btn')) {
+			void this.#confirmAndDelete(id);
+			return;
+		}
+		this.#moveRule(id, btn.classList.contains('move-up-btn') ? -1 : 1);
 	};
+
+	#moveRule(id: string, delta: -1 | 1) {
+		const reordered = swapAdjacentRuleIds(
+			this.#rules.map((r) => r.id),
+			id,
+			delta
+		);
+		if (reordered !== undefined) void this.#workspaceContext.reorder(reordered);
+	}
 
 	async #confirmAndDelete(id: string) {
 		const name = this.#rules.find((rule) => rule.id === id)?.name ?? '';
@@ -308,17 +324,15 @@ export class LeLøginScreenRuleListWorkspace extends UmbElementMixin(HTMLElement
 		event.preventDefault();
 		row.classList.remove('drag-over');
 		const targetId = row.dataset.id;
-		if (this.#dragSourceId === null || targetId === undefined || targetId === this.#dragSourceId)
-			return;
-		const ids = this.#rules.map((r) => r.id);
-		const from = ids.indexOf(this.#dragSourceId);
-		const to = ids.indexOf(targetId);
-		if (from === -1 || to === -1) return;
-		const reordered = [...ids];
-		reordered.splice(from, 1);
-		reordered.splice(to, 0, this.#dragSourceId);
+		const sourceId = this.#dragSourceId;
 		this.#dragSourceId = null;
-		void this.#workspaceContext.reorder(reordered);
+		if (sourceId === null || targetId === undefined) return;
+		const reordered = reorderRuleIds(
+			this.#rules.map((r) => r.id),
+			sourceId,
+			targetId
+		);
+		if (reordered !== undefined) void this.#workspaceContext.reorder(reordered);
 	}
 
 	#onDragEnd() {

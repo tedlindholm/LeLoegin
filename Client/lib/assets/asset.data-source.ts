@@ -2,6 +2,7 @@ import { UmbControllerBase } from '@umbraco-cms/backoffice/class-api';
 import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import { V1 } from '../api/index.js';
+import { mapDataSourceResponse } from '../utils/map-data-source-response.js';
 import {
 	mapApiLoginAsset,
 	mapApiLoginAssets,
@@ -38,10 +39,7 @@ export class LeLøginScreenAssetDataSource extends UmbControllerBase {
 	 */
 	async getAssets() {
 		const { data, error } = await tryExecute(this, V1.getAssets());
-		return {
-			data: data === undefined ? undefined : mapApiLoginAssets(data),
-			error
-		};
+		return mapDataSourceResponse(data, error, mapApiLoginAssets);
 	}
 
 	/**
@@ -72,10 +70,7 @@ export class LeLøginScreenAssetDataSource extends UmbControllerBase {
 			})
 		);
 
-		return {
-			data: data === undefined ? undefined : mapApiLoginAsset(data),
-			error
-		};
+		return mapDataSourceResponse(data, error, mapApiLoginAsset);
 	}
 
 	/**
@@ -97,10 +92,7 @@ export class LeLøginScreenAssetDataSource extends UmbControllerBase {
 			})
 		);
 
-		return {
-			data: data === undefined ? undefined : mapApiLoginAsset(data),
-			error
-		};
+		return mapDataSourceResponse(data, error, mapApiLoginAsset);
 	}
 
 	/**

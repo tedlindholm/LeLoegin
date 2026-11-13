@@ -38,10 +38,12 @@ export class LeLøginScreenRootWorkspace extends UmbElementMixin(HTMLElement) {
 	#rules: Array<LoginRule> = [];
 	#selectedRuleId: string | undefined = undefined;
 	#popoverOpen = false;
+	#loadError = false;
 	#ruleMenu: HTMLElement;
 	#selectorButton: HTMLElement;
 	#selectorLabel: HTMLElement;
 	#expandSymbol: HTMLElement;
+	#loadErrorTag: HTMLElement;
 
 	constructor() {
 		super();
@@ -54,6 +56,7 @@ export class LeLøginScreenRootWorkspace extends UmbElementMixin(HTMLElement) {
 		shadow.innerHTML = /* html */ `
 			<umb-workspace-editor headline="Le Løgin" alias="LeLøgin.Workspace.Root">
 				<login-screen-overview-dashboard id="dashboard"></login-screen-overview-dashboard>
+				<uui-tag slot="actions" color="danger" look="secondary" id="rules-load-error" hidden></uui-tag>
 				<uui-button slot="actions" look="secondary" id="rule-selector-button" popovertarget="le-løgin-rule-popover" hidden>
 					<span id="rule-selector-label"></span>
 					<uui-symbol-expand id="rule-expand"></uui-symbol-expand>
@@ -72,6 +75,7 @@ export class LeLøginScreenRootWorkspace extends UmbElementMixin(HTMLElement) {
 		this.#selectorButton = byId('rule-selector-button', 'rule selector button');
 		this.#selectorLabel = byId('rule-selector-label', 'rule selector label');
 		this.#expandSymbol = byId('rule-expand', 'rule expand symbol');
+		this.#loadErrorTag = byId('rules-load-error', 'rules load error');
 
 		shadow
 			.getElementById('le-løgin-rule-popover')
@@ -87,7 +91,15 @@ export class LeLøginScreenRootWorkspace extends UmbElementMixin(HTMLElement) {
 	}
 
 	async #loadRules() {
-		const { data } = await this.#ruleRepository.requestItems();
+		const { data, error } = await this.#ruleRepository.requestItems();
+		if (error !== undefined) {
+			this.#loadError = true;
+			this.#rules = [];
+			this.#selectedRuleId = undefined;
+			this.#render();
+			return;
+		}
+		this.#loadError = false;
 		this.#rules = [...(data ?? [])].sort((a, b) => a.priority - b.priority);
 		// If the currently selected rule was deleted, fall back to "Active screen".
 		if (
@@ -114,6 +126,10 @@ export class LeLøginScreenRootWorkspace extends UmbElementMixin(HTMLElement) {
 
 		this.#selectorLabel.textContent = label;
 		this.#selectorButton.setAttribute('label', label);
+		this.#loadErrorTag.toggleAttribute('hidden', !this.#loadError);
+		this.#loadErrorTag.textContent = this.#loadError
+			? this.localize.term('loginScreen_rulesLoadFailed')
+			: '';
 		// Hide the picker entirely when there's nothing to switch to.
 		if (this.#rules.length === 0) {
 			this.#selectorButton.setAttribute('hidden', '');

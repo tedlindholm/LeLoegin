@@ -18,4 +18,11 @@ describe('root workspace source', () => {
 		expect(source).not.toContain("querySelectorAll('uui-menu-item[data-rule-id]').forEach");
 		expect(source).not.toContain('this.#selectorButton.textContent =');
 	});
+
+	it('surfaces a load error when rules fail to load instead of hiding silently (3.12)', async () => {
+		const source = await readFile(workspaceElementFilePath, 'utf8');
+
+		expect(source).toContain('const { data, error } = await this.#ruleRepository.requestItems()');
+		expect(source).toContain('loginScreen_rulesLoadFailed');
+	});
 });

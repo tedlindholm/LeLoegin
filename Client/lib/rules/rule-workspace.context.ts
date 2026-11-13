@@ -2,8 +2,6 @@ import { UmbContextBase } from '@umbraco-cms/backoffice/class-api';
 import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
 import { UmbContextToken } from '@umbraco-cms/backoffice/context-api';
 import { UmbArrayState, UmbBooleanState } from '@umbraco-cms/backoffice/observable-api';
-import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
-import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import type { LoginRule } from '../models/index.js';
 import { LeLøginScreenRuleRepository } from './rule.repository.js';
 import { requestStructureReload } from '../utils/request-structure-reload.js';
@@ -26,7 +24,6 @@ export class LeLøginScreenRuleWorkspaceContext extends UmbContextBase {
 	#rules = new UmbArrayState<LoginRule>([], (rule) => rule.id);
 	#isLoading = new UmbBooleanState(false);
 	#loadError = new UmbBooleanState(false);
-	#localize = new UmbLocalizationController(this);
 
 	/** The rules in priority order. */
 	readonly rules = this.#rules.asObservable();
@@ -92,8 +89,9 @@ export class LeLøginScreenRuleWorkspaceContext extends UmbContextBase {
 		const changed = withNewPriorities.filter(
 			(rule, index) => rule.priority !== reordered[index]?.priority
 		);
-		const updates = changed.map((rule) => this.#repository.update(rule.id, rule));
-		const results = await Promise.all(updates);
+		const results = await Promise.all(
+			changed.map((rule) => this.#updateWithLatest(rule.id, (latest) => ({ ...latest, priority: rule.priority })))
+		);
 		if (results.some((result) => result.error !== undefined)) {
 			await this.#recoverFromFailedSave();
 		}
@@ -127,16 +125,23 @@ export class LeLøginScreenRuleWorkspaceContext extends UmbContextBase {
 			this.#rules.getValue().map((candidate) => (candidate.id === ruleId ? next : candidate))
 		);
 
-		const { error } = await this.#repository.update(ruleId, next);
+		const { error } = await this.#updateWithLatest(ruleId, (latest) => ({ ...latest, enabled }));
 		if (error) {
 			console.error('[LeLøginScreen] Failed to update rule enabled state', error);
 			await this.#recoverFromFailedSave();
 		}
 	}
 
+	async #updateWithLatest(ruleId: string, apply: (latest: LoginRule) => LoginRule) {
+		const { data: latest, error: readError } = await this.#repository.requestByUnique(ruleId);
+		if (readError || latest === undefined) {
+			return { data: undefined, error: readError ?? new Error('Rule not found.') };
+		}
+		return this.#repository.update(ruleId, apply(latest));
+	}
+
 	/**
-	 * Deletes a rule, removes it from the list and reloads the tree structure. On failure a danger
-	 * notification is shown.
+	 * Deletes a rule, removes it from the list and reloads the tree structure.
 	 *
 	 * @param ruleId - Identifier of the rule to delete
 	 * @returns `data: true` when deleted, otherwise `false` with the request error
@@ -145,7 +150,6 @@ export class LeLøginScreenRuleWorkspaceContext extends UmbContextBase {
 		const { data, error } = await this.#repository.delete(ruleId);
 		if (error) {
 			console.error('[LeLøginScreen] Failed to delete rule', error);
-			await this.#notifyFailure('loginScreen_ruleDeleteFailed');
 			return { data: false, error };
 		}
 
@@ -159,16 +163,11 @@ export class LeLøginScreenRuleWorkspaceContext extends UmbContextBase {
 
 	/**
 	 * The list was updated before the server answered. After a failure, reload it so it shows
-	 * what was actually saved — a reorder may have saved some rules and not others — and say so.
+	 * what was actually saved — a reorder may have saved some rules and not others. `tryExecute`
+	 * already shows the HTTP error notification.
 	 */
 	async #recoverFromFailedSave() {
 		await this.load();
-		await this.#notifyFailure('loginScreen_ruleSaveFailed');
-	}
-
-	async #notifyFailure(term: string) {
-		const notificationContext = await this.getContext(UMB_NOTIFICATION_CONTEXT);
-		notificationContext?.peek('danger', { data: { message: this.#localize.term(term) } });
 	}
 }
 

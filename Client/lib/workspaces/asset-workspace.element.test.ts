@@ -132,3 +132,15 @@ it('leaves background dragging to its own controller', async () => {
 	expect(workspaceElementSource).toContain('new LeLøginBackgroundDragController(');
 	expect(workspaceElementSource).not.toContain("addEventListener('pointerdown'");
 });
+
+it('preserves in-flight local draft fields when currentAsset emits a save response for the same asset (3.11)', async () => {
+	const { workspaceElementSource } = await readWorkspaceSources();
+
+	expect(workspaceElementSource).toContain('asset === null || asset.id !== this.#asset?.id');
+});
+
+it('observes loadError to distinguish load failures from not-found (3.12)', async () => {
+	const { workspaceElementSource } = await readWorkspaceSources();
+
+	expect(workspaceElementSource).toContain('ctx.loadError');
+});

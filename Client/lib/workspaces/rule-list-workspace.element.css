@@ -44,6 +44,12 @@
 	flex: 1;
 }
 
+.move-actions {
+	display: flex;
+	align-items: center;
+	gap: var(--uui-size-space-1);
+}
+
 .drag-handle {
 	display: flex;
 	align-items: center;

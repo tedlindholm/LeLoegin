@@ -79,6 +79,7 @@ export class LeLøginScreenRuleWorkspace extends UmbElementMixin(HTMLElement) {
 	#assets: Array<LoginImageAsset> = [];
 	#conditionMetadata: ConditionMetadata | null = null;
 	#isLoading = true;
+	#loadError = false;
 	#layout: HTMLElement;
 	#assetModalRouteBuilder: UmbModalRouteBuilder | null = null;
 	#thumbnails = new LeLøginAssetThumbnailController(this, () => this.#syncThumbnails());
@@ -132,6 +133,10 @@ export class LeLøginScreenRuleWorkspace extends UmbElementMixin(HTMLElement) {
 			this.#isLoading = loading;
 			this.#render();
 		});
+		this.observe(ctx.loadError, (loadError) => {
+			this.#loadError = loadError;
+			this.#render();
+		});
 		this.observe(ctx.name, (name) => {
 			if (this.#draft !== null && this.#draft.name !== name) {
 				this.#draft = { ...this.#draft, name };
@@ -178,7 +183,9 @@ export class LeLøginScreenRuleWorkspace extends UmbElementMixin(HTMLElement) {
 			throw new Error('Empty state template must have a single HTMLElement root.');
 		}
 		const message = queryRequired(box, '.empty-state', isHtmlElement, 'empty state message');
-		message.textContent = this.localize.term('loginScreen_ruleNotFound');
+		message.textContent = this.localize.term(
+			this.#loadError ? 'loginScreen_ruleLoadFailed' : 'loginScreen_ruleNotFound'
+		);
 		return box;
 	}
 

@@ -12,7 +12,6 @@ import type { UmbWorkspaceContext } from '@umbraco-cms/backoffice/workspace';
 import type { UmbEntityModel } from '@umbraco-cms/backoffice/entity';
 import { UmbStateManager } from '@umbraco-cms/backoffice/utils';
 import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
-import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import { LeLøginScreenAssetRepository } from '../assets/asset.repository.js';
 import type { LoginImageAsset } from '../models/index.js';
 import { LeLøginScreenConditionMetadataDataSource } from '../rules/condition-metadata.data-source.js';
@@ -24,10 +23,13 @@ import {
 } from '../rules/entity-types.js';
 import { LeLøginScreenRuleRepository } from '../rules/rule.repository.js';
 import { LatestLoad } from '../utils/latest-load.js';
+import { notifyMessage } from '../utils/notify.js';
 import {
 	requestChildrenReload,
 	requestStructureReload
 } from '../utils/request-structure-reload.js';
+import { LeLøginScreenUnsavedChangesGuard } from './unsaved-changes-guard.js';
+import { buildRuleEditorRoutes } from './rule-workspace.helpers.js';
 import {
 	cloneRuleDraft,
 	createEmptyRuleDraft,
@@ -75,6 +77,10 @@ export class LeLøginScreenRuleEditorWorkspaceContext extends UmbContextBase {
 	#assets = new UmbArrayState<LoginImageAsset>([], (asset) => asset.id);
 	#conditionMetadata = new UmbObjectState<ConditionMetadata | null>(null);
 	#isLoading = new UmbBooleanState(false);
+	#loadError = new UmbBooleanState(false);
+	#isDirty = new UmbBooleanState(false);
+	#editVersion = 0;
+	#unsavedChangesGuard: LeLøginScreenUnsavedChangesGuard;
 	#name = new UmbStringState('');
 	#unique = new UmbObjectState<string | undefined>(undefined);
 	#entityType = new UmbStringState(LOGIN_SCREEN_RULE_ENTITY_TYPE);
@@ -94,6 +100,10 @@ export class LeLøginScreenRuleEditorWorkspaceContext extends UmbContextBase {
 	readonly conditionMetadata = this.#conditionMetadata.asObservable();
 	/** True while a rule loads or saves. */
 	readonly isLoading = this.#isLoading.asObservable();
+	/** True when the last rule load failed with an error. */
+	readonly loadError = this.#loadError.asObservable();
+	/** True when the draft has unsaved edits. */
+	readonly isDirty = this.#isDirty.asObservable();
 	/** The draft's name, shown in the workspace header. */
 	readonly name = this.#name.asObservable();
 	/** Id of the rule; a draft id while creating. */
@@ -123,30 +133,30 @@ export class LeLøginScreenRuleEditorWorkspaceContext extends UmbContextBase {
 		this.#ruleRepository = new LeLøginScreenRuleRepository(this);
 		this.#assetRepository = new LeLøginScreenAssetRepository(this);
 		this.#conditionMetadataDataSource = new LeLøginScreenConditionMetadataDataSource(this);
+		this.#unsavedChangesGuard = new LeLøginScreenUnsavedChangesGuard(this, this.routes, () =>
+			this.getIsDirty()
+		);
 		this.#createUnderParent.setValue({
 			unique: null,
 			entityType: LOGIN_SCREEN_RULE_LIST_ENTITY_TYPE
 		});
-		this.routes.setRoutes([
-			{
-				path: 'create',
-				component: () => import('./rule-workspace.element.js'),
-				setup: () => this.#setUpCreate()
-			},
-			{
-				path: 'edit/:unique',
-				component: () => import('./rule-workspace.element.js'),
-				setup: (_component, info) => this.#setUpEdit(info.match.params.unique)
-			}
-		]);
+		this.routes.setRoutes(
+			buildRuleEditorRoutes(
+				() => this.#setUpCreate(),
+				(unique) => this.#setUpEdit(unique)
+			)
+		);
 	}
 
 	async #setUpCreate() {
-		this.#loads.begin();
+		const isCurrent = this.#loads.begin();
 		this.#unique.setValue(globalThis.crypto.randomUUID());
 		this.#isNew.setValue(true);
 		await Promise.all([this.loadAssets(), this.loadConditionMetadata()]);
+		if (!isCurrent()) return;
 		this.#showDraft(createEmptyRuleDraft(this.#conditionMetadata.getValue()));
+		this.#isDirty.setValue(false);
+		this.#unsavedChangesGuard.reset();
 	}
 
 	async #setUpEdit(unique: string | undefined) {
@@ -171,25 +181,25 @@ export class LeLøginScreenRuleEditorWorkspaceContext extends UmbContextBase {
 	getEntityType() {
 		return LOGIN_SCREEN_RULE_ENTITY_TYPE;
 	}
-	/** @returns Id of the rule, a draft id while creating, or `undefined` before a route has matched. */
 	getUnique() {
 		return this.#unique.getValue();
 	}
-	/** @returns The draft's current name. */
 	getName(): string {
 		return this.#name.getValue();
 	}
-	/**
-	 * Renames the draft; nothing is saved until submit.
-	 *
-	 * @param name - The new name.
-	 */
 	setName(name: string) {
 		this.updateDraft({ name });
 	}
-	/** @returns True until a new rule is first saved. */
 	getIsNew(): boolean {
 		return this.#isNew.getValue();
+	}
+	getIsDirty(): boolean {
+		return this.#isDirty.getValue();
+	}
+	/** Cleans up navigation guards when the workspace context is destroyed. */
+	override destroy() {
+		this.#unsavedChangesGuard.dispose();
+		super.destroy();
 	}
 	/** @returns A copy of the draft, or `null` when nothing is loaded. */
 	getDraft(): LoginRuleDraft | null {
@@ -236,22 +246,23 @@ export class LeLøginScreenRuleEditorWorkspaceContext extends UmbContextBase {
 	 */
 	async loadRule(ruleId: string) {
 		this.#isLoading.setValue(true);
-		if (!this.loading.getStates().some((s) => s.unique === 'loading')) {
-			this.loading.addState({
-				unique: 'loading',
-				message: this.#localize.term('loginScreen_loadingRule')
-			});
-		}
+		this.#loadError.setValue(false);
+		const loadingText = this.#localize.term('loginScreen_loadingRule');
+		if (!this.loading.getStates().some((s) => s.unique === 'loading'))
+			this.loading.addState({ unique: 'loading', message: loadingText });
 		this.#unique.setValue(ruleId);
 		const isLatest = this.#loads.begin();
 		// Drop the previous rule's draft before fetching. If this load fails or is overtaken by a
 		// newer one, Save then has nothing to write, rather than the previous rule's values under this id.
 		this.#showDraft(null);
+		this.#isDirty.setValue(false);
+		this.#unsavedChangesGuard.reset();
 		try {
 			const { data, error } = await this.#ruleRepository.requestByUnique(ruleId);
 			if (!isLatest()) return { data: undefined, error: undefined };
 			if (error) {
 				console.error('[LeLøginScreen] Failed to load rule', error);
+				this.#loadError.setValue(true);
 				return { data: undefined, error };
 			}
 			const draft = data === undefined ? null : ruleToDraft(data);
@@ -276,13 +287,11 @@ export class LeLøginScreenRuleEditorWorkspaceContext extends UmbContextBase {
 	 */
 	applySavedEnabled(ruleId: string, enabled: boolean) {
 		if (this.#unique.getValue() !== ruleId) return;
-		if (this.#draft !== null) {
-			this.#draft = { ...this.#draft, enabled };
-			this.#currentRule.setValue(cloneRuleDraft(this.#draft));
-			return;
-		}
-		const current = this.#currentRule.getValue();
-		if (current !== null) this.#currentRule.setValue({ ...current, enabled });
+		const target = this.#draft ?? this.#currentRule.getValue();
+		if (target === null) return;
+		const updated = { ...target, enabled };
+		if (this.#draft !== null) this.#draft = updated;
+		this.#currentRule.setValue(cloneRuleDraft(updated));
 	}
 
 	/**
@@ -292,6 +301,8 @@ export class LeLøginScreenRuleEditorWorkspaceContext extends UmbContextBase {
 	 */
 	updateDraft(update: Partial<LoginRuleDraft>) {
 		if (this.#draft === null) return;
+		this.#editVersion++;
+		this.#isDirty.setValue(true);
 		this.#draft = { ...this.#draft, ...update };
 		if (update.name !== undefined) this.#name.setValue(update.name);
 	}
@@ -307,19 +318,21 @@ export class LeLøginScreenRuleEditorWorkspaceContext extends UmbContextBase {
 		if (this.#draft === null) return false;
 		const validationState = validateRuleDraft(this.#draft);
 		if (validationState !== undefined) {
-			await this.#notify(
+			await notifyMessage(
+				this,
 				'danger',
 				this.#localize.term(RULE_DRAFT_VALIDATION_TERMS[validationState])
 			);
 			return false;
 		}
 		const wasNew = this.#draft.id === undefined;
-		const { data, error } = await this.#saveRule(this.#draft);
+		const { data, error } = await this.#saveRule({ ...this.#draft, name: this.#draft.name.trim() });
 		if (error || data === undefined) {
-			await this.#notify('danger', this.#localize.term('loginScreen_ruleSaveFailed'));
+			await notifyMessage(this, 'danger', this.#localize.term('loginScreen_ruleSaveFailed'));
 			return false;
 		}
-		await this.#notify(
+		await notifyMessage(
+			this,
 			'positive',
 			this.#localize.term(wasNew ? 'loginScreen_ruleCreated' : 'loginScreen_ruleSaved')
 		);
@@ -330,13 +343,9 @@ export class LeLøginScreenRuleEditorWorkspaceContext extends UmbContextBase {
 		return true;
 	}
 
-	async #notify(color: 'positive' | 'danger', message: string) {
-		const ctx = await this.getContext(UMB_NOTIFICATION_CONTEXT);
-		ctx?.peek(color, { data: { message } });
-	}
-
 	async #saveRule(draft: LoginRuleDraft) {
 		const isCurrent = this.#loads.begin();
+		const editVersionAtSave = this.#editVersion;
 		this.#isLoading.setValue(true);
 		const rule = draftToRule(draft, globalThis.crypto.randomUUID());
 		try {
@@ -352,6 +361,9 @@ export class LeLøginScreenRuleEditorWorkspaceContext extends UmbContextBase {
 			// Only update editor state and URL if the user has not switched to another rule or create route.
 			if (data !== undefined && isCurrent()) {
 				this.#showDraft(ruleToDraft(data));
+				if (this.#editVersion === editVersionAtSave) {
+					this.#isDirty.setValue(false);
+				}
 				this.#unique.setValue(data.id);
 				this.#isNew.setValue(false);
 				if (draft.id === undefined)

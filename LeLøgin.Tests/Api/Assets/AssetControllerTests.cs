@@ -407,6 +407,32 @@ public sealed class AssetControllerTests : IDisposable
 		Assert.Equal(1.0, asset.Zoom);
 	}
 
+	[Theory]
+	[InlineData("")]
+	[InlineData("   ")]
+	public async Task Update_Returns_BadRequest_When_Name_Is_Whitespace(string blankName)
+	{
+		var store = new FakeLeLøginScreenStore().WithAsset(Background("asset-1"));
+		var controller = CreateController(store);
+
+		var result = await controller.Update("asset-1", new AssetUpdateRequest(blankName, null, null, null, null, null));
+
+		Assert.IsType<BadRequestObjectResult>(result);
+	}
+
+	[Fact]
+	public async Task Update_Trims_Name()
+	{
+		var store = new FakeLeLøginScreenStore().WithAsset(Background("asset-1"));
+		var controller = CreateController(store);
+
+		var result = await controller.Update("asset-1", new AssetUpdateRequest("  Winter Sky  ", null, null, null, null, null));
+
+		var ok = Assert.IsType<OkObjectResult>(result);
+		var asset = Assert.IsType<LoginImageAsset>(ok.Value);
+		Assert.Equal("Winter Sky", asset.Name);
+	}
+
 	[Fact]
 	public async Task Delete_Removes_The_Image_From_Rules_And_Disables_A_Rule_Left_Without_Images()
 	{

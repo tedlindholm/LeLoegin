@@ -37,11 +37,11 @@ const localisationManifests = [
 		weight: -110,
 		name: 'Norsk',
 		meta: {
-			culture: 'nb-no'
+			culture: 'nb'
 		},
 		js: () => import('./nb-no.js')
 	}
 ] satisfies ReadonlyArray<ManifestLocalization>;
 
-/** Localisation extensions for every culture Le Løgin ships (en, da, sv, nb-no). */
+/** Localisation extensions for every culture Le Løgin ships (en, da, sv, nb). */
 export const manifests = [...localisationManifests];

@@ -91,13 +91,17 @@ export const englishDictionary = {
 		validationRuleAsset: 'An image is required.',
 		validationConditionValue: 'Each condition must have a value.',
 		assetsLoadFailed: 'Could not load the images. See the browser console for details.',
+		assetLoadFailed: 'Could not load the image. See the browser console for details.',
 		rulesLoadFailed: 'Could not load the rules. See the browser console for details.',
+		ruleLoadFailed: 'Could not load the rule. See the browser console for details.',
 		loadingRule: 'Loading rule',
 		previewOnly: 'Preview only',
 		assetDeleteRulesReduced: 'These rules will no longer show this image: %0%.',
 		assetDeleteRulesDisabled: 'These rules have no other images and will be disabled: %0%.',
 		assetDeleteFailed: 'Could not delete the image.',
-		toggleEnabled: 'Enable / Disable'
+		toggleEnabled: 'Enable / Disable',
+		moveRuleUp: 'Move rule up',
+		moveRuleDown: 'Move rule down'
 	}
 } satisfies UmbLocalizationDictionary;
 

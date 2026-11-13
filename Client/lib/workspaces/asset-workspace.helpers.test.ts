@@ -74,6 +74,21 @@ describe('computeFocalPointFromDrag when zoomed', () => {
 		});
 		expect(result.left).toBeCloseTo(0.5 - 100 / 1600, 5);
 	});
+
+	it('clamps an out-of-bounds zoom=1 startFocalPoint to [0.5/zoom, 1 - 0.5/zoom] before dragging (3.14)', () => {
+		// At zoom=2, valid focal point range is [0.25, 0.75].
+		// If startFocalPoint.left was 0.05 (valid at zoom=1), dragging left (-16px)
+		// should pan smoothly rightwards from 0.25 -> 0.25 + 16/1600 = 0.26, not jump from 0.05.
+		const result = computeFocalPointFromDrag({
+			...wideImageOnTallContainer,
+			startFocalPoint: { left: 0.05, top: 0.95 },
+			deltaX: -16,
+			deltaY: 0,
+			zoom: 2
+		});
+		expect(result.left).toBeCloseTo(0.26, 5);
+		expect(result.top).toBeCloseTo(0.75, 5);
+	});
 });
 
 describe('computeFocalPointFromDrag alignment with crop-preview', () => {

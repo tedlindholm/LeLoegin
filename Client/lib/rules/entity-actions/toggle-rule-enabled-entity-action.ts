@@ -31,8 +31,8 @@ export class LeLøginScreenToggleRuleEnabledEntityAction extends UmbEntityAction
 				? (await repository.update(unique, { ...rule, enabled })).error === undefined
 				: false;
 
-		await this.#notify(saved);
 		if (!saved || enabled === undefined) return;
+		await this.#notify(true);
 
 		// The rule editor and rule list are only in scope when the action runs from them.
 		const editor = await this.getContext(UMB_LOGIN_SCREEN_RULE_EDITOR_WORKSPACE_CONTEXT).catch(

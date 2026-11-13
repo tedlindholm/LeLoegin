@@ -2,6 +2,7 @@ import { UmbControllerBase } from '@umbraco-cms/backoffice/class-api';
 import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import { V1 } from '../api/index.js';
+import { mapDataSourceResponse } from '../utils/map-data-source-response.js';
 import { toConditionMetadata } from '../models/api-adapters.js';
 import type { ConditionMetadata } from '../rules/rule-condition.js';
 
@@ -22,10 +23,6 @@ export class LeLøginScreenConditionMetadataDataSource extends UmbControllerBase
 	 */
 	async getConditionMetadata(): Promise<{ data: ConditionMetadata | undefined; error: unknown }> {
 		const { data, error } = await tryExecute(this, V1.getRulesConditionMetadata());
-
-		return {
-			data: data === undefined ? undefined : toConditionMetadata(data),
-			error
-		};
+		return mapDataSourceResponse(data, error, toConditionMetadata);
 	}
 }
