@@ -48,4 +48,10 @@ describe('LeLøginScreenRuleListWorkspace source', () => {
 		expect(source).toContain('loginScreen_moveRuleUp');
 		expect(source).toContain('loginScreen_moveRuleDown');
 	});
+
+	it('patches existing rows in place when rule order has not changed (4.11)', async () => {
+		const source = await readFile(workspaceElementFilePath, 'utf8');
+
+		expect(source).toContain('#patchRowsInPlace(');
+	});
 });

@@ -12,7 +12,9 @@ import { LeLøginScreenRuleWorkspaceContext } from '../rules/rule-workspace.cont
 import { cloneTemplate } from '../utils/template.js';
 
 import {
+	buildRuleListShadowMarkup,
 	getEventTargetElement,
+	getMatchingRuleRows,
 	getRequiredById,
 	queryRequired,
 	reorderRuleIds,
@@ -48,43 +50,6 @@ const isRefNodeElement = (el: Element | null): el is RefNodeElement =>
 	el instanceof HTMLElement && el.localName === 'uui-ref-node';
 const isLabelElement = (el: Element | null): el is LabelElement =>
 	el instanceof HTMLElement && el.localName === 'uui-button';
-
-function buildRuleListShadowMarkup(headline: string, createLabel: string): string {
-	const safeHeadline = escapeHTML(headline);
-	const safeCreate = escapeHTML(createLabel);
-	return /* html */ `
-		<umb-workspace-editor headline="${safeHeadline}" alias="LeLøgin.Workspace.RuleList" enforceNoFooter>
-			<div id="layout">
-				<div id="actions">
-					<uui-button look="outline" href="${LOGIN_SCREEN_RULE_CREATE_WORKSPACE_PATH}" label="${safeCreate}">
-						${safeCreate}
-					</uui-button>
-				</div>
-				<uui-box id="list-box"></uui-box>
-			</div>
-			<template id="row-template">
-				<div class="rule-row">
-					<div class="drag-handle" draggable="true">
-						<uui-icon name="icon-navigation"></uui-icon>
-					</div>
-					<uui-ref-node class="ref"></uui-ref-node>
-					<div class="move-actions">
-						<uui-button class="move-up-btn" look="default" color="default" compact>
-							<uui-icon name="icon-arrow-up"></uui-icon>
-						</uui-button>
-						<uui-button class="move-down-btn" look="default" color="default" compact>
-							<uui-icon name="icon-arrow-down"></uui-icon>
-						</uui-button>
-					</div>
-					<uui-toggle class="enabled-toggle" hide-label></uui-toggle>
-					<uui-button class="delete-btn" look="default" color="default" compact>
-						<uui-icon name="icon-trash"></uui-icon>
-					</uui-button>
-				</div>
-			</template>
-		</umb-workspace-editor>
-	`;
-}
 
 /**
  * Rule list workspace: lists the rules in evaluation order (priority, then id), with a Create
@@ -136,7 +101,9 @@ export class LeLøginScreenRuleListWorkspace extends UmbElementMixin(HTMLElement
 		if (shadow === null) return;
 		shadow.innerHTML = buildRuleListShadowMarkup(
 			this.localize.term('loginScreen_rules'),
-			this.localize.term('general_create')
+			this.localize.term('general_create'),
+			LOGIN_SCREEN_RULE_CREATE_WORKSPACE_PATH,
+			escapeHTML
 		);
 		this.#listBox = getRequiredById(shadow, 'list-box', isHtmlElement, 'list box');
 		this.#rowTemplate = getRequiredById(shadow, 'row-template', isTemplateElement, 'row template');
@@ -174,6 +141,8 @@ export class LeLøginScreenRuleListWorkspace extends UmbElementMixin(HTMLElement
 			return;
 		}
 
+		if (this.#patchRowsInPlace(this.#rules)) return;
+
 		const list = document.createElement('div');
 		list.className = 'rule-list';
 
@@ -184,18 +153,30 @@ export class LeLøginScreenRuleListWorkspace extends UmbElementMixin(HTMLElement
 		this.#listBox.replaceChildren(list);
 	}
 
+	#patchRowsInPlace(rules: ReadonlyArray<LoginRule>): boolean {
+		const rows = getMatchingRuleRows(this.#listBox, rules);
+		if (rows === undefined) return false;
+		rows.forEach((row, index) => {
+			const rule = rules[index];
+			if (rule !== undefined) this.#populateRow(row, rule);
+		});
+		return true;
+	}
+
 	#buildRow(rule: LoginRule): HTMLElement {
 		if (this.#rowTemplate === undefined) {
 			throw new Error('Rule row template is not initialised.');
 		}
-
 		const fragment = cloneTemplate(this.#rowTemplate, 'rule row');
-
 		const row = fragment.firstElementChild;
 		if (!(row instanceof HTMLElement)) {
 			throw new Error('Rule row template must have a single HTMLElement root.');
 		}
+		this.#populateRow(row, rule);
+		return row;
+	}
 
+	#populateRow(row: HTMLElement, rule: LoginRule) {
 		row.dataset.id = rule.id;
 
 		const handle = queryRequired(row, '.drag-handle', isHtmlElement, 'drag handle');
@@ -207,6 +188,7 @@ export class LeLøginScreenRuleListWorkspace extends UmbElementMixin(HTMLElement
 
 		const toggle = queryRequired(row, '.enabled-toggle', isToggleElement, 'enabled toggle');
 		toggle.checked = rule.enabled;
+		toggle.setAttribute('hide-label', '');
 		toggle.setAttribute('label', this.localize.term('webhooks_enabled'));
 		toggle.dataset.id = rule.id;
 
@@ -224,8 +206,6 @@ export class LeLøginScreenRuleListWorkspace extends UmbElementMixin(HTMLElement
 		const deleteButton = queryRequired(row, '.delete-btn', isLabelElement, 'delete button');
 		deleteButton.label = this.localize.term('general_delete');
 		deleteButton.dataset.id = rule.id;
-
-		return row;
 	}
 
 	#onDragStartDelegate = (e: Event) => {

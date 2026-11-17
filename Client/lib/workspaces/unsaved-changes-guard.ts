@@ -23,18 +23,26 @@ function isWillChangeStateEvent(event: Event): event is CustomEvent<WillChangeSt
  *
  * @param routeManager - The workspace's route manager.
  * @param newUrl - The URL the navigation is heading towards.
+ * @param origin - Base origin used when `newUrl` is a relative string.
  * @returns True when the navigation leaves the current workspace route.
  */
 export function willNavigateAwayFromWorkspace(
 	routeManager: UmbWorkspaceRouteManager,
-	newUrl: string | URL
+	newUrl: string | URL,
+	origin = typeof window !== 'undefined' ? window.location.origin : undefined
 ): boolean {
 	const basePath = routeManager.getAbsolutePath();
 	if (basePath === undefined) return false;
 	const localPath = routeManager.getActiveLocalPath();
 	if (localPath === '') return false;
-	const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost';
-	const newPath = (newUrl instanceof URL ? newUrl : new URL(newUrl, origin)).pathname;
+	const resolvedUrl =
+		newUrl instanceof URL
+			? newUrl
+			: origin !== undefined
+				? new URL(newUrl, origin)
+				: undefined;
+	if (resolvedUrl === undefined) return false;
+	const newPath = resolvedUrl.pathname;
 	const absolutePath = `${basePath}/${localPath}`;
 	return !(newPath === absolutePath || newPath.startsWith(`${absolutePath}/`));
 }
@@ -118,4 +126,3 @@ export class LeLøginScreenUnsavedChangesGuard {
 		}
 	}
 }
-

@@ -1,6 +1,6 @@
 import { UmbRepositoryBase } from '@umbraco-cms/backoffice/repository';
 import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
-import type { FocalPoint, LoginImageAsset, LoginImageAssetKind } from '../models/index.js';
+import type { FocalPoint, LoginImageAssetKind } from '../models/index.js';
 import { LeLøginScreenAssetDataSource } from './asset.data-source.js';
 
 /**
@@ -122,11 +122,7 @@ export class LeLøginScreenAssetRepository extends UmbRepositoryBase {
 	 * ```
 	 */
 	async requestByUnique(unique: string) {
-		const { data, error } = await this.requestItems();
-		return {
-			data: data?.find((asset: LoginImageAsset) => asset.id === unique),
-			error
-		};
+		return this.#dataSource.getAsset(unique);
 	}
 
 	/**

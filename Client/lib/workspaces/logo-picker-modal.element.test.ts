@@ -17,4 +17,11 @@ describe('logo picker modal source', () => {
 		expect(source).not.toContain('this.#layout.innerHTML =');
 		expect(source).not.toContain("this.#layout.querySelector('#close-btn')?.addEventListener");
 	});
+
+	it('updates logo thumbnails in place instead of rebuilding the modal on each thumbnail (4.12)', async () => {
+		const source = await readFile(modalElementFilePath, 'utf8');
+
+		expect(source).toContain('#syncThumbnails()');
+		expect(source).not.toContain('new LeLøginAssetThumbnailController(this, () => this.#render())');
+	});
 });

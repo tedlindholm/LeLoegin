@@ -269,13 +269,15 @@ describe('willNavigateAwayFromWorkspace (3.17)', () => {
 		expect(
 			willNavigateAwayFromWorkspace(
 				ctx.routes,
-				'/section/settings/workspace/login-screen-rule/edit/rule-1'
+				'/section/settings/workspace/login-screen-rule/edit/rule-1',
+				'https://example.test'
 			)
 		).toBe(false);
 		expect(
 			willNavigateAwayFromWorkspace(
 				ctx.routes,
-				'/section/settings/workspace/login-screen-rule-list'
+				'/section/settings/workspace/login-screen-rule-list',
+				'https://example.test'
 			)
 		).toBe(true);
 	});

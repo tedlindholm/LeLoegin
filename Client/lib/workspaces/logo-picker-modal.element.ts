@@ -65,7 +65,7 @@ export class LeLøginLogoPickerModalElement
 {
 	#modalContext: UmbModalContext<LogoPickerModalData, LogoPickerModalValue> | undefined;
 	#layout: HTMLElement;
-	#thumbnails = new LeLøginAssetThumbnailController(this, () => this.#render());
+	#thumbnails = new LeLøginAssetThumbnailController(this, () => this.#syncThumbnails());
 
 	/** The modal context holding the logos and current choice. Setting it re-renders the dialog. */
 	get modalContext() {
@@ -178,6 +178,18 @@ export class LeLøginLogoPickerModalElement
 		image.alt = asset.altText ?? asset.name;
 
 		return card;
+	}
+
+	#syncThumbnails() {
+		for (const card of this.#layout.querySelectorAll<HTMLElement>(
+			'uui-card-media[data-asset-id]'
+		)) {
+			const assetId = card.dataset['assetId'];
+			const image = card.querySelector('img');
+			if (assetId === undefined || assetId.length === 0 || image === null) continue;
+			const url = this.#thumbnails.peek(assetId);
+			if (url !== undefined && image.src !== url) image.src = url;
+		}
 	}
 }
 

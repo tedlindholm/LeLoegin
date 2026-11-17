@@ -83,3 +83,21 @@ it('creates no URL for a thumbnail that arrives after disposal', async () => {
 	expect(harness.created).toEqual([]);
 	expect(harness.changes()).toBe(0);
 });
+
+it('aborts in-flight thumbnail requests when disposed (4.13)', async () => {
+	let capturedSignal: AbortSignal | undefined;
+	const urls = new AssetThumbnailUrls(
+		(_assetId, signal) => {
+			capturedSignal = signal;
+			return new Promise<Blob | undefined>(() => {});
+		},
+		() => {},
+		{ create: () => 'blob:test/1', revoke: () => {} }
+	);
+
+	urls.peek('asset-abort');
+	expect(capturedSignal?.aborted).toBe(false);
+
+	urls.dispose();
+	expect(capturedSignal?.aborted).toBe(true);
+});

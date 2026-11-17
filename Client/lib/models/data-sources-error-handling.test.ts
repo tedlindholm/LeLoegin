@@ -1,17 +1,28 @@
 import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { getAssetsMock, getAssetsByIdMock, getRulesMock, getRulesByIdMock, getConditionMetadataMock } =
-	vi.hoisted(() => ({
-		getAssetsMock: vi.fn(),
-		getAssetsByIdMock: vi.fn(),
-		getRulesMock: vi.fn(),
-		getRulesByIdMock: vi.fn(),
-		getConditionMetadataMock: vi.fn()
-	}));
+const {
+	getAssetsMock,
+	getAssetsByIdMock,
+	putAssetsByIdMock,
+	getRulesMock,
+	getRulesByIdMock,
+	getConditionMetadataMock
+} = vi.hoisted(() => ({
+	getAssetsMock: vi.fn(),
+	getAssetsByIdMock: vi.fn(),
+	putAssetsByIdMock: vi.fn(),
+	getRulesMock: vi.fn(),
+	getRulesByIdMock: vi.fn(),
+	getConditionMetadataMock: vi.fn()
+}));
 
 vi.mock('@umbraco-cms/backoffice/class-api', () => ({
 	UmbControllerBase: class {}
+}));
+
+vi.mock('@umbraco-cms/backoffice/repository', () => ({
+	UmbRepositoryBase: class {}
 }));
 
 vi.mock('@umbraco-cms/backoffice/resources', () => ({
@@ -22,6 +33,7 @@ vi.mock('../api/index.js', () => ({
 	V1: {
 		getAssets: getAssetsMock,
 		getAssetsById: getAssetsByIdMock,
+		putAssetsById: putAssetsByIdMock,
 		getRules: getRulesMock,
 		getRulesById: getRulesByIdMock,
 		getRulesConditionMetadata: getConditionMetadataMock
@@ -29,6 +41,7 @@ vi.mock('../api/index.js', () => ({
 }));
 
 import { LeLøginScreenAssetDataSource } from '../assets/asset.data-source.js';
+import { LeLøginScreenAssetRepository } from '../assets/asset.repository.js';
 import { LeLøginScreenConditionMetadataDataSource } from '../rules/condition-metadata.data-source.js';
 import { LeLøginScreenRuleDataSource } from '../rules/rule.data-source.js';
 
@@ -83,3 +96,44 @@ describe('data source adapter error handling (3.8)', () => {
 	});
 });
 
+describe('asset repository and data source performance (4.7 & 4.8)', () => {
+	const rawAsset = {
+		id: 'asset-1',
+		name: 'Updated',
+		kind: 'background',
+		storagePath: 'assets/asset-1.jpg',
+		width: 800,
+		height: 600,
+		createdAt: '2026-11-17T00:00:00Z',
+		updatedAt: '2026-11-17T00:00:00Z'
+	};
+
+	it('requestByUnique fetches a single asset without downloading the full asset list (4.7)', async () => {
+		const repo = new LeLøginScreenAssetRepository(stubHost);
+		getAssetsByIdMock.mockResolvedValueOnce({ data: rawAsset, error: undefined });
+
+		const result = await repo.requestByUnique('asset-1');
+
+		expect(getAssetsByIdMock).toHaveBeenCalledWith({ path: { id: 'asset-1' } });
+		expect(getAssetsMock).not.toHaveBeenCalled();
+		expect(result.data?.id).toBe('asset-1');
+	});
+
+	it('updateAsset maps the PUT response directly without a follow-up GET (4.8)', async () => {
+		const dataSource = new LeLøginScreenAssetDataSource(stubHost);
+		putAssetsByIdMock.mockResolvedValueOnce({ data: rawAsset, error: undefined });
+
+		const result = await dataSource.updateAsset('asset-1', {
+			name: 'Updated',
+			altText: null,
+			greetingText: null,
+			logoAssetId: null,
+			focalPoint: null,
+			zoom: null
+		});
+
+		expect(putAssetsByIdMock).toHaveBeenCalledTimes(1);
+		expect(getAssetsByIdMock).not.toHaveBeenCalled();
+		expect(result.data?.name).toBe('Updated');
+	});
+});

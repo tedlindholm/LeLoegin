@@ -101,6 +101,7 @@ export class LeLøginScreenOverviewDashboard extends UmbElementMixin(HTMLElement
 	}
 
 	#render() {
+		if (!this.isConnected) return;
 		if (this.#previewContext !== undefined) {
 			this.#previewBox.setAttribute('headline', this.#previewContext.name);
 		} else {
@@ -123,7 +124,10 @@ export class LeLøginScreenOverviewDashboard extends UmbElementMixin(HTMLElement
 			case 'loaded':
 				if (this.#activeImage === undefined) {
 					this.#previewBox.replaceChildren();
-				} else {
+				} else if (
+					this.#authPreview === undefined ||
+					!this.#previewBox.contains(this.#authPreview)
+				) {
 					this.#previewBox.replaceChildren(cloneTemplate(previewShellTemplate, 'preview shell'));
 				}
 				break;
@@ -164,8 +168,8 @@ export class LeLøginScreenOverviewDashboard extends UmbElementMixin(HTMLElement
 				? await this.#repository.requestActive()
 				: await this.#repository.requestPreviewForRule(selectedAtFetch.id);
 
-		// Drop the response if the user has since changed selection.
-		if (selectedAtFetch?.id !== this.#previewContext?.id) return;
+		// Drop the response if disconnected or if the user has since changed selection.
+		if (!this.isConnected || selectedAtFetch?.id !== this.#previewContext?.id) return;
 
 		if (error) {
 			this.#activeImage = undefined;

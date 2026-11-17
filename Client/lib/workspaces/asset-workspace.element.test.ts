@@ -144,3 +144,10 @@ it('observes loadError to distinguish load failures from not-found (3.12)', asyn
 
 	expect(workspaceElementSource).toContain('ctx.loadError');
 });
+
+it('reuses the rendered workspace body when only draft or preview state updates (4.9)', async () => {
+	const { workspaceElementSource } = await readWorkspaceSources();
+
+	expect(workspaceElementSource).toContain('#renderedBodyKey');
+	expect(workspaceElementSource).toContain('#syncRenderedBody(');
+});

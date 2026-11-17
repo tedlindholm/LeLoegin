@@ -216,7 +216,9 @@ const ensurePreviewProviders = (shadowRoot: ShadowRoot, noteText: string) => {
 		previewNote.id = PREVIEW_PROVIDER_NOTE_ID;
 		providers.insertAdjacentElement('afterend', previewNote);
 	}
-	previewNote.textContent = noteText;
+	if (previewNote.textContent !== noteText) {
+		previewNote.textContent = noteText;
+	}
 };
 
 // Crop simulation that mirrors runtime's ImageSharp `cc=` + center/cover output

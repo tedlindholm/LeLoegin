@@ -87,3 +87,18 @@ describe('rule tree data source', () => {
 		expect(result.data).toEqual([]);
 	});
 });
+
+describe('rule tree data source — single-item lookup (4.16)', () => {
+	it('uses requestByUnique for getAncestorsOf when available instead of fetching every rule (4.16)', async () => {
+		const config = buildDataSourceConfig({
+			requestItems: () => {
+				throw new Error('requestItems should not be called');
+			},
+			requestByUnique: async (id: string) => ({ data: rule(id), error: undefined })
+		});
+
+		const result = await config.getAncestorsOf(ancestorsArgs('r2'));
+
+		expect(result.data?.map((item) => item.id)).toEqual(['r2']);
+	});
+});

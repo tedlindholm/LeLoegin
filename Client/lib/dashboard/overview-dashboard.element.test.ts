@@ -45,4 +45,11 @@ describe('overview dashboard chrome', () => {
 		expect(source).toContain('const unhandledState: never = this.#state;');
 		expect(source).not.toContain("if (this.#state === '");
 	});
+
+	it('skips rendering when disconnected and updates auth-view in place (4.10)', async () => {
+		const source = await readFile(dashboardElementFilePath, 'utf8');
+
+		expect(source).toContain('if (!this.isConnected) return;');
+		expect(source).toContain('!this.#previewBox.contains(this.#authPreview)');
+	});
 });

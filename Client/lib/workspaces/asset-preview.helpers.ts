@@ -107,6 +107,69 @@ function measureCentre(
 	};
 }
 
+/** Computes a structural key for the rendered asset workspace body so in-place updates skip full rebuilds. */
+export function computeAssetBodyKey(
+	isLoading: boolean,
+	loadError: boolean,
+	asset: { id: string; kind: string } | null
+): string {
+	if (isLoading) return 'loading';
+	if (asset === null) return loadError ? 'error' : 'empty';
+	return `${asset.id}:${asset.kind}`;
+}
+
+/** Updates zoom buttons or logo preview image in place without rebuilding the workspace body. */
+export function syncRenderedAssetPreview(args: {
+	root: ShadowRoot | null;
+	isBackground: boolean;
+	previewUrl: string | undefined;
+	zoom: number;
+	zoomMin: number;
+	zoomMax: number;
+}) {
+	if (!args.isBackground) {
+		const img = args.root?.querySelector('img.logo-preview-image');
+		if (
+			img instanceof HTMLImageElement &&
+			args.previewUrl !== undefined &&
+			img.src !== args.previewUrl
+		) {
+			img.src = args.previewUrl;
+		}
+		return;
+	}
+	args.root
+		?.querySelector('#asset-zoom-in')
+		?.toggleAttribute('disabled', args.zoom >= args.zoomMax);
+	args.root
+		?.querySelector('#asset-zoom-out')
+		?.toggleAttribute('disabled', args.zoom <= args.zoomMin);
+}
+
+/** Measures the visible preview frame rect for background drag panning. */
+export function measureAuthPreviewFrame(
+	authPreview: HTMLElement | undefined,
+	shell: HTMLElement
+): { width: number; height: number } {
+	const graphic = authPreview?.shadowRoot?.getElementById('graphic');
+	const rect = (graphic instanceof HTMLElement ? graphic : shell).getBoundingClientRect();
+	return { width: rect.width, height: rect.height };
+}
+
+/** Positions the inline greeting overlay inside `root` from the auth preview's greeting slot. */
+export function applyGreetingOverlayPosition(
+	root: ShadowRoot | null,
+	authPreview: HTMLElement | undefined
+) {
+	if (authPreview === undefined) return;
+	const pos = measureGreetingPosition(authPreview);
+	if (pos === null) return;
+	const field = root?.querySelector<HTMLElement>('.preview-greeting-field');
+	if (!field) return;
+	field.style.setProperty('--greeting-left', `${pos.leftPct.toFixed(1)}%`);
+	field.style.setProperty('--greeting-top', `${pos.topPct.toFixed(1)}%`);
+}
+
 /**
  * Finds where the greeting sits in the auth preview, for placing the greeting overlay.
  *

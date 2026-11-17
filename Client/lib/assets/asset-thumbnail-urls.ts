@@ -29,11 +29,12 @@ const browserObjectUrls: ObjectUrlFactory = {
  * revokes every URL handed out, which invalidates them.
  */
 export class AssetThumbnailUrls {
-	readonly #load: (assetId: string) => Promise<Blob | undefined>;
+	readonly #load: (assetId: string, signal?: AbortSignal) => Promise<Blob | undefined>;
 	readonly #onChange: () => void;
 	readonly #objectUrls: ObjectUrlFactory;
 	readonly #requested = new Set<string>();
 	readonly #urls = new Map<string, string>();
+	readonly #abortControllers = new Map<string, AbortController>();
 	#disposed = false;
 
 	/**
@@ -44,7 +45,7 @@ export class AssetThumbnailUrls {
 	 * @param objectUrls - Creates and revokes the object URLs.
 	 */
 	constructor(
-		load: (assetId: string) => Promise<Blob | undefined>,
+		load: (assetId: string, signal?: AbortSignal) => Promise<Blob | undefined>,
 		onChange: () => void,
 		objectUrls: ObjectUrlFactory = browserObjectUrls
 	) {
@@ -70,9 +71,13 @@ export class AssetThumbnailUrls {
 		return undefined;
 	}
 
-	/** Revokes every URL this instance created and stops accepting late downloads. */
+	/** Revokes every URL this instance created and aborts any in-flight downloads. */
 	dispose() {
 		this.#disposed = true;
+		for (const controller of this.#abortControllers.values()) {
+			controller.abort();
+		}
+		this.#abortControllers.clear();
 		for (const url of this.#urls.values()) {
 			this.#objectUrls.revoke(url);
 		}
@@ -80,10 +85,16 @@ export class AssetThumbnailUrls {
 	}
 
 	async #loadUrl(assetId: string) {
-		const blob = await this.#load(assetId).catch(() => undefined);
-		if (blob === undefined || this.#disposed) return;
+		const controller = new AbortController();
+		this.#abortControllers.set(assetId, controller);
+		try {
+			const blob = await this.#load(assetId, controller.signal).catch(() => undefined);
+			if (blob === undefined || this.#disposed) return;
 
-		this.#urls.set(assetId, this.#objectUrls.create(blob));
-		this.#onChange();
+			this.#urls.set(assetId, this.#objectUrls.create(blob));
+			this.#onChange();
+		} finally {
+			this.#abortControllers.delete(assetId);
+		}
 	}
 }

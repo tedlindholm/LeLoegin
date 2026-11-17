@@ -44,4 +44,10 @@ describe('auth view preview customiser', () => {
 		expect(source).toContain("element.removeAttribute('src');");
 		expect(source).toContain("element.style.visibility = 'hidden';");
 	});
+
+	it('only writes previewNote.textContent when the note text actually changed (4.14)', async () => {
+		const source = await readFile(customiserFilePath, 'utf8');
+
+		expect(source).toContain('if (previewNote.textContent !== noteText)');
+	});
 });

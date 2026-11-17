@@ -234,4 +234,20 @@ describe('asset tree data source — failure recovery', () => {
 		expect(retried.error).toBeUndefined();
 		expect(retried.data?.items.map((item) => item.id)).toEqual(['bg-1']);
 	});
+
+	it('uses requestByUnique for getAncestorsOf when available instead of fetching every asset (4.16)', async () => {
+		const source = {
+			requestItems: () => {
+				throw new Error('requestItems should not be called');
+			},
+			requestByUnique: async (id: string) => ({ data: asset(id, 'background'), error: undefined })
+		};
+		const config = buildDataSourceConfig(source);
+
+		const result = await config.getAncestorsOf({
+			treeItem: { unique: 'bg-1', entityType: 'login-screen-asset' }
+		});
+
+		expect(result.data?.map((item) => item.id)).toEqual([BACKGROUND_GROUP_ID, 'bg-1']);
+	});
 });

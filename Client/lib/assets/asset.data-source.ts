@@ -167,7 +167,7 @@ export class LeLøginScreenAssetDataSource extends UmbControllerBase {
 		// absent key deserialises to null and clears the stored value), so the contract
 		// requires every key and this signature refuses to build a partial payload.
 		const body: ApiAssetUpdateBody = update;
-		const { error } = await tryExecute(
+		const { data, error } = await tryExecute(
 			this,
 			V1.putAssetsById({
 				path: { id: assetId },
@@ -175,14 +175,7 @@ export class LeLøginScreenAssetDataSource extends UmbControllerBase {
 			})
 		);
 
-		if (error) {
-			return {
-				data: undefined,
-				error
-			};
-		}
-
-		return this.getAsset(assetId);
+		return mapDataSourceResponse(data, error, mapApiLoginAsset);
 	}
 
 	/**

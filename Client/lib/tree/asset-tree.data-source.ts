@@ -17,7 +17,8 @@ import type { LoginImageAssetKind } from '../models/index.js';
  * The slice of {@link LeLøginScreenAssetRepository} the tree needs. Declared structurally so the
  * tree logic stays free of the backoffice runtime and can be exercised directly in tests.
  */
-export type AssetItemsSource = Pick<LeLøginScreenAssetRepository, 'requestItems'>;
+export type AssetItemsSource = Pick<LeLøginScreenAssetRepository, 'requestItems'> &
+	Partial<Pick<LeLøginScreenAssetRepository, 'requestByUnique'>>;
 
 type AssetItemsResponse = Awaited<ReturnType<AssetItemsSource['requestItems']>>;
 type AssetItemsError = NonNullable<AssetItemsResponse['error']>;
@@ -216,10 +217,17 @@ const createGetChildrenOf =
 	};
 
 const createGetAncestorsOf =
-	(leafProvider: AssetTreeLeafProvider) =>
+	(leafProvider: AssetTreeLeafProvider, assetSource: AssetItemsSource) =>
 	async (args: UmbTreeAncestorsOfRequestArgs): Promise<AssetTreeAncestorsResult> => {
 		const groupKind = KIND_BY_GROUP_ID[args.treeItem.unique];
 		if (groupKind !== undefined) return { data: [] };
+		if (assetSource.requestByUnique !== undefined) {
+			const { data, error } = await assetSource.requestByUnique(args.treeItem.unique);
+			if (error) return { error };
+			if (data === undefined) return { data: [] };
+			const leaf = toLeafServerItem(data);
+			return { data: [toGroupServerItem(leaf.assetKind), leaf] };
+		}
 		const { leaves, error } = await leafProvider.fetch();
 		if (error) return { error };
 		const asset = (leaves ?? []).find((leaf) => leaf.id === args.treeItem.unique);
@@ -240,7 +248,7 @@ export const buildDataSourceConfig = (assetSource: AssetItemsSource) => {
 	return {
 		getRootItems: createGetRootItems(leafProvider),
 		getChildrenOf: createGetChildrenOf(leafProvider),
-		getAncestorsOf: createGetAncestorsOf(leafProvider),
+		getAncestorsOf: createGetAncestorsOf(leafProvider, assetSource),
 		mapper: toTreeItemModel
 	};
 };

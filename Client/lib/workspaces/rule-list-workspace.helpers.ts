@@ -82,3 +82,66 @@ export function swapAdjacentRuleIds(
 	return reordered;
 }
 
+/**
+ * Returns existing `.rule-row` elements from `listBox` when their `data-id` sequence matches
+ * `rules` in order, otherwise `undefined`.
+ */
+export function getMatchingRuleRows(
+	listBox: HTMLElement | undefined,
+	rules: ReadonlyArray<{ id: string }>
+): Array<HTMLElement> | undefined {
+	const list = listBox?.firstElementChild;
+	if (!(list instanceof HTMLElement) || !list.classList.contains('rule-list')) return undefined;
+	const rows = Array.from(list.children).filter(
+		(child): child is HTMLElement => child instanceof HTMLElement
+	);
+	if (rows.length !== rules.length) return undefined;
+	return rows.every((row, index) => row.dataset.id === rules[index]?.id) ? rows : undefined;
+}
+
+const RULE_ROW_TEMPLATE = /* html */ `
+	<template id="row-template">
+		<div class="rule-row">
+			<div class="drag-handle" draggable="true">
+				<uui-icon name="icon-navigation"></uui-icon>
+			</div>
+			<uui-ref-node class="ref"></uui-ref-node>
+			<div class="move-actions">
+				<uui-button class="move-up-btn" look="default" color="default" compact>
+					<uui-icon name="icon-arrow-up"></uui-icon>
+				</uui-button>
+				<uui-button class="move-down-btn" look="default" color="default" compact>
+					<uui-icon name="icon-arrow-down"></uui-icon>
+				</uui-button>
+			</div>
+			<uui-toggle class="enabled-toggle" hide-label></uui-toggle>
+			<uui-button class="delete-btn" look="default" color="default" compact>
+				<uui-icon name="icon-trash"></uui-icon>
+			</uui-button>
+		</div>
+	</template>
+`;
+
+/** Builds the static shadow DOM markup for the rule list workspace. */
+export function buildRuleListShadowMarkup(
+	headline: string,
+	createLabel: string,
+	createPath: string,
+	escapeHtml: (value: string) => string
+): string {
+	const safeHeadline = escapeHtml(headline);
+	const safeCreate = escapeHtml(createLabel);
+	return /* html */ `
+		<umb-workspace-editor headline="${safeHeadline}" alias="LeLøgin.Workspace.RuleList" enforceNoFooter>
+			<div id="layout">
+				<div id="actions">
+					<uui-button look="outline" href="${createPath}" label="${safeCreate}">
+						${safeCreate}
+					</uui-button>
+				</div>
+				<uui-box id="list-box"></uui-box>
+			</div>
+			${RULE_ROW_TEMPLATE}
+		</umb-workspace-editor>
+	`;
+}

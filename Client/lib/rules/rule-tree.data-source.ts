@@ -14,7 +14,8 @@ import type { LeLøginScreenRuleRepository } from './rule.repository.js';
  * The slice of {@link LeLøginScreenRuleRepository} the tree needs. Declared structurally so the
  * tree logic stays free of the backoffice runtime and can be exercised directly in tests.
  */
-export type RuleItemsSource = Pick<LeLøginScreenRuleRepository, 'requestItems'>;
+export type RuleItemsSource = Pick<LeLøginScreenRuleRepository, 'requestItems'> &
+	Partial<Pick<LeLøginScreenRuleRepository, 'requestByUnique'>>;
 
 type RuleItemsResponse = Awaited<ReturnType<RuleItemsSource['requestItems']>>;
 type RuleItemsError = NonNullable<RuleItemsResponse['error']>;
@@ -108,6 +109,10 @@ export const buildDataSourceConfig = (ruleSource: RuleItemsSource) => ({
 	getChildrenOf: async (_args: UmbTreeChildrenOfRequestArgs): Promise<RuleTreeItemsResult> =>
 		itemsResult([]),
 	getAncestorsOf: async (args: UmbTreeAncestorsOfRequestArgs): Promise<RuleTreeAncestorsResult> => {
+		if (ruleSource.requestByUnique !== undefined) {
+			const { data } = await ruleSource.requestByUnique(args.treeItem.unique);
+			return { data: data === undefined ? [] : [toRuleTreeServerItem(data)] };
+		}
 		const { data } = await ruleSource.requestItems();
 		const items = (data ?? []).map(toRuleTreeServerItem);
 		const currentItem = items.find((item) => item.id === args.treeItem.unique);

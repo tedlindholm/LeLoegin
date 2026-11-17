@@ -28,9 +28,12 @@ import {
 import { LOGO_PICKER_MODAL_TOKEN } from './logo-picker-modal.token.js';
 import { LeLøginBackgroundDragController } from './background-drag.controller.js';
 import {
+	applyGreetingOverlayPosition,
 	buildAssetPreviewCustomisation,
-	measureGreetingPosition,
-	observeAuthPreviewLayout
+	computeAssetBodyKey,
+	measureAuthPreviewFrame,
+	observeAuthPreviewLayout,
+	syncRenderedAssetPreview
 } from './asset-preview.helpers.js';
 
 import { getEventTargetElement, getRequiredById } from './rule-list-workspace.helpers.js';
@@ -56,6 +59,7 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 	#draftLogoAssetId: string | undefined;
 	#draftFocalPoint: FocalPoint | undefined;
 	#draftZoom = 1;
+	#renderedBodyKey: string | undefined;
 	#layout: HTMLElement;
 	#backgroundDrag: LeLøginBackgroundDragController | undefined;
 	// Re-render when a thumbnail arrives: the preview image and the login-preview background both use it.
@@ -152,20 +156,38 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 	#render() {
 		const previewUrl =
 			this.#asset?.id !== undefined ? this.#thumbnails.peek(this.#asset.id) : undefined;
-		this.#layout.replaceChildren(
-			...buildWorkspaceBody({
-				localize: this.localize,
-				isLoading: this.#isLoading,
-				loadError: this.#loadError,
-				asset: this.#asset,
-				previewUrl,
-				logoAssets: this.#logoAssets(),
-				greetingText: this.#draftGreetingTextValue ?? '',
-				selectedLogoAssetId: this.#selectedLogoAssetId(),
-				zoom: this.#draftZoom
-			})
-		);
+		const bodyKey = computeAssetBodyKey(this.#isLoading, this.#loadError, this.#asset);
+		if (bodyKey !== this.#renderedBodyKey) {
+			this.#renderedBodyKey = bodyKey;
+			this.#layout.replaceChildren(
+				...buildWorkspaceBody({
+					localize: this.localize,
+					isLoading: this.#isLoading,
+					loadError: this.#loadError,
+					asset: this.#asset,
+					previewUrl,
+					logoAssets: this.#logoAssets(),
+					greetingText: this.#draftGreetingTextValue ?? '',
+					selectedLogoAssetId: this.#selectedLogoAssetId(),
+					zoom: this.#draftZoom
+				})
+			);
+		} else {
+			this.#syncRenderedBody(previewUrl);
+		}
 		this.#syncAuthPreview();
+	}
+
+	#syncRenderedBody(previewUrl: string | undefined) {
+		if (this.#asset === null) return;
+		syncRenderedAssetPreview({
+			root: this.shadowRoot,
+			isBackground: isBackgroundLoginImageAsset(this.#asset),
+			previewUrl,
+			zoom: this.#draftZoom,
+			zoomMin: ZOOM_MIN,
+			zoomMax: ZOOM_MAX
+		});
 	}
 
 	#applyZoomDelta(factor: number) {
@@ -174,15 +196,7 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 		this.#draftZoom = newZoom;
 		this.#workspaceContext?.updateDraft({ zoom: newZoom });
 		this.#syncAuthPreview();
-		this.#updateZoomButtonStates();
-	}
-
-	#updateZoomButtonStates() {
-		const root = this.shadowRoot;
-		root?.querySelector('#asset-zoom-in')?.toggleAttribute('disabled', this.#draftZoom >= ZOOM_MAX);
-		root
-			?.querySelector('#asset-zoom-out')
-			?.toggleAttribute('disabled', this.#draftZoom <= ZOOM_MIN);
+		this.#syncRenderedBody(undefined);
 	}
 
 	async #openLogoPicker() {
@@ -249,20 +263,12 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 		this.#detachBackgroundDrag();
 		this.#backgroundDrag = new LeLøginBackgroundDragController(shell, {
 			imageSize: () => ({ width: this.#asset?.width ?? 0, height: this.#asset?.height ?? 0 }),
-			measureContainer: () => this.#measurePreviewFrame(shell),
+			measureContainer: () => measureAuthPreviewFrame(this.#authPreview, shell),
 			focalPoint: () => this.#draftFocalPoint,
 			zoom: () => this.#draftZoom,
 			onFocalPointChange: (focalPoint) => this.#applyDraggedFocalPoint(focalPoint),
 			onZoom: (zoomIn) => this.#applyZoomDelta(zoomIn ? ZOOM_STEP : 1 / ZOOM_STEP)
 		});
-	}
-
-	#measurePreviewFrame(shell: HTMLElement) {
-		// Prefer the auth-view's #graphic rect (matches the visible image frame),
-		// fall back to the shell itself if the auth-view hasn't laid out yet.
-		const graphic = this.#authPreview?.shadowRoot?.getElementById('graphic');
-		const rect = (graphic instanceof HTMLElement ? graphic : shell).getBoundingClientRect();
-		return { width: rect.width, height: rect.height };
 	}
 
 	#detachBackgroundDrag() {
@@ -279,13 +285,8 @@ export class LeLøginScreenAssetWorkspace extends UmbElementMixin(HTMLElement) {
 	}
 
 	#positionGreetingOverlay() {
-		if (!this.#isBackgroundAssetLoaded() || this.#authPreview === undefined) return;
-		const pos = measureGreetingPosition(this.#authPreview);
-		if (pos === null) return;
-		const field = this.shadowRoot?.querySelector<HTMLElement>('.preview-greeting-field');
-		if (!field) return;
-		field.style.setProperty('--greeting-left', `${pos.leftPct.toFixed(1)}%`);
-		field.style.setProperty('--greeting-top', `${pos.topPct.toFixed(1)}%`);
+		if (!this.#isBackgroundAssetLoaded()) return;
+		applyGreetingOverlayPosition(this.shadowRoot, this.#authPreview);
 	}
 
 	#isBackgroundAssetLoaded(): boolean {

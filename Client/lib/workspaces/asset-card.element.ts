@@ -47,6 +47,7 @@ export class LeLøginScreenAssetCard extends UmbElementMixin(HTMLElement) {
 	}
 
 	#render() {
+		if (!this.isConnected) return;
 		if (this.#value === undefined) {
 			this.innerHTML = '';
 			return;
