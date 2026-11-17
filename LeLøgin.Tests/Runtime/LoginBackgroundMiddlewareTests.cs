@@ -32,7 +32,7 @@ public sealed class LeLøginBackgroundMiddlewareTests
 		var runtimeState = new Mock<IRuntimeState>();
 		runtimeState.SetupGet(state => state.Level).Returns(RuntimeLevel.Install);
 
-		await middleware.InvokeAsync(
+		await middleware.InvokeCoreAsync(
 			context,
 			new Mock<ILeLøginScreenStore>(MockBehavior.Strict).Object,
 			new Mock<ILeLøginScreenFileService>(MockBehavior.Strict).Object,
@@ -56,7 +56,7 @@ public sealed class LeLøginBackgroundMiddlewareTests
 		var runtimeState = new Mock<IRuntimeState>();
 		runtimeState.SetupGet(state => state.Level).Returns(RuntimeLevel.Run);
 
-		await middleware.InvokeAsync(
+		await middleware.InvokeCoreAsync(
 			context,
 			FakeLeLøginScreenStoreSeed.FromConfigJson(ConfigWithBackground),
 			new StubFileService(),
@@ -83,7 +83,7 @@ public sealed class LeLøginBackgroundMiddlewareTests
 		runtimeState.SetupGet(state => state.Level).Returns(RuntimeLevel.Run);
 		var fileService = new StubFileService();
 
-		await middleware.InvokeAsync(
+		await middleware.InvokeCoreAsync(
 			context,
 			StoreWithAnInactiveRuleImage(),
 			fileService,
@@ -181,6 +181,30 @@ public sealed class LeLøginBackgroundMiddlewareTests
 	  "settings": { "publicEndpointCacheSeconds": 300 }
 	}
 	""";
+
+	[Fact]
+	public async Task InvokeAsync_Does_Not_Resolve_Services_When_Path_Does_Not_Match()
+	{
+		var nextCalled = false;
+		var middleware = new LeLøginBackgroundMiddleware(_ =>
+		{
+			nextCalled = true;
+			return Task.CompletedTask;
+		});
+		var context = new DefaultHttpContext();
+		context.Request.Path = "/umbraco/section/content";
+		context.RequestServices = new ThrowingServiceProvider();
+
+		await middleware.InvokeAsync(context);
+
+		Assert.True(nextCalled);
+	}
+
+	private sealed class ThrowingServiceProvider : IServiceProvider
+	{
+		public object? GetService(Type serviceType) =>
+			throw new InvalidOperationException($"Unexpected service resolution for {serviceType.Name}");
+	}
 
 	private sealed class StubFileService : ILeLøginScreenFileService
 	{

@@ -4,6 +4,7 @@ using LeLøgin.Core.Models;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.Processing;
+using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using System.Globalization;
@@ -133,6 +134,8 @@ public sealed class LeLøginScreenFileService(
         }
     }
 
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> ThumbnailLocks = new(StringComparer.OrdinalIgnoreCase);
+
     /// <inheritdoc />
     public async Task<EncodedThumbnail> GetThumbnailAsync(LoginImageAsset asset)
     {
@@ -157,10 +160,22 @@ public sealed class LeLøginScreenFileService(
 
         if (!assetManager.FileSystem.FileExists(cacheFileName))
         {
-            // Stale entries for this asset are wasted disc space and confuse future
-            // debugging — prune them before writing the new one.
-            PruneStaleThumbnails(asset.Id, cacheFileName);
-            await EncodeWebpThumbnailAsync(sourcePath, cacheFileName);
+            var thumbnailLock = ThumbnailLocks.GetOrAdd(cacheFileName, static _ => new SemaphoreSlim(1, 1));
+            await thumbnailLock.WaitAsync();
+            try
+            {
+                if (!assetManager.FileSystem.FileExists(cacheFileName))
+                {
+                    // Stale entries for this asset are wasted disc space and confuse future
+                    // debugging — prune them before writing the new one.
+                    PruneStaleThumbnails(asset.Id, cacheFileName);
+                    await EncodeWebpThumbnailAsync(sourcePath, cacheFileName);
+                }
+            }
+            finally
+            {
+                thumbnailLock.Release();
+            }
         }
 
         return new EncodedThumbnail(
@@ -198,12 +213,20 @@ public sealed class LeLøginScreenFileService(
     {
         try
         {
-            foreach (var existing in assetManager.FileSystem.GetFiles(ThumbnailsPrefix.TrimEnd('/'), $"{assetId}-*.webp"))
-            {
-                if (!string.Equals(existing, keepCacheFileName, StringComparison.OrdinalIgnoreCase))
+            var prefix = $"{assetId}-";
+            var matches = assetManager.FileSystem.GetFiles(ThumbnailsPrefix.TrimEnd('/'))
+                .Where(existing =>
                 {
-                    assetManager.FileSystem.DeleteFile(existing);
-                }
+                    var fileName = Path.GetFileName(existing);
+                    return fileName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) &&
+                        fileName.EndsWith(".webp", StringComparison.OrdinalIgnoreCase) &&
+                        !string.Equals(existing, keepCacheFileName, StringComparison.OrdinalIgnoreCase);
+                })
+                .ToList();
+
+            foreach (var existing in matches)
+            {
+                assetManager.FileSystem.DeleteFile(existing);
             }
         }
         catch (Exception ex)
@@ -236,6 +259,8 @@ public sealed class LeLøginScreenFileService(
         return $"{exposureId}.jpg";
     }
 
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> PublishLocks = new(StringComparer.OrdinalIgnoreCase);
+
     /// <returns><c>true</c> when the image was written; <c>false</c> when it was already published.</returns>
     private async Task<bool> PublishImageIfMissingAsync(string storagePath, string publishFileName)
     {
@@ -244,15 +269,29 @@ public sealed class LeLøginScreenFileService(
             return false;
         }
 
-        using var sourceStream = assetManager.FileSystem.OpenFile(storagePath);
-        using var image = await LoadBoundedImageAsync(sourceStream, () => assetManager.FileSystem.OpenFile(storagePath));
-        image.Mutate(op => op.AutoOrient());
-        StripMetadata(image);
-        using var encoded = new MemoryStream();
-        await image.SaveAsJpegAsync(encoded);
-        encoded.Position = 0;
-        publishManager.FileSystem.AddFile(publishFileName, encoded);
-        return true;
+        var fileLock = PublishLocks.GetOrAdd(publishFileName, static _ => new SemaphoreSlim(1, 1));
+        await fileLock.WaitAsync();
+        try
+        {
+            if (publishManager.FileSystem.FileExists(publishFileName))
+            {
+                return false;
+            }
+
+            using var sourceStream = assetManager.FileSystem.OpenFile(storagePath);
+            using var image = await LoadBoundedImageAsync(sourceStream, () => assetManager.FileSystem.OpenFile(storagePath));
+            image.Mutate(op => op.AutoOrient());
+            StripMetadata(image);
+            using var encoded = new MemoryStream();
+            await image.SaveAsJpegAsync(encoded);
+            encoded.Position = 0;
+            publishManager.FileSystem.AddFile(publishFileName, encoded);
+            return true;
+        }
+        finally
+        {
+            fileLock.Release();
+        }
     }
 
     private static async Task<Image> LoadBoundedImageAsync(Stream stream, Func<Stream>? reopenStream = null)
@@ -347,7 +386,9 @@ public sealed class LeLøginScreenFileService(
 
     private static Guid CreateDeterministicExposureId(LoginImageAsset imageAsset)
     {
-        var seed = $"{imageAsset.Id}|{imageAsset.UpdatedAt.ToUniversalTime().Ticks.ToString(CultureInfo.InvariantCulture)}";
+        // Source image bytes never change after upload, so metadata edits (UpdatedAt, name, focal point, zoom)
+        // keep the same published filename and avoid re-encoding on anonymous requests.
+        var seed = $"{imageAsset.Id}|{imageAsset.StoragePath}";
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(seed));
         Span<byte> guidBytes = stackalloc byte[16];
         hash.AsSpan(0, 16).CopyTo(guidBytes);

@@ -2,6 +2,7 @@ using LeLøgin.Core.Models;
 using LeLøgin.Core.Storage;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Services;
@@ -20,6 +21,8 @@ namespace LeLøgin.Core.Runtime;
 /// <param name="next">The next middleware, invoked whenever Le Løgin does not handle the request.</param>
 public sealed class LeLøginLogoMiddleware(RequestDelegate next)
 {
+	private static readonly FileExtensionContentTypeProvider ContentTypeProvider = new();
+
 	private static readonly string[] LogoPaths =
 	[
 		"/umbraco/management/api/v1/security/back-office/graphics/login-logo",
@@ -28,19 +31,35 @@ public sealed class LeLøginLogoMiddleware(RequestDelegate next)
 
 	/// <summary>
 	/// Handles one request. Only GET/HEAD on the logo paths are considered, and only once Umbraco
-	/// is fully running. When the resolved background has a logo whose file exists, streams it
-	/// with the image security headers and <c>Cache-Control: no-store</c>; otherwise, or when the
-	/// file disappears or lies outside the safe directory, calls the next middleware.
+	/// is fully running; non-matching requests fall through before any Le Løgin service is resolved.
 	/// </summary>
 	/// <param name="context">The current HTTP context.</param>
-	/// <param name="store">Source of assets and rules.</param>
-	/// <param name="runtimeResolver">Picks the background asset for the request's runtime context.</param>
-	/// <param name="timeProvider">Clock used to build the runtime context.</param>
-	/// <param name="assetManager">File system holding the source logo files.</param>
-	/// <param name="logger">Logger for missing or refused logo files.</param>
-	/// <param name="runtimeState">Umbraco runtime state; requests pass through until it is <see cref="RuntimeLevel.Run"/>.</param>
 	/// <returns>A task that completes when the logo is streamed or the next middleware finishes.</returns>
-	public async Task InvokeAsync(
+	public async Task InvokeAsync(HttpContext context)
+	{
+		if (!IsLogoReadRequest(context.Request))
+		{
+			await next(context);
+			return;
+		}
+
+		var services = context.RequestServices;
+		await InvokeCoreAsync(
+			context,
+			services.GetRequiredService<ILeLøginScreenStore>(),
+			services.GetRequiredService<LeLøginScreenRuntimeResolver>(),
+			services.GetRequiredService<TimeProvider>(),
+			services.GetRequiredService<LeLøginAssetFileManager>(),
+			services.GetRequiredService<ILogger<LeLøginLogoMiddleware>>(),
+			services.GetRequiredService<IRuntimeState>());
+	}
+
+	private static bool IsLogoReadRequest(HttpRequest request) =>
+		(HttpMethods.IsGet(request.Method) || HttpMethods.IsHead(request.Method)) &&
+		(request.Path.StartsWithSegments(LogoPaths[0], StringComparison.OrdinalIgnoreCase) ||
+		 request.Path.StartsWithSegments(LogoPaths[1], StringComparison.OrdinalIgnoreCase));
+
+	internal async Task InvokeCoreAsync(
 		HttpContext context,
 		ILeLøginScreenStore store,
 		LeLøginScreenRuntimeResolver runtimeResolver,
@@ -49,10 +68,7 @@ public sealed class LeLøginLogoMiddleware(RequestDelegate next)
 		ILogger<LeLøginLogoMiddleware> logger,
 		IRuntimeState runtimeState)
 	{
-		// StartsWithSegments is segment-aware, so each candidate matches its own exact endpoint
-		// (not its prefix). We check all configured logo endpoints.
-		var isReadRequest = HttpMethods.IsGet(context.Request.Method) || HttpMethods.IsHead(context.Request.Method);
-		if (!isReadRequest || !LogoPaths.Any(path => context.Request.Path.StartsWithSegments(path, StringComparison.OrdinalIgnoreCase)))
+		if (!IsLogoReadRequest(context.Request))
 		{
 			await next(context);
 			return;
@@ -104,7 +120,7 @@ public sealed class LeLøginLogoMiddleware(RequestDelegate next)
 				return;
 			}
 
-			if (!new FileExtensionContentTypeProvider().TryGetContentType(logoAsset.StoragePath, out var contentType))
+			if (!ContentTypeProvider.TryGetContentType(logoAsset.StoragePath, out var contentType))
 			{
 				contentType = "application/octet-stream";
 			}

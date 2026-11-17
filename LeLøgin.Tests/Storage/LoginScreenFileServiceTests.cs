@@ -142,7 +142,7 @@ public sealed class LeLøginScreenFileServiceTests
 	}
 
 	[Fact]
-	public async Task EnsureRuntimeAssetsAsync_Reuses_The_Publication_Across_Service_Instances_And_Publishes_A_New_One_When_The_Asset_Changes()
+	public async Task EnsureRuntimeAssetsAsync_Reuses_The_Publication_Across_Service_Instances_And_Metadata_Saves()
 	{
 		var contentRootPath = CreateTempDirectory();
 
@@ -158,9 +158,93 @@ public sealed class LeLøginScreenFileServiceTests
 			Assert.StartsWith("/login-screen/", first.ImageUrl, StringComparison.Ordinal);
 			Assert.EndsWith(".jpg", first.ImageUrl, StringComparison.Ordinal);
 			Assert.Equal(first, repeated);
-			Assert.NotEqual(first.ImageUrl, edited.ImageUrl);
-			Assert.False(File.Exists(ToPublicFilePath(contentRootPath, first.ImageUrl)));
-			Assert.True(File.Exists(ToPublicFilePath(contentRootPath, edited.ImageUrl)));
+			Assert.Equal(first.ImageUrl, edited.ImageUrl);
+			Assert.True(File.Exists(ToPublicFilePath(contentRootPath, first.ImageUrl)));
+		}
+		finally
+		{
+			Directory.Delete(contentRootPath, recursive: true);
+		}
+	}
+
+	[Fact]
+	public async Task EnsureRuntimeAssetsAsync_Encodes_Once_When_Called_Concurrently_For_New_Asset()
+	{
+		var contentRootPath = CreateTempDirectory();
+
+		try
+		{
+			var (assetA, _) = await CreateTwoBackgroundsAsync(contentRootPath);
+			var innerAssetManager = TestFileSystems.AssetFileManager(contentRootPath);
+			var countingFileSystem = new CountingOpenFileSystem(innerAssetManager.FileSystem);
+			var service = new LeLøginScreenFileService(
+				new LeLøginAssetFileManager(countingFileSystem),
+				TestFileSystems.PublishFileManager(contentRootPath),
+				NullLogger<LeLøginScreenFileService>.Instance);
+
+			var results = await Task.WhenAll(
+				Enumerable.Range(0, 5).Select(_ => service.EnsureRuntimeAssetsAsync(assetA, [assetA])));
+
+			Assert.Single(results.Select(r => r.ImageUrl).Distinct(StringComparer.Ordinal));
+			Assert.Equal(1, countingFileSystem.OpenFileCount);
+		}
+		finally
+		{
+			Directory.Delete(contentRootPath, recursive: true);
+		}
+	}
+
+	[Fact]
+	public async Task GetThumbnailAsync_Prunes_Stale_Thumbnails_On_Blob_Like_FileSystem()
+	{
+		var contentRootPath = CreateTempDirectory();
+
+		try
+		{
+			var assetManager = TestFileSystems.BlobLikeAssetFileManager(contentRootPath);
+			var service = new LeLøginScreenFileService(
+				assetManager,
+				TestFileSystems.BlobLikePublishFileManager(contentRootPath),
+				NullLogger<LeLøginScreenFileService>.Instance);
+			var asset = await UploadAsync(service, "0123456789abcdef0123456789abcdef", Color.CornflowerBlue);
+			var staleThumbnail = $"thumbnails/{asset.Id}-1.webp";
+			using (var staleStream = new MemoryStream([1, 2, 3]))
+			{
+				assetManager.FileSystem.AddFile(staleThumbnail, staleStream);
+			}
+
+			var result = await service.GetThumbnailAsync(asset);
+
+			Assert.NotEqual(staleThumbnail, result.FileName);
+			Assert.False(assetManager.FileSystem.FileExists(staleThumbnail));
+			Assert.True(assetManager.FileSystem.FileExists(result.FileName));
+		}
+		finally
+		{
+			Directory.Delete(contentRootPath, recursive: true);
+		}
+	}
+
+	[Fact]
+	public async Task GetThumbnailAsync_Encodes_Once_When_Called_Concurrently_For_New_Asset()
+	{
+		var contentRootPath = CreateTempDirectory();
+
+		try
+		{
+			var (assetA, _) = await CreateTwoBackgroundsAsync(contentRootPath);
+			var innerAssetManager = TestFileSystems.AssetFileManager(contentRootPath);
+			var countingFileSystem = new CountingOpenFileSystem(innerAssetManager.FileSystem);
+			var service = new LeLøginScreenFileService(
+				new LeLøginAssetFileManager(countingFileSystem),
+				TestFileSystems.PublishFileManager(contentRootPath),
+				NullLogger<LeLøginScreenFileService>.Instance);
+
+			var results = await Task.WhenAll(
+				Enumerable.Range(0, 5).Select(_ => service.GetThumbnailAsync(assetA)));
+
+			Assert.Single(results.Select(r => r.FileName).Distinct(StringComparer.Ordinal));
+			Assert.Equal(1, countingFileSystem.OpenFileCount);
 		}
 		finally
 		{
@@ -495,5 +579,36 @@ public sealed class LeLøginScreenFileServiceTests
 		var path = Path.Combine(Path.GetTempPath(), "LeLøginTests", Guid.NewGuid().ToString("N"));
 		Directory.CreateDirectory(path);
 		return path;
+	}
+
+	private sealed class CountingOpenFileSystem(Umbraco.Cms.Core.IO.IFileSystem inner) : Umbraco.Cms.Core.IO.IFileSystem
+	{
+		private int _openFileCount;
+		public int OpenFileCount => Volatile.Read(ref _openFileCount);
+
+		public Stream OpenFile(string path)
+		{
+			Interlocked.Increment(ref _openFileCount);
+			return inner.OpenFile(path);
+		}
+
+		public bool CanAddPhysical => inner.CanAddPhysical;
+		public IEnumerable<string> GetDirectories(string path) => inner.GetDirectories(path);
+		public void DeleteDirectory(string path) => inner.DeleteDirectory(path);
+		public void DeleteDirectory(string path, bool recursive) => inner.DeleteDirectory(path, recursive);
+		public bool DirectoryExists(string path) => inner.DirectoryExists(path);
+		public void AddFile(string path, Stream stream) => inner.AddFile(path, stream);
+		public void AddFile(string path, Stream stream, bool overrideIfExists) => inner.AddFile(path, stream, overrideIfExists);
+		public void AddFile(string path, string physicalPath, bool overrideIfExists = true, bool copy = false) => inner.AddFile(path, physicalPath, overrideIfExists, copy);
+		public IEnumerable<string> GetFiles(string path) => inner.GetFiles(path);
+		public IEnumerable<string> GetFiles(string path, string filter) => inner.GetFiles(path, filter);
+		public void DeleteFile(string path) => inner.DeleteFile(path);
+		public bool FileExists(string path) => inner.FileExists(path);
+		public string GetRelativePath(string fullPathOrUrl) => inner.GetRelativePath(fullPathOrUrl);
+		public string GetFullPath(string path) => inner.GetFullPath(path);
+		public string GetUrl(string? path) => inner.GetUrl(path);
+		public DateTimeOffset GetLastModified(string path) => inner.GetLastModified(path);
+		public DateTimeOffset GetCreated(string path) => inner.GetCreated(path);
+		public long GetSize(string path) => inner.GetSize(path);
 	}
 }

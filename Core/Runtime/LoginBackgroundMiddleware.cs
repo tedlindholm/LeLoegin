@@ -1,6 +1,7 @@
 using LeLøgin.Core.Models;
 using LeLøgin.Core.Storage;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SixLabors.ImageSharp.Web;
@@ -29,21 +30,32 @@ public sealed class LeLøginBackgroundMiddleware(RequestDelegate next)
 
 	/// <summary>
 	/// Handles one request. Only the login-background path is considered, and only once Umbraco
-	/// is fully running. On a match it publishes the runtime copies of every resolvable background
-	/// (side effect on the publish file system) and answers with an uncacheable 302 to the
-	/// processed image; on no match, or on any publishing failure (logged), it calls the next middleware.
+	/// is fully running; non-matching requests fall through before any Le Løgin service is resolved.
 	/// </summary>
 	/// <param name="context">The current HTTP context.</param>
-	/// <param name="store">Source of assets and rules.</param>
-	/// <param name="fileService">Publishes the public runtime copy of the chosen asset.</param>
-	/// <param name="runtimeResolver">Picks the asset for the request's runtime context.</param>
-	/// <param name="timeProvider">Clock used to build the runtime context.</param>
-	/// <param name="imageSharpOptions">ImageSharp.Web options, read for the HMAC key.</param>
-	/// <param name="logger">Logger for publishing failures.</param>
-	/// <param name="runtimeState">Umbraco runtime state; requests pass through until it is <see cref="RuntimeLevel.Run"/>.</param>
-	/// <param name="requestAuthorizationUtilities">Signs the image URL when HMAC is configured; optional.</param>
 	/// <returns>A task that completes when the response is written or the next middleware finishes.</returns>
-	public async Task InvokeAsync(
+	public async Task InvokeAsync(HttpContext context)
+	{
+		if (!context.Request.Path.StartsWithSegments(BackgroundPath, StringComparison.OrdinalIgnoreCase))
+		{
+			await next(context);
+			return;
+		}
+
+		var services = context.RequestServices;
+		await InvokeCoreAsync(
+			context,
+			services.GetRequiredService<ILeLøginScreenStore>(),
+			services.GetRequiredService<ILeLøginScreenFileService>(),
+			services.GetRequiredService<LeLøginScreenRuntimeResolver>(),
+			services.GetRequiredService<TimeProvider>(),
+			services.GetRequiredService<IOptions<ImageSharpMiddlewareOptions>>(),
+			services.GetRequiredService<ILogger<LeLøginBackgroundMiddleware>>(),
+			services.GetRequiredService<IRuntimeState>(),
+			services.GetService<RequestAuthorizationUtilities>());
+	}
+
+	internal async Task InvokeCoreAsync(
 		HttpContext context,
 		ILeLøginScreenStore store,
 		ILeLøginScreenFileService fileService,

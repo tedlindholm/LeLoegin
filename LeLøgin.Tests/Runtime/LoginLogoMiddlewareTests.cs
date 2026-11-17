@@ -36,7 +36,7 @@ public sealed class LeLøginLogoMiddlewareTests : IDisposable
 		var runtimeState = new Mock<IRuntimeState>();
 		runtimeState.SetupGet(state => state.Level).Returns(RuntimeLevel.Install);
 
-		await middleware.InvokeAsync(
+		await middleware.InvokeCoreAsync(
 			BuildContext(path),
 			new Mock<ILeLøginScreenStore>(MockBehavior.Strict).Object,
 			new LeLøginScreenRuntimeResolver(),
@@ -315,6 +315,23 @@ public sealed class LeLøginLogoMiddlewareTests : IDisposable
 		Assert.True(nextCalled);
 	}
 
+	[Fact]
+	public async Task InvokeAsync_Does_Not_Resolve_Services_When_Path_Does_Not_Match()
+	{
+		var nextCalled = false;
+		var middleware = new LeLøginLogoMiddleware(_ =>
+		{
+			nextCalled = true;
+			return Task.CompletedTask;
+		});
+		var context = BuildContext("/umbraco/section/content");
+		context.RequestServices = new ThrowingServiceProvider();
+
+		await middleware.InvokeAsync(context);
+
+		Assert.True(nextCalled);
+	}
+
 	public void Dispose()
 	{
 		if (Directory.Exists(_contentRootPath))
@@ -324,7 +341,7 @@ public sealed class LeLøginLogoMiddlewareTests : IDisposable
 	}
 
 	private Task InvokeAsync(LeLøginLogoMiddleware middleware, HttpContext context, ILeLøginScreenStore store) =>
-		middleware.InvokeAsync(
+		middleware.InvokeCoreAsync(
 			context,
 			store,
 			new LeLøginScreenRuntimeResolver(),
@@ -332,6 +349,12 @@ public sealed class LeLøginLogoMiddlewareTests : IDisposable
 			TestFileSystems.AssetFileManager(_contentRootPath),
 			new NullLogger<LeLøginLogoMiddleware>(),
 			Mock.Of<IRuntimeState>(state => state.Level == RuntimeLevel.Run));
+
+	private sealed class ThrowingServiceProvider : IServiceProvider
+	{
+		public object? GetService(Type serviceType) =>
+			throw new InvalidOperationException($"Unexpected service resolution for {serviceType.Name}");
+	}
 
 	private static DefaultHttpContext BuildContext(string path)
 	{

@@ -32,6 +32,7 @@ public class AssetController(
 {
 	private const long MaxUploadSizeBytes = 10 * 1024 * 1024;
 	private const long MaxUploadRequestSizeBytes = MaxUploadSizeBytes + 64 * 1024; // Multipart fields and headers.
+	private static readonly FileExtensionContentTypeProvider ContentTypeProvider = new();
 
 	/// <summary>Lists every asset of both kinds.</summary>
 	/// <returns>200 with the assets.</returns>
@@ -76,8 +77,7 @@ public class AssetController(
 				return NotFound();
 			}
 
-			var contentTypeProvider = new FileExtensionContentTypeProvider();
-			var contentType = contentTypeProvider.TryGetContentType(asset.StoragePath, out var resolvedContentType)
+			var contentType = ContentTypeProvider.TryGetContentType(asset.StoragePath, out var resolvedContentType)
 				? resolvedContentType
 				: "application/octet-stream";
 
