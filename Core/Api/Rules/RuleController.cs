@@ -53,13 +53,22 @@ public sealed class RuleController(
 			{
 				["weekday"] = new(
 					Operators: ["is", "isNot"],
-					DefaultValue: "monday",
-					AllowedValues: new object[] { "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday" }
+					DefaultValue: LoginRuleConditionValue.FromText("monday"),
+					AllowedValues:
+					[
+						LoginRuleConditionValue.FromText("monday"),
+						LoginRuleConditionValue.FromText("tuesday"),
+						LoginRuleConditionValue.FromText("wednesday"),
+						LoginRuleConditionValue.FromText("thursday"),
+						LoginRuleConditionValue.FromText("friday"),
+						LoginRuleConditionValue.FromText("saturday"),
+						LoginRuleConditionValue.FromText("sunday"),
+					]
 				),
 				["month"] = new(
 					Operators: ["is", "isNot"],
-					DefaultValue: 1,
-					AllowedValues: new object[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 }
+					DefaultValue: LoginRuleConditionValue.FromNumber(1),
+					AllowedValues: Enumerable.Range(1, 12).Select(LoginRuleConditionValue.FromNumber).ToList()
 				),
 			});
 

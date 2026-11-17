@@ -1,4 +1,5 @@
 import { UmbElementMixin } from '@umbraco-cms/backoffice/element-api';
+import { escapeHTML } from '@umbraco-cms/backoffice/utils';
 import styles from './condition-editor.element.css?inline';
 import type {
 	ConditionMetadata,
@@ -16,6 +17,7 @@ import {
 } from './rule-condition.js';
 import { cloneTemplate } from '../utils/template.js';
 import {
+	buildConditionShellMarkup,
 	conditionControlRole,
 	conditionRowIndex,
 	conditionRowTemplate,
@@ -131,20 +133,18 @@ export class LeLøginScreenConditionEditor extends UmbElementMixin(HTMLElement) 
 	}
 
 	#createShell(shadow: ShadowRoot) {
-		shadow.innerHTML = /* html */ `
-			<div class="group-operator-row">
-				<uui-label for="group-operator-select">${this.localize.term('loginScreen_conditionMatchLabel')}</uui-label>
-				<uui-select id="group-operator-select"></uui-select>
-			</div>
-			<div id="condition-list" class="condition-list"></div>
-			<uui-action-bar>
-				<uui-button id="add-condition-btn" look="placeholder" label="${this.localize.term('loginScreen_addCondition')}">
-					${this.localize.term('loginScreen_addCondition')}
-				</uui-button>
-			</uui-action-bar>
-		`;
+		shadow.innerHTML = buildConditionShellMarkup(
+			this.localize.term('loginScreen_conditionMatchLabel'),
+			this.localize.term('loginScreen_addCondition'),
+			escapeHTML
+		);
 
-		const conditionList = getRequiredById(shadow, 'condition-list', isHtmlElement, 'condition list');
+		const conditionList = getRequiredById(
+			shadow,
+			'condition-list',
+			isHtmlElement,
+			'condition list'
+		);
 		const groupSelect = getRequiredById(
 			shadow,
 			'group-operator-select',
@@ -368,7 +368,6 @@ export class LeLøginScreenConditionEditor extends UmbElementMixin(HTMLElement) 
 		condition.values = [allowedValues?.find((v) => v.toString() === rawValue) ?? rawValue];
 		this.#emitChange();
 	}
-
 
 	// ──────────────────────────────────────────────────────────────────────────
 	// Actions

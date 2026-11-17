@@ -337,6 +337,8 @@ public sealed class RuleControllerTests : IDisposable
 		var metadata = Assert.IsType<ConditionMetadataResponse>(result.Value);
 
 		Assert.Equal(["is", "isNot"], metadata.Operators.Keys.OrderBy(k => k, StringComparer.Ordinal).ToArray());
+		Assert.Equal(LoginRuleConditionValue.FromText("monday"), metadata.Fields["weekday"].DefaultValue);
+		Assert.Equal(LoginRuleConditionValue.FromNumber(1), metadata.Fields["month"].DefaultValue);
 	}
 
 	[Fact]

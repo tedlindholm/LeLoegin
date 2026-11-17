@@ -341,8 +341,8 @@ public sealed record ConditionOperatorMetadata(string Arity);
 /// <param name="AllowedValues">The values the field accepts, or <see langword="null"/> when unrestricted.</param>
 public sealed record ConditionFieldMetadata(
 	IReadOnlyList<string> Operators,
-	object DefaultValue,
-	IReadOnlyList<object>? AllowedValues = null);
+	LoginRuleConditionValue DefaultValue,
+	IReadOnlyList<LoginRuleConditionValue>? AllowedValues = null);
 
 /// <summary>
 /// Full metadata catalogue for all Le Løgin condition operators and fields.

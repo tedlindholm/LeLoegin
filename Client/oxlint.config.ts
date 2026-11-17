@@ -17,6 +17,8 @@ export default defineConfig({
 		'no-debugger': 'error',
 		'no-var': 'error',
 		'prefer-const': 'error',
+		// AGENTS.md rule 4: forbid raw fetch() outside generated/mocked code.
+		'no-restricted-globals': ['error', 'fetch'],
 		// AGENTS.md rule 5: no `any` and no `as` casts. `as const` is still allowed.
 		'typescript/no-explicit-any': 'error',
 		'typescript/consistent-type-assertions': ['error', { assertionStyle: 'never' }],
@@ -25,5 +27,13 @@ export default defineConfig({
 		'max-params': ['warn', { max: 4 }],
 		'max-depth': ['warn', { max: 4 }],
 		complexity: ['warn', { max: 10 }]
-	}
+	},
+	overrides: [
+		{
+			files: ['scripts/**'],
+			rules: {
+				'no-restricted-globals': 'off'
+			}
+		}
+	]
 });

@@ -25,8 +25,8 @@ export type AssetUpdateRequest = {
 
 export type ConditionFieldMetadata = {
 	operators: Array<string>;
-	defaultValue: unknown;
-	allowedValues?: null | Array<unknown>;
+	defaultValue: string | number;
+	allowedValues?: null | Array<string | number>;
 };
 
 export type ConditionMetadataResponse = {

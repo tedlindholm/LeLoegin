@@ -1,4 +1,5 @@
 import { computeCropRegion } from './compute-crop-region.js';
+import { escapeCssUrl } from '../utils/css-url.js';
 
 /** Inputs for the editor crop simulation; the preview only activates when zoom exceeds 1.001. */
 export interface CropPreviewInputs {
@@ -147,7 +148,7 @@ const paintCropPreview = (
 	inputs: CropPreviewInputs,
 	paint: CropPreviewPaint
 ) => {
-	const nextImage = `url("${escapeBackgroundUrl(inputs.imageUrl)}")`;
+	const nextImage = `url("${escapeCssUrl(inputs.imageUrl)}")`;
 	const nextSize = `${paint.paintedW.toFixed(2)}px ${paint.paintedH.toFixed(2)}px`;
 	const nextPosition = `${(paint.bpX * 100).toFixed(4)}% ${(paint.bpY * 100).toFixed(4)}%`;
 	if (wrapper.style.backgroundImage !== nextImage) {
@@ -189,5 +190,3 @@ const backgroundPositionFraction = (
 	if (denom <= 0) return 0.5;
 	return (cropCentre * paintedSize - panelSize / 2) / denom;
 };
-
-const escapeBackgroundUrl = (value: string) => value.replaceAll('"', '%22');

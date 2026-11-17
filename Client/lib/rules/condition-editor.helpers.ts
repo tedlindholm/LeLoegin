@@ -322,3 +322,24 @@ export function valueLabel(localize: Localize, field: LoginRuleField, value: str
 	}
 	return value.charAt(0).toUpperCase() + value.slice(1);
 }
+
+/** Builds the static shadow DOM markup for the condition editor shell with escaped labels. */
+export function buildConditionShellMarkup(
+	matchLabel: string,
+	addLabel: string,
+	escapeHtml: (value: string) => string
+): string {
+	const safeAdd = escapeHtml(addLabel);
+	return /* html */ `
+		<div class="group-operator-row">
+			<uui-label for="group-operator-select">${escapeHtml(matchLabel)}</uui-label>
+			<uui-select id="group-operator-select"></uui-select>
+		</div>
+		<div id="condition-list" class="condition-list"></div>
+		<uui-action-bar>
+			<uui-button id="add-condition-btn" look="placeholder" label="${safeAdd}">
+				${safeAdd}
+			</uui-button>
+		</uui-action-bar>
+	`;
+}

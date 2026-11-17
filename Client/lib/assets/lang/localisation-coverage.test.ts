@@ -7,7 +7,34 @@ import { englishDictionary } from './en.js';
 
 const currentDirectory = dirname(fileURLToPath(import.meta.url));
 const libDirectory = resolve(currentDirectory, '..', '..');
-const keyPattern = /#?(loginScreen_[A-Za-z0-9]+)/g;
+const KEY_PREFIX = 'loginScreen_';
+
+function isKeyChar(ch: string): boolean {
+	const code = ch.charCodeAt(0);
+	return (
+		(code >= 48 && code <= 57) || // 0-9
+		(code >= 65 && code <= 90) || // A-Z
+		(code >= 97 && code <= 122) // a-z
+	);
+}
+
+function extractLoginScreenKeys(source: string): Array<string> {
+	const keys: Array<string> = [];
+	let searchFrom = 0;
+	while (searchFrom < source.length) {
+		const start = source.indexOf(KEY_PREFIX, searchFrom);
+		if (start === -1) break;
+		let end = start + KEY_PREFIX.length;
+		while (end < source.length && isKeyChar(source.charAt(end))) {
+			end++;
+		}
+		if (end > start + KEY_PREFIX.length) {
+			keys.push(source.slice(start, end));
+		}
+		searchFrom = end;
+	}
+	return keys;
+}
 
 const collectTypeScriptFiles = async (directory: string): Promise<Array<string>> => {
 	const entries = await readdir(directory, { withFileTypes: true });
@@ -42,11 +69,8 @@ describe('Le Løgin localisations', () => {
 		for (const filePath of files) {
 			const source = await readFile(filePath, 'utf8');
 
-			for (const match of source.matchAll(keyPattern)) {
-				const key = match[1];
-				if (key !== undefined) {
-					referencedKeys.add(key);
-				}
+			for (const key of extractLoginScreenKeys(source)) {
+				referencedKeys.add(key);
 			}
 		}
 

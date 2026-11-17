@@ -1,3 +1,4 @@
+import { UmbElementMixin } from '@umbraco-cms/backoffice/element-api';
 import styles from './image-upload-preview.element.css?inline';
 
 /** The shape Umbraco's file upload expects of a preview element. */
@@ -13,7 +14,7 @@ export interface UmbFileUploadPreviewElement extends HTMLElement {
  * Revokes the object URL when the file changes or the element is removed.
  */
 export class LoginScreenImageUploadPreviewElement
-	extends HTMLElement
+	extends UmbElementMixin(HTMLElement)
 	implements UmbFileUploadPreviewElement
 {
 	#objectUrl?: string;

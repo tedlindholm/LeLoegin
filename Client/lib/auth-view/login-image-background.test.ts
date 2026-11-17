@@ -8,9 +8,9 @@ describe('login image background', () => {
 		);
 	});
 
-	it('escapes double quotes in image URLs before writing CSS', () => {
-		expect(toLoginImageBackground('/login-screen/runtime-image-"quoted".jpg')).toBe(
-			'url("/login-screen/runtime-image-%22quoted%22.jpg") no-repeat center center / cover'
+	it('escapes quotes, backslashes, parentheses, and newlines in image URLs before writing CSS (5.10)', () => {
+		expect(toLoginImageBackground('/login-screen/a"b\\c(d)\ne.jpg')).toBe(
+			'url("/login-screen/a%22b%5Cc%28d%29%0Ae.jpg") no-repeat center center / cover'
 		);
 	});
 

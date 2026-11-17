@@ -253,7 +253,7 @@ const assetGroupCardCollectionViewManifest: UmbExtensionManifest = {
 	name: 'Login Screen Asset Group Grid View',
 	element: () => import('./asset-group-card-collection-view.element.js'),
 	meta: {
-		label: 'Grid',
+		label: '#general_grid',
 		icon: 'icon-grid',
 		pathName: 'grid'
 	},

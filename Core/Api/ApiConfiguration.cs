@@ -44,6 +44,12 @@ public static partial class ApiConfiguration
 		{
 			ApplyStringEnum(schema, "all", "any");
 		}
+		else if (type == typeof(LoginRuleConditionValue))
+		{
+			var stringOrInt = CreateStringOrIntegerSchema();
+			schema.Type = stringOrInt.Type;
+			schema.OneOf = stringOrInt.OneOf;
+		}
 		else if (typeInfo.ElementType == typeof(LoginRuleConditionValue))
 		{
 			// Matched via typeInfo.ElementType — i.e. on the collection, not on the value type.

@@ -1,10 +1,4 @@
-/**
- * Escapes double quotes in a URL string to prevent CSS injection.
- *
- * @param value - The URL string to escape.
- * @returns The escaped URL with double quotes replaced by `%22`.
- */
-const safeCssUrl = (value: string) => value.replaceAll('"', '%22');
+import { escapeCssUrl } from '../utils/css-url.js';
 
 /**
  * Builds the background shorthand expected by Umbraco's auth layout image wrapper.
@@ -26,7 +20,7 @@ export const toLoginImageBackground = (
 		focalPoint === undefined
 			? 'center center'
 			: `${formatPositionPercent(focalPoint.left)} ${formatPositionPercent(focalPoint.top)}`;
-	return `url("${safeCssUrl(imageUrl)}") no-repeat ${position} / cover`;
+	return `url("${escapeCssUrl(imageUrl)}") no-repeat ${position} / cover`;
 };
 
 const formatPositionPercent = (value: number) => {

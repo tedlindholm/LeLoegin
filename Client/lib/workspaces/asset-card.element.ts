@@ -2,8 +2,16 @@ import '@umbraco-cms/backoffice/components';
 import '@umbraco-cms/backoffice/entity-action';
 import { UmbElementMixin } from '@umbraco-cms/backoffice/element-api';
 import { UmbEntityContext } from '@umbraco-cms/backoffice/entity';
-import { escapeHTML } from '@umbraco-cms/backoffice/utils';
 import { LeLøginAssetThumbnailController } from '../assets/asset-thumbnail.controller.js';
+import { cloneTemplate } from '../utils/template.js';
+
+const assetCardTemplate = document.createElement('template');
+assetCardTemplate.innerHTML = /* html */ `
+	<uui-card-media>
+		<img loading="lazy">
+		<umb-entity-actions-bundle slot="actions"></umb-entity-actions-bundle>
+	</uui-card-media>
+`;
 
 /** The data an asset card renders and exposes to its entity actions. */
 export interface LeLøginScreenAssetCardValue {
@@ -49,15 +57,21 @@ export class LeLøginScreenAssetCard extends UmbElementMixin(HTMLElement) {
 	#render() {
 		if (!this.isConnected) return;
 		if (this.#value === undefined) {
-			this.innerHTML = '';
+			this.replaceChildren();
 			return;
 		}
-		this.innerHTML = /* html */ `
-			<uui-card-media name="${escapeHTML(this.#value.name)}" href="${escapeHTML(this.#value.href)}">
-				<img alt="${escapeHTML(this.#value.alt)}" loading="lazy">
-				<umb-entity-actions-bundle slot="actions" label="${escapeHTML(this.#value.name)}"></umb-entity-actions-bundle>
-			</uui-card-media>
-		`;
+		const fragment = cloneTemplate(assetCardTemplate, 'asset card');
+		const card = fragment.firstElementChild;
+		if (!(card instanceof HTMLElement)) {
+			throw new Error('Asset card template must have a single HTMLElement root.');
+		}
+		card.setAttribute('name', this.#value.name);
+		card.setAttribute('href', this.#value.href);
+		const image = card.querySelector('img');
+		if (image instanceof HTMLImageElement) image.alt = this.#value.alt;
+		const actions = card.querySelector('umb-entity-actions-bundle');
+		actions?.setAttribute('label', this.#value.name);
+		this.replaceChildren(card);
 		this.#syncThumbnail();
 	}
 
