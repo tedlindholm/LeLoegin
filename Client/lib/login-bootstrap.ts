@@ -3,23 +3,10 @@ import {
 	umbLocalizationRegistry,
 	type ManifestLocalization
 } from '@umbraco-cms/backoffice/localization';
-import type { UmbLocalizationDictionary } from '@umbraco-cms/backoffice/localization-api';
-import { loadWithTimeout } from './login-greeting-loader.js';
+import { assertGreetingLocalizationModule, loadWithTimeout } from './login-greeting-loader.js';
 
-function isGreetingLocalizationModule(
-	value: unknown
-): value is { default: UmbLocalizationDictionary } {
-	if (typeof value !== 'object' || value === null || !('default' in value)) return false;
-	const dict: unknown = value.default;
-	return typeof dict === 'object' && dict !== null;
-}
-
-async function loadGreetingModule(path: string): Promise<{ default: UmbLocalizationDictionary }> {
-	const loaded: unknown = await import(path);
-	if (!isGreetingLocalizationModule(loaded)) {
-		throw new Error('Le Løgin: invalid greeting localisation module.');
-	}
-	return loaded;
+async function loadGreetingModule(path: string) {
+	return assertGreetingLocalizationModule(await import(path));
 }
 
 /**

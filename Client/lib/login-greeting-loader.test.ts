@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { loadWithTimeout } from './login-greeting-loader.js';
+import { assertGreetingLocalizationModule, loadWithTimeout } from './login-greeting-loader.js';
 
 describe('loadWithTimeout', () => {
 	it('returns the loaded value when it resolves before the timeout', async () => {
@@ -11,5 +11,21 @@ describe('loadWithTimeout', () => {
 	it('rejects when the loader stalls past the timeout', async () => {
 		const never = () => new Promise<never>(() => {});
 		await expect(loadWithTimeout(never, 20)).rejects.toThrow('Timed out after 20ms.');
+	});
+});
+
+describe('assertGreetingLocalizationModule', () => {
+	it('accepts a module with an object default export and rejects malformed modules', () => {
+		const valid = { default: { login: { greeting0: 'Hi' } } };
+		expect(assertGreetingLocalizationModule(valid)).toEqual(valid);
+		expect(() => assertGreetingLocalizationModule(null)).toThrow(
+			'Le Løgin: invalid greeting localisation module.'
+		);
+		expect(() => assertGreetingLocalizationModule({})).toThrow(
+			'Le Løgin: invalid greeting localisation module.'
+		);
+		expect(() => assertGreetingLocalizationModule({ default: 'not-an-object' })).toThrow(
+			'Le Løgin: invalid greeting localisation module.'
+		);
 	});
 });

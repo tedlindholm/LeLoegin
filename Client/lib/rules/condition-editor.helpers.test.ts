@@ -7,12 +7,13 @@ const localize: Parameters<typeof operatorOptions>[0] = {
 };
 
 let operatorOptions: typeof import('./condition-editor.helpers.js').operatorOptions;
+let buildConditionShellMarkup: typeof import('./condition-editor.helpers.js').buildConditionShellMarkup;
 
 beforeAll(async () => {
 	vi.stubGlobal('document', {
 		createElement: () => ({ innerHTML: '' })
 	});
-	({ operatorOptions } = await import('./condition-editor.helpers.js'));
+	({ operatorOptions, buildConditionShellMarkup } = await import('./condition-editor.helpers.js'));
 });
 
 afterAll(() => {
@@ -49,5 +50,16 @@ describe('operatorOptions', () => {
 			{ name: 'loginScreen_operatorIn', value: 'in', selected: true }
 		]);
 		expect(metadata.fields.get('weekday')?.operators).toEqual(['is', 'in']);
+	});
+});
+
+describe('buildConditionShellMarkup', () => {
+	it('escapes localised labels before interpolating into HTML markup', () => {
+		const escape = (v: string) =>
+			v.replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
+		const markup = buildConditionShellMarkup('Match <all>', 'Add "condition"', escape);
+
+		expect(markup).toContain('>Match &lt;all&gt;</uui-label>');
+		expect(markup).toContain('label="Add &quot;condition&quot;"');
 	});
 });

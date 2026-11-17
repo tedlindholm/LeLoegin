@@ -18,6 +18,8 @@ function isWillChangeStateEvent(event: Event): event is CustomEvent<WillChangeSt
 	);
 }
 
+type WorkspaceRoutes = Pick<UmbWorkspaceRouteManager, 'getAbsolutePath' | 'getActiveLocalPath'>;
+
 /**
  * Determines whether a pending navigation leaves the workspace that owns `routeManager`.
  *
@@ -27,7 +29,7 @@ function isWillChangeStateEvent(event: Event): event is CustomEvent<WillChangeSt
  * @returns True when the navigation leaves the current workspace route.
  */
 export function willNavigateAwayFromWorkspace(
-	routeManager: UmbWorkspaceRouteManager,
+	routeManager: WorkspaceRoutes,
 	newUrl: string | URL,
 	origin = typeof window !== 'undefined' ? window.location.origin : undefined
 ): boolean {
@@ -36,11 +38,7 @@ export function willNavigateAwayFromWorkspace(
 	const localPath = routeManager.getActiveLocalPath();
 	if (localPath === '') return false;
 	const resolvedUrl =
-		newUrl instanceof URL
-			? newUrl
-			: origin !== undefined
-				? new URL(newUrl, origin)
-				: undefined;
+		newUrl instanceof URL ? newUrl : origin !== undefined ? new URL(newUrl, origin) : undefined;
 	if (resolvedUrl === undefined) return false;
 	const newPath = resolvedUrl.pathname;
 	const absolutePath = `${basePath}/${localPath}`;
@@ -53,7 +51,7 @@ export function willNavigateAwayFromWorkspace(
  */
 export class LeLøginScreenUnsavedChangesGuard {
 	#host: UmbControllerHost;
-	#routes: UmbWorkspaceRouteManager;
+	#routes: WorkspaceRoutes;
 	#hasUnsavedChanges: () => boolean;
 	#localize: UmbLocalizationController;
 	#allowNavigateAway = false;
@@ -65,11 +63,7 @@ export class LeLøginScreenUnsavedChangesGuard {
 	 * @param routes - The workspace's route manager.
 	 * @param hasUnsavedChanges - Returns true when the workspace has unpersisted edits.
 	 */
-	constructor(
-		host: UmbControllerHost,
-		routes: UmbWorkspaceRouteManager,
-		hasUnsavedChanges: () => boolean
-	) {
+	constructor(host: UmbControllerHost, routes: WorkspaceRoutes, hasUnsavedChanges: () => boolean) {
 		this.#host = host;
 		this.#routes = routes;
 		this.#hasUnsavedChanges = hasUnsavedChanges;

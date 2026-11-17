@@ -3,6 +3,8 @@ using LeLøgin.Core.Models;
 using LeLøgin.Core.Storage;
 using LeLøgin.Tests.Storage;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -198,6 +200,31 @@ public sealed class LeLøginBackgroundMiddlewareTests
 		await middleware.InvokeAsync(context);
 
 		Assert.True(nextCalled);
+	}
+
+	[Fact]
+	public async Task InvokeAsync_Resolves_Services_From_RequestServices_When_Path_Matches()
+	{
+		var middleware = new LeLøginBackgroundMiddleware(_ =>
+			throw new InvalidOperationException("The next middleware must not run when a background is resolved."));
+		var services = new ServiceCollection()
+			.AddSingleton<ILeLøginScreenStore>(FakeLeLøginScreenStoreSeed.FromConfigJson(ConfigWithBackground))
+			.AddSingleton<ILeLøginScreenFileService>(new StubFileService())
+			.AddSingleton(new LeLøginScreenRuntimeResolver())
+			.AddSingleton(TimeProvider.System)
+			.AddSingleton(Options.Create(new ImageSharpMiddlewareOptions()))
+			.AddSingleton<ILogger<LeLøginBackgroundMiddleware>>(new NullLogger<LeLøginBackgroundMiddleware>())
+			.AddSingleton(Mock.Of<IRuntimeState>(state => state.Level == RuntimeLevel.Run))
+			.BuildServiceProvider();
+
+		var context = new DefaultHttpContext { RequestServices = services };
+		context.Request.Path = BackgroundUrl;
+		context.Request.Host = new HostString("localhost");
+
+		await middleware.InvokeAsync(context);
+
+		Assert.Equal(StatusCodes.Status302Found, context.Response.StatusCode);
+		Assert.Equal("/login-screen/runtime-image-guid.jpg", context.Response.Headers.Location);
 	}
 
 	private sealed class ThrowingServiceProvider : IServiceProvider
