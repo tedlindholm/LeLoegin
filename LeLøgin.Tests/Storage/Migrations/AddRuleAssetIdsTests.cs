@@ -10,6 +10,7 @@ namespace LeLøgin.Tests.Storage.Migrations;
 /// Upgrades a database that still has the single-image <c>LeLoginRules.AssetId</c> column and checks
 /// that the migration keeps each rule's image, priority and enabled flag.
 /// </summary>
+[Collection(UmbracoHostCollection.Name)]
 public sealed class AddRuleAssetIdsTests
 {
 	[Fact]

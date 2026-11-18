@@ -18,6 +18,7 @@ using Xunit;
 
 namespace LeLøgin.Tests.Site;
 
+[Collection(UmbracoHostCollection.Name)]
 public sealed class FreshInstallStartupTests
 {
 	private static readonly string[] LoginGraphicsPaths =

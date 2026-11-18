@@ -10,6 +10,7 @@ namespace LeLøgin.Tests.Storage;
 /// Runs the real NPoco store against the SQLite database that Umbraco installs for each test, so
 /// these checks cover the mapping, the upsert and the delete path that the fake store skips.
 /// </summary>
+[Collection(UmbracoHostCollection.Name)]
 public sealed class LoginScreenStoreTests
 {
 	[Fact]
