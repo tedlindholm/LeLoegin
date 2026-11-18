@@ -7,16 +7,31 @@ using Xunit;
 namespace LeLøgin.Tests.Storage;
 
 /// <summary>
-/// Runs the real NPoco store against the SQLite database that Umbraco installs for each test, so
-/// these checks cover the mapping, the upsert and the delete path that the fake store skips.
+/// Runs the real NPoco store against a SQLite database that Umbraco installs, so these checks cover
+/// the mapping, the upsert and the delete path that the fake store skips. One installed site serves
+/// the whole class; each test starts with no assets and no rules.
 /// </summary>
 [Collection(UmbracoHostCollection.Name)]
-public sealed class LoginScreenStoreTests
+public sealed class LoginScreenStoreTests(InstalledSite site) : IClassFixture<InstalledSite>, IAsyncLifetime
 {
+	public Task InitializeAsync() => WithStoreAsync(async store =>
+	{
+		foreach (var rule in await store.GetAllRulesAsync())
+		{
+			await store.DeleteRuleAsync(rule.Id);
+		}
+
+		foreach (var asset in await store.GetAllAssetsAsync())
+		{
+			await store.DeleteAssetAsync(asset.Id);
+		}
+	});
+
+	public Task DisposeAsync() => Task.CompletedTask;
+
 	[Fact]
 	public async Task Asset_Round_Trips_Every_Field_Through_The_Database()
 	{
-		await using var site = await StartInstalledSiteAsync();
 		var asset = Asset("asset-full");
 		asset.Kind = LoginImageAssetKind.Logo;
 		asset.AltText = "Company logo";
@@ -25,7 +40,7 @@ public sealed class LoginScreenStoreTests
 		asset.FocalPoint = new FocalPoint { Left = 0.25, Top = 0.75 };
 		asset.Zoom = 1.5;
 
-		await WithStoreAsync(site, async store =>
+		await WithStoreAsync(async store =>
 		{
 			await store.UpsertAssetAsync(asset);
 
@@ -53,9 +68,7 @@ public sealed class LoginScreenStoreTests
 	[Fact]
 	public async Task Upserting_An_Existing_Asset_Updates_The_Row_Instead_Of_Adding_Another()
 	{
-		await using var site = await StartInstalledSiteAsync();
-
-		await WithStoreAsync(site, async store =>
+		await WithStoreAsync(async store =>
 		{
 			await store.UpsertAssetAsync(Asset("asset-one"));
 			var renamed = Asset("asset-one");
@@ -72,9 +85,7 @@ public sealed class LoginScreenStoreTests
 	[Fact]
 	public async Task Rule_Round_Trips_Its_Ordered_Image_List_Condition_And_Enabled_Flag()
 	{
-		await using var site = await StartInstalledSiteAsync();
-
-		await WithStoreAsync(site, async store =>
+		await WithStoreAsync(async store =>
 		{
 			await store.UpsertRuleAsync(new LoginRule
 			{
@@ -99,9 +110,7 @@ public sealed class LoginScreenStoreTests
 	[Fact]
 	public async Task DeleteAsset_Returns_False_For_An_Unknown_Id_And_True_When_It_Removes_The_Row()
 	{
-		await using var site = await StartInstalledSiteAsync();
-
-		await WithStoreAsync(site, async store =>
+		await WithStoreAsync(async store =>
 		{
 			await store.UpsertAssetAsync(Asset("asset-gone"));
 
@@ -116,9 +125,7 @@ public sealed class LoginScreenStoreTests
 	{
 		// Umbraco creates the LeLoginAssets columns COLLATE NOCASE, so these are one row. The fake store
 		// matches ids the same way, so tests built on it see this behaviour too.
-		await using var site = await StartInstalledSiteAsync();
-
-		await WithStoreAsync(site, async store =>
+		await WithStoreAsync(async store =>
 		{
 			await store.UpsertAssetAsync(Asset("Asset-A"));
 			await store.UpsertAssetAsync(Asset("asset-a"));
@@ -160,9 +167,28 @@ public sealed class LoginScreenStoreTests
 		return site;
 	}
 
-	private static async Task WithStoreAsync(FreshInstallSite site, Func<ILeLøginScreenStore, Task> action)
+	private async Task WithStoreAsync(Func<ILeLøginScreenStore, Task> action)
 	{
 		await using var scope = site.Services.CreateAsyncScope();
 		await action(scope.ServiceProvider.GetRequiredService<ILeLøginScreenStore>());
+	}
+}
+
+/// <summary>The installed site every test in <see cref="LoginScreenStoreTests"/> shares.</summary>
+public sealed class InstalledSite : IAsyncLifetime
+{
+	private FreshInstallSite? _site;
+
+	public IServiceProvider Services =>
+		_site?.Services ?? throw new InvalidOperationException("The installed site has not started.");
+
+	public async Task InitializeAsync() => _site = await LoginScreenStoreTests.StartInstalledSiteAsync();
+
+	public async Task DisposeAsync()
+	{
+		if (_site is not null)
+		{
+			await _site.DisposeAsync();
+		}
 	}
 }
