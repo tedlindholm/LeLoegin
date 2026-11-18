@@ -25,9 +25,10 @@ public class RuntimeController(
 	/// bootstrap before it imports Umbraco's login bundle.
 	/// Resolved per request with <c>Cache-Control: no-store</c> so asset swaps, weekday/month
 	/// rule flips, and random rules apply on the next login-page load on every instance —
-	/// the same freshness model as the background-image middleware. Only the <c>login</c>
-	/// namespace is emitted: in Umbraco 18 both the login page and the logout view read
-	/// <c>login_greeting0..6</c>, and <c>auth_greeting*</c> is deprecated for removal in 20.
+	/// the same freshness model as the background-image middleware. Each track emits only the
+	/// namespace its own login page reads: Umbraco 17 reads <c>auth_greeting0..6</c> and nothing
+	/// else; Umbraco 18 reads <c>login_greeting0..6</c>, and would still use an
+	/// <c>auth_greeting*</c> key but log a deprecation warning for it (removal in 20).
 	/// </summary>
 	/// <returns>
 	/// A <c>text/javascript</c> module whose default export overrides every weekday greeting, or an
@@ -66,7 +67,11 @@ public class RuntimeController(
 				greetingValues[$"greeting{day}"] = greeting;
 			}
 
+#if UMBRACO_17
+			payload = new { auth = greetingValues };
+#else
 			payload = new { login = greetingValues };
+#endif
 		}
 
 		// System.Text.Json's default encoder escapes quotes and non-ASCII, so the serialised
